@@ -19,7 +19,7 @@ import fr.wonder.ahk.transpilers.asm_x64.writers.memory.DirectLoc;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryLoc;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.VarLocation;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class ExpressionWriter {
 	

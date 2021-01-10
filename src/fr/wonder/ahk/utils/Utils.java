@@ -76,7 +76,7 @@ public class Utils {
 		return sb.toString();
 	}
 	
-	public static <T> String toString(T[] array, Function<T, ?> getter) {
+	public static <T> String mapToString(T[] array, Function<T, ?> getter) {
 		if(array == null)
 			return "null";
 		StringBuilder sb = new StringBuilder();
@@ -120,12 +120,6 @@ public class Utils {
 		for(Object o : list)
 			System.out.println(o);
 	}
-	
-//	public static void dump(List<? extends SourceElement> list) {
-//		for(SourceElement el : list) {
-//			System.out.println(el + " |" + el.getSourceStart() + " " + el.getSourceStop());
-//		}
-//	}
 	
 	public static void dump(Map<?, ?> map) {
 		System.out.println(Arrays.toString(map.entrySet().toArray()));

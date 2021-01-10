@@ -4,7 +4,7 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 /**
  * Used (currently) only by the {@link ExpressionWriter} while writing function operations,

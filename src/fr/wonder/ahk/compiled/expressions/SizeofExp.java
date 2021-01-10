@@ -3,7 +3,7 @@ package fr.wonder.ahk.compiled.expressions;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class SizeofExp extends Expression {
 

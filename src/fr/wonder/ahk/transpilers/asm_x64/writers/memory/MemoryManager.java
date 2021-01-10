@@ -19,7 +19,7 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.asm_x64.writers.FunctionWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.NoneExp;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class MemoryManager {
 	

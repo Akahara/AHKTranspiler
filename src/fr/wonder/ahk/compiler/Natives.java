@@ -11,7 +11,8 @@ import java.util.Set;
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.units.UnitImportation;
 import fr.wonder.ahk.compiler.tokens.Token;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.AssertionException;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class Natives {
 	
@@ -19,7 +20,7 @@ public class Natives {
 	
 	private static final Set<Unit> nativeUnits = new HashSet<>();
 
-	public static List<Unit> getUnits(UnitImportation importation, ErrorWrapper errors) {
+	public static List<Unit> getUnits(UnitImportation importation, ErrorWrapper errors) throws AssertionException {
 		for(Unit u : nativeUnits) {
 			if(u.getFullBase().equals(importation.unitBase))
 				return Arrays.asList(u);

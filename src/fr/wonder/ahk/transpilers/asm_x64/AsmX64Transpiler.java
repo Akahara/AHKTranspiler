@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import fr.wonder.ahk.AHKCompiledHandle;
+import fr.wonder.ahk.AHKTranspiler;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
@@ -13,7 +14,8 @@ import fr.wonder.ahk.transpilers.asm_x64.natives.ProcessFiles;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.TextBuffer;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.AssertionException;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.files.FilesUtils;
 
 public class AsmX64Transpiler implements Transpiler {
@@ -24,13 +26,9 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 
 	@Override
-	public void exportProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	public void exportProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException, AssertionException {
 		validateProject(handle, errors);
 		errors.assertNoErrors();
-		
-		if(dir.isDirectory())
-			FilesUtils.deleteRecur(dir);
-		dir.mkdirs();
 		
 		String[] files = new String[handle.units.length + handle.nativeRequirements.length];
 		
@@ -54,6 +52,11 @@ public class AsmX64Transpiler implements Transpiler {
 		errors.assertNoErrors();
 		
 		runCompiler(handle, dir, files, errors);
+	}
+
+	@Override
+	public void exportAPI(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
+		// TODO export as api
 	}
 	
 	private void validateProject(AHKCompiledHandle handle, ErrorWrapper errors) {
@@ -98,7 +101,7 @@ public class AsmX64Transpiler implements Transpiler {
 		
 		for(String f : files) {
 			new File(dir, "obj_files/"+f).getParentFile().mkdirs();
-			compiled &= runCommand(nasm + f + asme + f + ".o", dir);
+			compiled &= runCommand(nasm + f + asme + f + ".o", dir) == 0;
 		}
 		
 		if(!compiled) {
@@ -111,28 +114,23 @@ public class AsmX64Transpiler implements Transpiler {
 			ld += handle.manifest.LINKER_OPTIONS + " ";
 		for(String f : files)
 			ld += "obj_files/" + f + ".o ";
-		if(!runCommand(ld, dir))
+		if(runCommand(ld, dir) != 0)
 			errors.add("Unable to link all source files");
 	}
 	
-	private static boolean runCommand(String cmd, File dir) throws IOException {
-		System.out.print("Running command || " + cmd);
+	private static int runCommand(String cmd, File dir) throws IOException {
+		AHKTranspiler.logger.info("Running command || " + cmd);
 		ProcessBuilder pb = new ProcessBuilder(cmd.split(" "));
 		Process p = pb.directory(dir).start();
 		int ec = -1;
 		try { ec = p.waitFor(); } catch (InterruptedException x) { }
-		System.out.print(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec);
-		if((ec & 0x80) == 0 || ((ec-1) ^ 0x80) > 16)
-			System.out.println();
-		else
-			System.out.println(" signal " + SIGNALS[(ec-1) ^ 0x80]);
-		System.out.flush();
-		System.err.flush();
-		System.out.print(new String(p.getInputStream().readAllBytes()));
-		System.err.print(new String(p.getErrorStream().readAllBytes()));
-		System.out.flush();
-		System.err.flush();
-		return ec == 0;
+		String signal = (ec & 0x80) == 0 || ((ec-1) ^ 0x80) > 16 ? "" : " signal " + SIGNALS[(ec-1) ^ 0x80];
+		AHKTranspiler.logger.info(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec + signal);
+		for(String l : new String(p.getInputStream().readAllBytes()).split("\n"))
+			AHKTranspiler.logger.info(l);
+		for(String l : new String(p.getErrorStream().readAllBytes()).split("\n"))
+			AHKTranspiler.logger.err(l);
+		return ec;
 	}
 	
 	private static final String[] SIGNALS = {
@@ -143,8 +141,8 @@ public class AsmX64Transpiler implements Transpiler {
 	};
 
 	@Override
-	public void runProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
-		runCommand("./" + handle.manifest.OUTPUT_NAME, dir);
+	public int runProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
+		return runCommand("./" + handle.manifest.OUTPUT_NAME, dir);
 	}
 	
 }

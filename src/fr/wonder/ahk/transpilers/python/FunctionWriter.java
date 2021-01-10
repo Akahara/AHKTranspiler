@@ -18,15 +18,15 @@ import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.Unit;
-import fr.wonder.ahk.utils.ErrorWrapper;
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class FunctionWriter {
 	
 	static void writeFunction(Unit unit, FunctionSection func, StringBuilder sb, ErrorWrapper errors) {
 		sb.append("  @staticmethod\n");
-		sb.append("  def " + func.name + "(");
-		sb.append(Utils.toString(func.arguments, arg->arg.name));
+		sb.append("  def " + func.getUnitSignature() + "(");
+		sb.append(Utils.mapToString(func.arguments, arg->arg.name));
 		sb.append("):\n");
 		
 		// write statements

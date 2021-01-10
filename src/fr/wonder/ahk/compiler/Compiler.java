@@ -3,36 +3,23 @@ package fr.wonder.ahk.compiler;
 import fr.wonder.ahk.AHKCompiledHandle;
 import fr.wonder.ahk.AHKProjectHandle;
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiler.linker.Linker;
 import fr.wonder.ahk.compiler.tokens.Token;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.AssertionException;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class Compiler {
 	
-	public static AHKCompiledHandle compile(AHKProjectHandle project, ErrorWrapper errors) {
-		System.out.println("Compiling project...");
-		
-		System.out.println("Tokenizing units...");
+	public static AHKCompiledHandle compile(AHKProjectHandle project, ErrorWrapper errors) throws AssertionException {
 		Token[][] unitsTokens = tokenizeUnits(project, errors.subErrrors("Unable to tokenize all units"));
 		errors.assertNoErrors();
-		System.out.println("Tokenized units.");
 		
-		System.out.println("Parsing units...");
 		Unit[] units = parseUnits(project, unitsTokens, errors.subErrrors("Unable to parse all units"));
 		errors.assertNoErrors();
-		System.out.println("Parsed units.");
 		
 		AHKCompiledHandle compiled = new AHKCompiledHandle(project.manifest, units);
 		
 		project.manifest.validate(compiled, errors);
 		errors.assertNoErrors();
-		
-		System.out.println("Linking project...");
-		Linker.link(compiled, errors.subErrrors("Unable to link all units"));
-		errors.assertNoErrors();
-		System.out.println("Linked project.");
-		
-		System.out.println("Compiled project.");
 		
 		return compiled;
 	}
@@ -49,8 +36,13 @@ public class Compiler {
 	private static Unit[] parseUnits(AHKProjectHandle project, Token[][] unitsTokens, ErrorWrapper errors) {
 		Unit[] units = new Unit[project.units.length];
 		for(int i = 0; i < project.units.length; i++) {
-			UnitSource source = project.units[i];
-			units[i] = UnitParser.parseUnit(source, unitsTokens[i], errors.subErrrors("Parsing errors in unit " + source.name));
+			try {
+				UnitSource source = project.units[i];
+				units[i] = UnitParser.parseUnit(source, unitsTokens[i], errors.subErrrors("Parsing errors in unit " + source.name));
+			} catch (AssertionException x) {
+				// catching there only results in skipping a part of
+				// the compilation of the current source
+			}
 		}
 		return units;
 	}

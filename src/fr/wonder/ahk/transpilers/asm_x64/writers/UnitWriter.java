@@ -18,7 +18,7 @@ import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitWriter {
 	

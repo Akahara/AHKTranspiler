@@ -32,12 +32,12 @@ import fr.wonder.ahk.compiler.Natives;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.AssertionException;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class Linker {
 	
-	public static void link(AHKCompiledHandle handle, ErrorWrapper errors) {
-		
+	public static void link(AHKCompiledHandle handle, ErrorWrapper errors) throws AssertionException {
 		// search for all required native units
 		Set<Unit> nativeUnits = new HashSet<>();
 		for(Unit u : handle.units) {
@@ -95,6 +95,8 @@ public class Linker {
 			ValueDeclaration[] externFields = linkUnit(handle, linkedUnits[u], subErrors);
 			handle.externFields.put(linkedUnits[u].unit, externFields);
 		}
+		
+		errors.assertNoErrors();
 	}
 	
 	private static ValueDeclaration[] linkUnit(AHKCompiledHandle handle, LinkedUnit lunit, ErrorWrapper errors) {
@@ -128,8 +130,8 @@ public class Linker {
 			
 			// check signatures duplicates
 			for(int j = 0; j < i; j++) {
-				if(lunit.unit.functions[j].unitSignature.equals(func.unitSignature)) {
-					errors.add("Two functions have the same signature: " + func.unitSignature +
+				if(lunit.unit.functions[j].getUnitSignature().equals(func.getUnitSignature())) {
+					errors.add("Two functions have the same signature: " + func.getUnitSignature() +
 							lunit.unit.functions[j].getErr() + lunit.unit.functions[i].getErr());
 				}
 			}
@@ -143,7 +145,7 @@ public class Linker {
 			}
 			
 			// link variables
-			linkStatements(handle, lunit, func, errors.subErrrors("Errors in function " + func.unitSignature));
+			linkStatements(handle, lunit, func, errors.subErrrors("Errors in function " + func.getUnitSignature()));
 		}
 		
 		return externFields.toArray(ValueDeclaration[]::new);

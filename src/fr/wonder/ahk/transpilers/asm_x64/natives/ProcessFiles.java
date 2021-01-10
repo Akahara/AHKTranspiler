@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 import fr.wonder.ahk.AHKCompiledHandle;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.files.FilesUtils;
 import fr.wonder.commons.utils.ReflectUtils;
 

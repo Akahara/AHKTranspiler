@@ -1,9 +1,7 @@
 # specify the program entry point, using the #main function
 entry-point=fr.wonder.main.Unit
-# build for linux
-build-architecture=elf64
-build-target=unix
-# add debugging symbols
+# build using python
+build-architecture=macho64
+build-target=mac
+# add debugging symbols (TODO they are not yet used with python)
 debug-symbols=true
-# linker options, unused here
-linker-options=-e _main

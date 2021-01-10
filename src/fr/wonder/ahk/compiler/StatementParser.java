@@ -10,11 +10,11 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
-import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.VarExp;
+import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -30,8 +30,8 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
-import fr.wonder.ahk.utils.ErrorWrapper;
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class StatementParser {
 

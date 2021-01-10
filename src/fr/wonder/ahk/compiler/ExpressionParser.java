@@ -13,17 +13,16 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
-import fr.wonder.ahk.utils.ErrorWrapper;
-import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.types.Tuple;
 
 public class ExpressionParser {
@@ -115,8 +114,7 @@ public class ExpressionParser {
 				current.operators.add(new Tuple<>(Tokens.getOperator(t), i));
 		}
 		if(!sections.isEmpty()) {
-			Utils.dump(line);
-			System.out.println(start + " " + stop);
+//			Utils.dump(line);
 			throw new IllegalArgumentException("Unexpected unclosed section: " + sections.get(sections.size()-1));
 		}
 		return current;

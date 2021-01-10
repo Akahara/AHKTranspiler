@@ -1,23 +1,23 @@
 package fr.wonder.ahk.transpilers.asm_x64.natives.operations;
 
+import static fr.wonder.ahk.compiled.expressions.Operator.*;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
+import static fr.wonder.ahk.compiler.types.NativeOperation.get;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.DataAccess;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.DirectLoc;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.types.Tuple;
-
-import static fr.wonder.ahk.compiler.types.NativeOperation.get;
-import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
 
 public class AsmWriter {
 	

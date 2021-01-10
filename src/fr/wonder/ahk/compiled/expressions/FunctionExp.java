@@ -4,8 +4,8 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.ahk.utils.ErrorWrapper;
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 /**
  * Replaces {@link FunctionCallExp} when the {@link FunctionCallExp#getFunction() function argument}

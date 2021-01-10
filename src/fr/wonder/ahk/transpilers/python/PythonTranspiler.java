@@ -10,7 +10,8 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.transpilers.Transpiler;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.AssertionException;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.files.FilesUtils;
 
 public class PythonTranspiler implements Transpiler {
@@ -21,8 +22,7 @@ public class PythonTranspiler implements Transpiler {
 	}
 	
 	@Override
-	public void exportProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
-		System.out.println("Exporting project as python script...");
+	public void exportProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException, AssertionException {
 		ErrorWrapper[] unitErrors = new ErrorWrapper[handle.units.length+handle.nativeRequirements.length];
 		for(int i = 0; i < handle.units.length; i++) {
 			unitErrors[i] = errors.subErrrors("Unable to compile unit " + handle.units[i].getFullBase());
@@ -46,7 +46,11 @@ public class PythonTranspiler implements Transpiler {
 			exportUnit(handle, handle.nativeRequirements[i], unitFile, unitErrors[handle.units.length+i]);
 		}
 		errors.assertNoErrors();
-		System.out.println("Successfully exported project as python script");
+	}
+
+	@Override
+	public void exportAPI(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
+		throw new IOException("Unsupported in python");
 	}
 	
 	private static void refactorUnit(AHKCompiledHandle handle, Unit unit, ErrorWrapper errors) {
@@ -81,8 +85,10 @@ public class PythonTranspiler implements Transpiler {
 		for(FunctionSection func : unit.functions) {
 			if(!func.modifiers.hasModifier(Modifier.NATIVE)) {
 				FunctionWriter.writeFunction(unit, func, sb, errors);
-				sb.append("\n\n");
-			} 
+			} else {
+				NativeFunctions.writeNative(func, sb, handle.typesTable.conversions);
+			}
+			sb.append("\n\n");
 		}
 		
 		for(VariableDeclaration decl : unit.variables) {
@@ -93,22 +99,23 @@ public class PythonTranspiler implements Transpiler {
 		if(handle.manifest.ENTRY_POINT.equals(unit.getFullBase())) {
 			sb.append("\n");
 			sb.append("if __name__ == '__main__':\n");
-			sb.append("  exit(" + unit.name + ".main())\n");
+			sb.append("  exit(" + handle.manifest.entryPointFunction.declaringUnit.name + "." +
+					handle.manifest.entryPointFunction.getUnitSignature() + "())\n");
 		}
 		
 		FilesUtils.write(file, sb.toString());
 	}
 	
-	public void runProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
-		System.out.println("Running python script\n");
-		ProcessBuilder pb = new ProcessBuilder("python", handle.manifest.ENTRY_POINT.replaceAll("\\.", "_")+".py");
+	@Override
+	public int runProject(AHKCompiledHandle handle, File dir, ErrorWrapper errors) throws IOException {
+		ProcessBuilder pb = new ProcessBuilder("python3", handle.manifest.ENTRY_POINT.replaceAll("\\.", "_")+".py");
 		pb.directory(dir);
 		pb.inheritIO();
 		Process process = pb.start();
 		try {
-			System.out.println("\nProcess exited with status " + process.waitFor());
+			return process.waitFor();
 		} catch (InterruptedException x) {
-			errors.add("Python process got interrupted");
+			throw new IOException("The python process got interrupted");
 		}
 	}
 	

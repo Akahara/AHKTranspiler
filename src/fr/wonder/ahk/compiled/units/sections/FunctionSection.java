@@ -26,8 +26,10 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 	public Statement[] body;
 	
 	// set by the linker using #makeSignature
-	public String signature;
-	public String unitSignature;
+	/** the global scope signature of this function */
+	private String signature;
+	/** the signature that can be used when already inside the declaring unit */
+	private String unitSignature;
 	
 	public FunctionSection(Unit unit, int sourceStart, int sourceStop) {
 		super(unit, sourceStart, sourceStop);
@@ -56,13 +58,18 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 
 	/** Called by the linker after the function argument types where computed */
 	public void makeSignature() {
-		this.signature = declaringUnit.getFullBase() + '.' + name + '(';
-		for(int i = 0; i < arguments.length-1; i++)
-			this.signature += arguments[i].getType().getName() + ", ";
-		if(arguments.length != 0)
-			this.signature += arguments[arguments.length-1].getType().toString();
-		this.signature += ')';
-		this.unitSignature = signature.substring(declaringUnit.getFullBase().length()+1);
+		this.unitSignature = name + "_" + getFunctionType().getSignature();
+		this.signature = declaringUnit.base + "." + unitSignature;
+	}
+	
+	/** global scope signature (declaring unit full base + unit scope signature) */
+	public String getSignature() {
+		return signature;
+	}
+	
+	/** unit scope signature */
+	public String getUnitSignature() {
+		return unitSignature;
 	}
 	
 	@Override

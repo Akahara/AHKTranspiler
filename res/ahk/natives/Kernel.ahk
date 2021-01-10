@@ -17,6 +17,21 @@ func void print(bool b) {}
 @native("ahk_Kernel_print_ln");
 func void println() {}
 
+func void prinln(int i) {
+	print(i);
+	println();
+}
+
+func void println(float f) {
+	print(f);
+	println();
+}
+
+func void println(str s) {
+	print(s);
+	println();
+}
+
 @native("ker_exit");
 func void exit(int exitCode) {}
 

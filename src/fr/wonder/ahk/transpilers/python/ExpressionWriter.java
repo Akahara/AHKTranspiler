@@ -1,5 +1,6 @@
 package fr.wonder.ahk.transpilers.python;
 
+import fr.wonder.ahk.compiled.expressions.ArrayExp;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
@@ -12,11 +13,11 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
+import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
-import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class ExpressionWriter {
 
@@ -42,10 +43,7 @@ class ExpressionWriter {
 			
 		} else if(exp instanceof FunctionExp) {
 			FunctionExp f = (FunctionExp) exp;
-			if(f.function.modifiers.hasModifier(Modifier.NATIVE))
-				sb.append(f.function.name);
-			else
-				sb.append(f.function.declaringUnit.name + '.' + f.function.name);
+			sb.append(f.function.declaringUnit.name + "." + f.function.getUnitSignature());
 			sb.append("(");
 			writeExpressions(unit, f.getArguments(), sb, errors);
 			sb.append(")");
@@ -77,8 +75,25 @@ class ExpressionWriter {
 				writeExpression(unit, c.getValue(), sb, errors);
 			}
 			
+		} else if(exp instanceof SizeofExp) {
+			SizeofExp s = (SizeofExp) exp;
+			sb.append("len(");
+			writeExpression(unit, s.getExpression(), sb, errors);
+			sb.append(")");
+			
+		} else if(exp instanceof ArrayExp) {
+			ArrayExp a = (ArrayExp) exp;
+			sb.append("[");
+			for(Expression e : a.getExpressions()) {
+				writeExpression(unit, e, sb, errors);
+				sb.append(", ");
+			}
+			if(a.getExpressions().length != 0)
+				sb.delete(sb.length()-2, sb.length());
+			sb.append("]");
+			
 		} else {
-			errors.add("Unkown expression type " + exp.getClass().getSimpleName());
+			errors.add("Unkown expression type " + exp.getClass().getSimpleName() + " " + exp.getErr());
 		}
 	}
 	

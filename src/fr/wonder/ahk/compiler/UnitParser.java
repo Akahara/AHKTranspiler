@@ -16,11 +16,12 @@ import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.AssertionException;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitParser {
 	
-	public static Unit parseUnit(UnitSource source, Token[] tokens, ErrorWrapper errors) {
+	public static Unit parseUnit(UnitSource source, Token[] tokens, ErrorWrapper errors) throws AssertionException {
 		Unit unit = new Unit(source);
 		for(Token t : tokens)
 			t.declaringUnit = unit;

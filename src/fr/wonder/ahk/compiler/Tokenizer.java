@@ -1,9 +1,6 @@
 package fr.wonder.ahk.compiler;
 
-import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_FLOAT;
-import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_INT;
-import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_STR;
-import static fr.wonder.ahk.compiler.tokens.TokenBase.TK_DOT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +10,7 @@ import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
-import fr.wonder.ahk.utils.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class Tokenizer {
 
