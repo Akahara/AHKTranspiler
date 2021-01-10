@@ -1,0 +1,9 @@
+# specify the program entry point, using the #main function
+entry-point=fr.wonder.main.Unit
+# build for mac os x64
+build-architecture=macho64
+build-target=mac
+# add debugging symbols
+debug-symbols=true
+# linker options, compile for macos >10.15
+linker-options=-macosx_version_min 10.15 -lSystem -no_pie

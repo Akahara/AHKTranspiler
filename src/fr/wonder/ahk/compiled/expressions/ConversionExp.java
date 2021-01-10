@@ -1,0 +1,47 @@
+package fr.wonder.ahk.compiled.expressions;
+
+import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.compiler.types.TypesTable;
+import fr.wonder.ahk.utils.ErrorWrapper;
+
+public class ConversionExp extends Expression {
+	
+	public final VarType castType;
+	public final boolean isImplicit;
+	
+	public ConversionExp(Unit unit, int sourceStart, int sourceStop, VarType castType, Expression value, boolean isImplicit) {
+		super(unit, sourceStart, sourceStop, value);
+		this.castType = castType;
+		this.isImplicit = isImplicit;
+	}
+	
+	/** Used by the linker only, to cast function argument (for implicit conversions) for example */
+	public ConversionExp(Unit unit, Expression value, VarType castType, boolean isImplicit) {
+		this(unit, value.sourceStart, value.sourceStop, castType, value, isImplicit);
+		this.type = castType;
+	}
+	
+	public Expression getValue() {
+		return expressions[0];
+	}
+	
+	@Override
+	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
+		if(!typesTable.conversions.canConvertImplicitely(getValue().getType(), castType) &&
+			(isImplicit || !typesTable.conversions.canConvertExplicitely(getValue().getType(), castType)))
+			errors.add("Unable to convert explicitely from type " + getValue().getType() + " to " + castType);
+		return castType;
+	}
+	
+	@Override
+	public String toString() {
+		return castType+":("+getValue()+")";
+	}
+
+	/** Returns true if the type of the casted expression is not the destination type */
+	public boolean isEffective() {
+		return getValue().getType() != castType;
+	}
+	
+}
