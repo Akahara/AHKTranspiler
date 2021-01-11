@@ -30,15 +30,15 @@ public class UnitParser {
 		unitTokens = TokensFactory.finalizeTokens(unitTokens);
 		
 		UnitHeader header = parseHeader(unit, unitTokens, errors.subErrrors("Unable to parse unit header"));
+		errors.assertNoErrors();
 		unit.name = header.name;
 		unit.base = header.base;
 		unit.importations = header.importations;
-		errors.assertNoErrors();
 		
 		UnitBody body = parseSections(unit, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
+		errors.assertNoErrors();
 		unit.variables = body.variables;
 		unit.functions = body.functions;
-		errors.assertNoErrors();
 		
 		return unit;
 	}
@@ -63,7 +63,7 @@ public class UnitParser {
 	private static UnitHeader parseHeader(Unit unit, Token[][] lines, ErrorWrapper errors) {
 		UnitHeader header = new UnitHeader();
 		
-		if(lines.length < 3) {
+		if(lines.length < 2) {
 			errors.add("Incomplete ahk file:" + unit.source.getErr(0));
 			return null;
 		}

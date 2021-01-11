@@ -46,7 +46,7 @@ public class AHKTranspiler {
 		ErrorWrapper errors = null;
 		try {
 			errors = new ErrorWrapper("Cannot compile project");
-			AHKCompiledHandle handle = Compiler.compile(project, errors);
+			AHKCompiledHandle handle = Compiler.compile(project, errors, false);
 			errors = new ErrorWrapper("Cannot link project");
 			Linker.link(handle, errors);
 			return handle;
