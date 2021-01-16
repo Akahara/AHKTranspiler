@@ -14,15 +14,13 @@ public class UnitSource {
 	
 	public UnitSource(String name, String rawSource) {
 		this.name = name;
-		rawSource = rawSource.replaceAll("\t", "  ");
+		rawSource = rawSource.replaceAll("\t", " ");
 		this.rawSource = rawSource;
 		this.source = rawSource.replaceAll("\n", " ");
 		this.linebreaks = new int[Utils.countChar(rawSource, '\n')];
 		int lastBreak = 0;
-		for(int i = 0; i < rawSource.length(); i++) {
-			if(rawSource.charAt(i)=='\n')
-				this.linebreaks[lastBreak++] = i;
-		}
+		for(int i = 0; i < linebreaks.length; i++)
+			linebreaks[i] = lastBreak = rawSource.indexOf('\n', lastBreak);
 	}
 	
 	public char charAt(int i) {
