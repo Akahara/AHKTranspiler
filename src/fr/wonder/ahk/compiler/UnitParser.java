@@ -8,7 +8,6 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.UnitImportation;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -16,29 +15,26 @@ import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
-import fr.wonder.commons.exceptions.AssertionException;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
 public class UnitParser {
 	
-	public static Unit parseUnit(UnitSource source, Token[] tokens, ErrorWrapper errors) throws AssertionException {
-		Unit unit = new Unit(source);
-		for(Token t : tokens)
-			t.declaringUnit = unit;
+	public static Unit parseUnit(UnitSource source, ErrorWrapper errors) throws WrappedException {
+		Token[] tokens = Tokenizer.tokenize(source, errors);
+		errors.assertNoErrors();
 		
-		Token[][] unitTokens = TokensFactory.splitTokens(source, tokens);
+		Token[][] unitTokens = TokensFactory.splitTokens(tokens);
 		unitTokens = TokensFactory.finalizeTokens(unitTokens);
 		
-		UnitHeader header = parseHeader(unit, unitTokens, errors.subErrrors("Unable to parse unit header"));
+		UnitHeader header = parseHeader(source, unitTokens, errors.subErrrors("Unable to parse unit header"));
 		errors.assertNoErrors();
-		unit.name = header.name;
-		unit.base = header.base;
-		unit.importations = header.importations;
 		
-		UnitBody body = parseSections(unit, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
+		UnitBody body = parseSections(source, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
 		errors.assertNoErrors();
-		unit.variables = body.variables;
-		unit.functions = body.functions;
+		
+		Unit unit = new Unit(source, header.base, header.name, header.importations,
+				body.variables, body.functions);
 		
 		return unit;
 	}
@@ -47,7 +43,7 @@ public class UnitParser {
 		
 		String base;
 		String name;
-		UnitImportation[] importations;
+		String[] importations;
 		
 		int declarationEnd;
 		
@@ -60,11 +56,11 @@ public class UnitParser {
 		
 	}
 	
-	private static UnitHeader parseHeader(Unit unit, Token[][] lines, ErrorWrapper errors) {
+	private static UnitHeader parseHeader(UnitSource source, Token[][] lines, ErrorWrapper errors) {
 		UnitHeader header = new UnitHeader();
 		
 		if(lines.length < 2) {
-			errors.add("Incomplete ahk file:" + unit.source.getErr(0));
+			errors.add("Incomplete ahk file:" + source.getErr(0));
 			return null;
 		}
 		
@@ -91,7 +87,7 @@ public class UnitParser {
 			importationCount++;
 		importationCount--;
 		
-		header.importations = new UnitImportation[importationCount];
+		header.importations = new String[importationCount];
 		for(int i = 0; i < importationCount; i++) {
 			Token[] line = lines[i+1];
 			if(line.length < 2) {
@@ -107,7 +103,7 @@ public class UnitParser {
 					importation += line[j].text;
 				}
 				importation += line[line.length-1].text;
-				header.importations[i] = new UnitImportation(importation, unit, line[0].sourceStart, line[line.length-1].sourceStop);
+				header.importations[i] = importation;
 			}
 		}
 		
@@ -116,7 +112,7 @@ public class UnitParser {
 		// parse unit name
 		
 		if(lines.length == 1+importationCount) {
-			errors.add("Incomplete source file:" + unit.source.getErr(unit.source.length()-1));
+			errors.add("Incomplete source file:" + source.getErr(source.length()-1));
 			return null;
 		}
 		
@@ -133,7 +129,7 @@ public class UnitParser {
 	}
 	
 	/** Assumes no line is empty */
-	private static UnitBody parseSections(Unit unit, Token[][] lines, int headerEnd, ErrorWrapper errors) {
+	private static UnitBody parseSections(UnitSource source, Token[][] lines, int headerEnd, ErrorWrapper errors) {
 		List<FunctionSection> functions = new ArrayList<>();
 		List<VariableDeclaration> variables = new ArrayList<>();
 		
@@ -146,9 +142,9 @@ public class UnitParser {
 				// parse function section
 				int functionEnd = getSectionEnd(lines, i+1);
 				if(functionEnd == -1) {
-					errors.add("Unfinished function:" + unit.source.getErr(lines[i]));
+					errors.add("Unfinished function:" + source.getErr(lines[i]));
 				} else {
-					FunctionSection func = parseFunctionSection(unit, lines, i, functionEnd, errors);
+					FunctionSection func = parseFunctionSection(source, lines, i, functionEnd, errors);
 					i = functionEnd;
 					if(func != null)
 						func.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
@@ -158,7 +154,7 @@ public class UnitParser {
 				
 			} else if(line[0].base == TokenBase.VAR_MODIFIER) {
 				// parse modifier
-				modifiers.add(parseModifier(unit, line, errors));
+				modifiers.add(parseModifier(line, errors));
 				
 			} else if(line[0].base == TokenBase.KW_STRUCT) {
 				// parse struct
@@ -166,7 +162,7 @@ public class UnitParser {
 				
 			} else if(Tokens.isVarType(line[0].base) && line[0].base != TokenBase.TYPE_VOID) {
 				// parse variable declaration
-				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, errors);
+				VariableDeclaration var = StatementParser.parseVariableDeclaration(source, line, errors);
 				if(var != null)
 					var.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
 				variables.add(var);
@@ -186,6 +182,7 @@ public class UnitParser {
 	private static int getSectionEnd(Token[][] lines, int start) {
 		// there is no need to check for other section types because the
 		// syntax was already validated by the tokenizer
+		// TODO0 maybe search for Token#sectionPair instead
 		int opened = 1;
 		for(int i = start; i < lines.length; i++) {
 			if(lines[i].length == 1 && lines[i][0].base == TokenBase.TK_BRACE_CLOSE) {
@@ -200,9 +197,10 @@ public class UnitParser {
 	}
 	
 	/** Assumes that the first line token is KW_FUNC */
-	private static FunctionSection parseFunctionSection(Unit unit, Token[][] tokens, int start, int stop, ErrorWrapper errors) {
+	private static FunctionSection parseFunctionSection(UnitSource source, Token[][] tokens,
+			int start, int stop, ErrorWrapper errors) {
 		Token[] declaration = tokens[start];
-		FunctionSection function = new FunctionSection(unit,
+		FunctionSection function = new FunctionSection(source,
 				declaration[0].sourceStart, declaration[declaration.length-1].sourceStop);
 		if(declaration.length < 6) {
 			errors.add("Incomplete function declaration:" + function.getErr());
@@ -252,15 +250,15 @@ public class UnitParser {
 		function.body = new Statement[stop-start-1];
 		ErrorWrapper functionErrors = errors.subErrrors("Unable to parse function");
 		for(int i = start+1; i < stop; i++)
-			function.body[i-start-1] = StatementParser.parseStatement(unit, tokens[i], functionErrors);
+			function.body[i-start-1] = StatementParser.parseStatement(source, tokens[i], functionErrors);
 		if(functionErrors.noErrors())
-			StatementParser.finalizeStatements(function);
+			StatementParser.finalizeStatements(source, function);
 //		Utils.dump(Arrays.copyOfRange(tokens, start, stop));
 		return function;
 	}
 	
 	/** Assumes that the first line token base is VAR_MODIFIER */
-	private static Modifier parseModifier(Unit unit, Token[] line, ErrorWrapper errors) {
+	private static Modifier parseModifier(Token[] line, ErrorWrapper errors) {
 		if(line.length == 1)
 			return new Modifier(line[0].text.substring(1));
 		

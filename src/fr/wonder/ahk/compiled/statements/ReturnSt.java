@@ -1,16 +1,16 @@
 package fr.wonder.ahk.compiled.statements;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiler.Unit;
 
 public class ReturnSt extends Statement {
 	
-	public ReturnSt(Unit unit, int sourceStart, int sourceStop, Expression expression) {
-		super(unit, sourceStart, sourceStop, expression);
+	public ReturnSt(UnitSource source, int sourceStart, int sourceStop, Expression expression) {
+		super(source, sourceStart, sourceStop, expression);
 	}
 	
-	public ReturnSt(Unit unit, int sourceStart, int sourceStop) {
-		super(unit, sourceStart, sourceStop);
+	public ReturnSt(UnitSource source, int sourceStart, int sourceStop) {
+		super(source, sourceStart, sourceStop);
 	}
 
 	public Expression getExpression() {

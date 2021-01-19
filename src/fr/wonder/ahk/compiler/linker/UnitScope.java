@@ -4,7 +4,7 @@ import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.compiler.LinkedUnit;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 
 class UnitScope implements Scope {
@@ -33,13 +33,15 @@ class UnitScope implements Scope {
 	@Override
 	public ValueDeclaration getVariable(String name) {
 		int dot = name.indexOf('.');
-		Unit unit;
+		LinkedUnit unit;
 		if(dot != -1) {
 			String unitName = name.substring(0, dot);
 			name = name.substring(dot+1);
 			unit = declaringUnit.getReachableUnit(unitName);
+			if(unit == null)
+				return null;
 		} else {
-			unit = declaringUnit.unit;
+			unit = declaringUnit;
 		}
 		// note that no function and variable can have the same name
 		for(VariableDeclaration var : unit.variables)
@@ -66,14 +68,16 @@ class UnitScope implements Scope {
 	
 	private int countMatchingFunctions(String name, VarType[] args, ConversionTable conversions, ArgumentsMatchPredicate predicate) {
 		int dot = name.indexOf('.');
-		Unit unit;
+		LinkedUnit unit;
 		if(dot != -1) {
 			String unitName = name.substring(0, dot);
 			name = name.substring(dot+1);
 			unit = declaringUnit.getReachableUnit(unitName);
 		} else {
-			unit = declaringUnit.unit;
+			unit = declaringUnit;
 		}
+		if(unit == null)
+			return 0;
 		int count = 0;
 		for(FunctionSection func : unit.functions) {
 			if(func.name.equals(name) && predicate.matches(func.argumentTypes, args, conversions))
@@ -84,14 +88,16 @@ class UnitScope implements Scope {
 	
 	private FunctionSection getFunction(String name, VarType[] args, ConversionTable conversions, ArgumentsMatchPredicate predicate) {
 		int dot = name.indexOf('.');
-		Unit unit;
+		LinkedUnit unit;
 		if(dot != -1) {
 			String unitName = name.substring(0, dot);
 			name = name.substring(dot+1);
 			unit = declaringUnit.getReachableUnit(unitName);
 		} else {
-			unit = declaringUnit.unit;
+			unit = declaringUnit;
 		}
+		if(unit == null)
+			return null;
 		for(FunctionSection func : unit.functions) {
 			if(func.name.equals(name) && predicate.matches(func.argumentTypes, args, conversions))
 				return func;

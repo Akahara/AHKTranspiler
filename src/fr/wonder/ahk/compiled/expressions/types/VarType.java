@@ -14,7 +14,12 @@ public abstract class VarType {
 	public static final VarNativeType INT = new VarNativeType("int");
 	public static final VarNativeType FLOAT = new VarNativeType("float");
 	public static final VarNativeType BOOL = new VarNativeType("bool");
-	public static final VarStructType STR = new VarStructType("str");
+	public static final VarStructType STR = new VarStructType("str") {
+		@Override
+		public String getSignature() {
+			return "s";
+		}
+	};
 
 	public abstract String getName();
 	public abstract String getSignature();

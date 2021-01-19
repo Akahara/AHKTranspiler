@@ -2,15 +2,15 @@ package fr.wonder.ahk.compiled.units.sections;
 
 import java.util.Arrays;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.Operation;
-import fr.wonder.ahk.transpilers.asm_x64.writers.FunctionWriter;
 import fr.wonder.ahk.utils.Utils;
 
 public class FunctionSection extends SourceObject implements Operation, ValueDeclaration {
@@ -25,31 +25,30 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 	// set by the unit parser using the statement parser
 	public Statement[] body;
 	
-	// set by the linker using #makeSignature
-	/** the global scope signature of this function */
-	private String signature;
-	/** the signature that can be used when already inside the declaring unit */
-	private String unitSignature;
+//	// set by the linker using #makeSignature
+//	/** the global scope signature of this function */
+//	private String signature;
+//	/** the signature that can be used when already inside the declaring unit */
+//	private String unitSignature;
+	private Signature signature;
 	
-	public FunctionSection(Unit unit, int sourceStart, int sourceStop) {
-		super(unit, sourceStart, sourceStop);
-		if(unit == null)
-			throw new IllegalArgumentException();
+	public FunctionSection(UnitSource source, int sourceStart, int sourceStop) {
+		super(source, sourceStart, sourceStop);
 	}
 	
-	/**
-	 * Used to create an dummy empty function, is currently used by the asm x64 {@link FunctionWriter}
-	 * to have an empty initialization function.
-	 */
-	public FunctionSection(Unit unit) {
-		super(unit, 0, 0);
-		this.returnType = VarType.VOID;
-		this.arguments = new FunctionArgument[0];
-		this.argumentTypes = new VarType[0];
-		this.modifiers = new DeclarationModifiers(new Modifier[0]);
-		this.body = new Statement[0];
-		this.makeSignature();
-	}
+//	/**
+//	 * Used to create an dummy empty function, is currently used by the asm x64 {@link FunctionWriter}
+//	 * to have an empty initialization function.
+//	 */
+//	public FunctionSection(Unit unit) {
+//		super(unit.source, 0, 0);
+//		this.returnType = VarType.VOID;
+//		this.arguments = new FunctionArgument[0];
+//		this.argumentTypes = new VarType[0];
+//		this.modifiers = new DeclarationModifiers(new Modifier[0]);
+//		this.body = new Statement[0];
+//		this.makeSignature(unit.fullBase);
+//	}
 	
 	@Override
 	public String toString() {
@@ -57,19 +56,13 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 	}
 
 	/** Called by the linker after the function argument types where computed */
-	public void makeSignature() {
-		this.unitSignature = name + "_" + getFunctionType().getSignature();
-		this.signature = declaringUnit.base + "." + unitSignature;
+	public void setSignature(Signature signature) {
+		this.signature = signature;
 	}
 	
 	/** global scope signature (declaring unit full base + unit scope signature) */
-	public String getSignature() {
+	public Signature getSignature() {
 		return signature;
-	}
-	
-	/** unit scope signature */
-	public String getUnitSignature() {
-		return unitSignature;
 	}
 	
 	@Override
@@ -87,6 +80,7 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 		return name;
 	}
 	
+	/** Beware, this is not the same as {@link #getFunctionType()} */
 	@Override
 	public VarType getType() {
 		return getResultType();
@@ -97,6 +91,10 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 		return modifiers;
 	}
 	
+	/**
+	 * Returns the {@link VarFunctionType} associated with this function,
+	 * cannot be called before the linker linked types.
+	 */
 	public VarType getFunctionType() {
 		return new VarFunctionType(returnType, argumentTypes);
 	}

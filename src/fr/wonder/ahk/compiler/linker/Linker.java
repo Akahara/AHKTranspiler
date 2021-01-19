@@ -1,11 +1,8 @@
 package fr.wonder.ahk.compiler.linker;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import fr.wonder.ahk.AHKCompiledHandle;
 import fr.wonder.ahk.compiled.expressions.ArrayExp;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
@@ -24,34 +21,46 @@ import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.UnitImportation;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiler.LinkedUnit;
 import fr.wonder.ahk.compiler.Natives;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.commons.exceptions.AssertionException;
+import fr.wonder.ahk.handles.AHKCompiledHandle;
+import fr.wonder.ahk.handles.AHKLinkedHandle;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
 public class Linker {
 	
-	public static void link(AHKCompiledHandle handle, ErrorWrapper errors) throws AssertionException {
+	public static AHKLinkedHandle link(AHKCompiledHandle handle, ErrorWrapper errors) throws WrappedException {
 		// search for all required native units
-		Set<Unit> nativeUnits = new HashSet<>();
+		List<Unit> nativeUnits = new ArrayList<>();
 		for(Unit u : handle.units) {
-			ErrorWrapper nativeImportErrors = errors.subErrrors("Missive native import in unit " + u.getFullBase());
-			for(UnitImportation importation : u.importations) {
-				if(importation.unitBase.startsWith(Natives.ahkImportBase)) {
+			ErrorWrapper nativeImportErrors = errors.subErrrors("Missive native import in unit " + u.fullBase);
+			for(String importation : u.importations) {
+				if(importation.startsWith(Natives.ahkImportBase)) {
 					List<Unit> importedUnits = Natives.getUnits(importation, nativeImportErrors);
-					if(importedUnits != null)
-						nativeUnits.addAll(importedUnits);
+					
+					if(importedUnits != null) {
+						for(Unit iu : importedUnits) {
+							if(!nativeUnits.contains(iu))
+								nativeUnits.add(iu);
+						}
+					}
 				}
 			}
 		}
-		handle.nativeRequirements = nativeUnits.toArray(Unit[]::new);
+		errors.assertNoErrors();
 		
+		// the list of linked native required units, separate from linkedUnits to
+		// be able to search for importations through native units only
+		LinkedUnit[] linkedNatives = new LinkedUnit[nativeUnits.size()];
+		// the list of linked units
 		LinkedUnit[] linkedUnits = new LinkedUnit[handle.units.length+nativeUnits.size()];
 		
 		// check unit duplicates
@@ -59,80 +68,112 @@ public class Linker {
 			Unit unit = handle.units[u];
 			linkedUnits[u] = new LinkedUnit(unit);
 			for(int j = 0; j < u; j++) {
-				if(handle.units[j].getFullBase().equals(unit.getFullBase()))
-					errors.add("Duplicate unit found with base " + unit.getFullBase());
+				if(handle.units[j].fullBase.equals(unit.fullBase))
+					errors.add("Duplicate unit found with base " + unit.fullBase);
 			}	
 		}
-		for(int u = 0; u < handle.nativeRequirements.length; u++)
-			linkedUnits[handle.units.length+u] = new LinkedUnit(handle.nativeRequirements[u]);
-		
+		// create linked native units, there cannot be duplicates at this point
+		// also bind importations as a native unit can only import other natives
+		for(int u = 0; u < linkedNatives.length; u++)
+			linkedNatives[u] = new LinkedUnit(nativeUnits.get(u));
+		for(int u = 0; u < linkedNatives.length; u++) {
+			LinkedUnit lu = linkedNatives[u];
+			for(int i = 0; i < lu.importations.length; i++)
+				lu.importations[i] = searchImportedUnit(linkedNatives, nativeUnits.get(u).importations[i]);
+			linkedUnits[handle.units.length + u] = lu;
+		}
+
 		errors.assertNoErrors();
 		
-		// link all importations
-		for(int u = 0; u < linkedUnits.length; u++) {
-			Unit unit = linkedUnits[u].unit;
+		AHKLinkedHandle linkedHandle = new AHKLinkedHandle(linkedUnits, linkedNatives);
+		
+		// link all project unit importations (not native units)
+		for(int u = 0; u < handle.units.length; u++) {
+			Unit unit = handle.units[u];
 			for(int i = 0; i < unit.importations.length; i++) {
-				UnitImportation importation = unit.importations[i];
-				// search in the project units
-				for(int j = 0; j < linkedUnits.length; j++) {
-					if(importation.unitBase.equals(linkedUnits[j].unit.getFullBase())) {
-						linkedUnits[u].importations[i] = linkedUnits[j];
-						importation.unit = linkedUnits[j].unit;
-						break;
-					}
-				}
-				if(linkedUnits[u].importations[i] == null) {
-					errors.add("Missing importation in unit " + unit.getFullBase() + importation.getErr());
-				}
+				String importation = unit.importations[i];
+				// search in the project & native units
+				linkedUnits[u].importations[i] = searchImportedUnit(linkedUnits, importation);
+				if(linkedUnits[u].importations[i] == null)
+					errors.add("Missing importation in unit " + unit.fullBase + " for " + importation);
 			}
 		}
 		
 		errors.assertNoErrors();
+		
+		// prelink units
+		for(LinkedUnit lunit : linkedUnits) {
+			prelinkUnit(lunit);
+		}
 		
 		// actually link unit statements
 		for(int u = 0; u < linkedUnits.length; u++) {
-			ErrorWrapper subErrors = errors.subErrrors("Unable to link unit " + linkedUnits[u].unit.getFullBase());
-			ValueDeclaration[] externFields = linkUnit(handle, linkedUnits[u], subErrors);
-			handle.externFields.put(linkedUnits[u].unit, externFields);
+			ErrorWrapper subErrors = errors.subErrrors("Unable to link unit " + linkedUnits[u].fullBase);
+			ValueDeclaration[] externFields = linkUnit(linkedHandle, linkedUnits[u], subErrors);
+			linkedHandle.externFields.put(linkedUnits[u], externFields);
 		}
 		
 		errors.assertNoErrors();
+		
+		return linkedHandle;
 	}
 	
-	private static ValueDeclaration[] linkUnit(AHKCompiledHandle handle, LinkedUnit lunit, ErrorWrapper errors) {
+	/** Returns the unit of {@code units} which full base is {@code fullBase}, null if none matches */
+	private static LinkedUnit searchImportedUnit(LinkedUnit[] units, String fullBase) {
+		for(LinkedUnit lu : units) {
+			if(lu.fullBase.equals(fullBase))
+				return lu;
+		}
+		return null;
+	}
+	
+	/** Computes functions and variables signatures */
+	private static void prelinkUnit(LinkedUnit lunit) {
+		for(FunctionSection func : lunit.functions) {
+			func.setSignature(new Signature(lunit, func.name, func.name + "_" +
+					func.getFunctionType().getSignature()));
+		}
+	}
+	
+	/**
+	 * Assumes that all types and signatures have been computed already.
+	 * 
+	 * @return all fields that can be accessed globally
+	 */
+	private static ValueDeclaration[] linkUnit(AHKLinkedHandle handle, LinkedUnit lunit, ErrorWrapper errors) {
 		List<ValueDeclaration> externFields = new ArrayList<>();
 		
-		for(int i = 0; i < lunit.unit.variables.length; i++) {
-			VariableDeclaration var = lunit.unit.variables[i];
+		for(int i = 0; i < lunit.variables.length; i++) {
+			VariableDeclaration var = lunit.variables[i];
 			if(var.getVisibility() == DeclarationVisibility.GLOBAL)
 				externFields.add(var);
-			linkExpressions(lunit, lunit.unitScope, var.getExpressions(), handle.typesTable, errors);
+			linkExpressions(lunit, new UnitScope(lunit), var.getExpressions(), handle.typesTable, errors);
 			for(int j = 0; j < i; j++) {
-				if(lunit.unit.variables[j].name.equals(var.name)) {
+				if(lunit.variables[j].name.equals(var.name)) {
 					errors.add("Two variables have the same name: " + var.name +
-							lunit.unit.variables[j].getErr() + lunit.unit.variables[i].getErr());
+							lunit.variables[j].getErr() + lunit.variables[i].getErr());
 				}
 			}
 		}
 		
-		for(int i = 0; i < lunit.unit.functions.length; i++) {
-			FunctionSection func = lunit.unit.functions[i];
-			func.makeSignature();
+		for(int i = 0; i < lunit.functions.length; i++) {
+			FunctionSection func = lunit.functions[i];
 			
 			if(func.getVisibility() == DeclarationVisibility.GLOBAL)
 				externFields.add(func);
 			
 			// check variable name conflicts
-			for(VariableDeclaration var : lunit.unit.variables) {
+			for(VariableDeclaration var : lunit.variables) {
 				if(var.name.equals(func.name))
 					errors.add("A function has the same name as a variable: " + var.name + func.getErr() + var.getErr());
 			}
 			
 			// check signatures duplicates
+			String funcSig = func.getSignature().computedSignature;
 			for(int j = 0; j < i; j++) {
-				if(lunit.unit.functions[j].getUnitSignature().equals(func.getUnitSignature())) {
-					errors.add("Two functions have the same signature: " + func.getUnitSignature() +
-							lunit.unit.functions[j].getErr() + lunit.unit.functions[i].getErr());
+				if(lunit.functions[j].getSignature().computedSignature.equals(funcSig)) {
+					errors.add("Two functions have the same signature: " + funcSig +
+							lunit.functions[j].getErr() + lunit.functions[i].getErr());
 				}
 			}
 			
@@ -145,14 +186,14 @@ public class Linker {
 			}
 			
 			// link variables
-			linkStatements(handle, lunit, func, errors.subErrrors("Errors in function " + func.getUnitSignature()));
+			linkStatements(handle, lunit, func, errors.subErrrors("Errors in function " + funcSig));
 		}
 		
 		return externFields.toArray(ValueDeclaration[]::new);
 	}
 	
-	private static void linkStatements(AHKCompiledHandle handle, LinkedUnit lunit, FunctionSection func, ErrorWrapper errors) {
-		Scope scope = lunit.unitScope.innerScope();
+	private static void linkStatements(AHKLinkedHandle handle, LinkedUnit lunit, FunctionSection func, ErrorWrapper errors) {
+		Scope scope = new UnitScope(lunit).innerScope();
 		List<LabeledStatement> openedSections = new ArrayList<>();
 		LabeledStatement latestClosedStatement = null;
 		
@@ -249,12 +290,12 @@ public class Linker {
 					// replace the FunctionCallExp by a FunctionExp
 					FunctionSection function = searchMatchingFunction(lunit, fexp, typesTable, errors);
 					if(function != null) {
-						FunctionExp functionExpression = new FunctionExp(lunit.unit, fexp, function);
+						FunctionExp functionExpression = new FunctionExp(lunit.source, fexp, function);
 						exp = expressions[i] = functionExpression;
 						for(int j = 0; j < fexp.getArguments().length; j++) {
 							Expression argument = functionExpression.getArguments()[j];
 							if(function.argumentTypes[j] != argument.getType()) {
-								ConversionExp conv = new ConversionExp(lunit.unit, argument, function.argumentTypes[j], true);
+								ConversionExp conv = new ConversionExp(lunit.source, argument, function.argumentTypes[j], true);
 								functionExpression.expressions[j] = conv;
 							}
 						}
@@ -263,6 +304,7 @@ public class Linker {
 						errors.add("No matching function " + fexp.getErr());
 					}
 				} else {
+					// TODO implement functions as expressions
 					errors.add(">>> Unimplemented function call!" + fexp.getErr());
 				}
 				
@@ -283,27 +325,27 @@ public class Linker {
 	}
 	
 	private static FunctionSection searchMatchingFunction(LinkedUnit lunit, FunctionCallExp fexp, TypesTable typesTable, ErrorWrapper errors) {
-		
+		UnitScope unitScope = new UnitScope(lunit);
 		String funcName = ((VarExp) fexp.getFunction()).variable;
 		VarType[] argumentsTypes = fexp.getArgumentsTypes();
 		{ // search without casting
-			FunctionSection function = lunit.unitScope.getFunctionStrict(funcName, argumentsTypes);
+			FunctionSection function = unitScope.getFunctionStrict(funcName, argumentsTypes);
 			if(function != null)
 				return function;
 		}
 		{ // search with a single cast
-			int singleConversionCount = lunit.unitScope.countMatchingFunction1c(funcName, argumentsTypes, typesTable.conversions);
+			int singleConversionCount = unitScope.countMatchingFunction1c(funcName, argumentsTypes, typesTable.conversions);
 			if(singleConversionCount == 1)
-				return lunit.unitScope.getFunction1c(funcName, argumentsTypes, typesTable.conversions);
+				return unitScope.getFunction1c(funcName, argumentsTypes, typesTable.conversions);
 			if(singleConversionCount > 1) {
 				errors.add("Multiple matching functions " + fexp.getErr());
 				return null;
 			}
 		}
 		{ // search with any number of casts
-			int anyConversionCount = lunit.unitScope.countMatchingFunctionXc(funcName, argumentsTypes, typesTable.conversions);
+			int anyConversionCount = unitScope.countMatchingFunctionXc(funcName, argumentsTypes, typesTable.conversions);
 			if(anyConversionCount == 1)
-				return lunit.unitScope.getFunctionXc(funcName, argumentsTypes, typesTable.conversions);
+				return unitScope.getFunctionXc(funcName, argumentsTypes, typesTable.conversions);
 			if(anyConversionCount > 1) {
 				errors.add("Multiple matching functions " + fexp.getErr());
 				return null;

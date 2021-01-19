@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.statements;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiler.Unit;
 
 public class LabeledStatement extends Statement {
 	
@@ -9,8 +9,9 @@ public class LabeledStatement extends Statement {
 	public SectionEndSt sectionEnd;
 	public final boolean singleLine;
 	
-	public LabeledStatement(Unit unit, int sourceStart, int sourceStop, boolean singleLine, Expression... expressions) {
-		super(unit, sourceStart, sourceStop, expressions);
+	public LabeledStatement(UnitSource source, int sourceStart, int sourceStop,
+			boolean singleLine, Expression... expressions) {
+		super(source, sourceStart, sourceStop, expressions);
 		this.singleLine = singleLine;
 	}
 	

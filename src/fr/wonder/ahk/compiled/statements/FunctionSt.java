@@ -1,12 +1,12 @@
 package fr.wonder.ahk.compiled.statements;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.FunctionExpression;
-import fr.wonder.ahk.compiler.Unit;
 
 public class FunctionSt extends Statement {
 	
-	public FunctionSt(Unit unit, int sourceStart, int sourceStop, FunctionExpression function) {
-		super(unit, sourceStart, sourceStop, function);
+	public FunctionSt(UnitSource source, int sourceStart, int sourceStop, FunctionExpression function) {
+		super(source, sourceStart, sourceStop, function);
 	}
 	
 	public FunctionExpression getFunction() {

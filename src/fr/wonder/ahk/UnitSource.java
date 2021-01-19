@@ -18,9 +18,9 @@ public class UnitSource {
 		this.rawSource = rawSource;
 		this.source = rawSource.replaceAll("\n", " ");
 		this.linebreaks = new int[Utils.countChar(rawSource, '\n')];
-		int lastBreak = 0;
+		int lastBreak = -1;
 		for(int i = 0; i < linebreaks.length; i++)
-			linebreaks[i] = lastBreak = rawSource.indexOf('\n', lastBreak);
+			linebreaks[i] = lastBreak = rawSource.indexOf('\n', lastBreak+1);
 	}
 	
 	public char charAt(int i) {

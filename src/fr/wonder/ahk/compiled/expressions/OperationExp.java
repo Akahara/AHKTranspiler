@@ -2,8 +2,8 @@ package fr.wonder.ahk.compiled.expressions;
 
 import java.util.Objects;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -15,15 +15,15 @@ public class OperationExp extends Expression {
 	/** set by the linker usin {@link #setOperation(Operation)} */
 	public Operation operation;
 	
-	public OperationExp(Unit unit, int sourceStart, int sourceStop, Operator operator,
+	public OperationExp(UnitSource source, int sourceStart, int sourceStop, Operator operator,
 			Expression leftOperand, Expression rightOperand) {
-		super(unit, sourceStart, sourceStop, rightOperand, leftOperand);
+		super(source, sourceStart, sourceStop, rightOperand, leftOperand);
 		this.operator = operator;
 	}
 	
-	public OperationExp(Unit unit, int sourceStart, int sourceStop, Operator operator,
+	public OperationExp(UnitSource source, int sourceStart, int sourceStop, Operator operator,
 			Expression rightOperand) {
-		super(unit, sourceStart, sourceStop, rightOperand);
+		super(source, sourceStart, sourceStop, rightOperand);
 		this.operator = operator;
 	}
 	
@@ -41,9 +41,9 @@ public class OperationExp extends Expression {
 		this.operation = op;
 		if(op != Operation.NOOP) {
 			if(getLOType() != op.getOperandsTypes()[0])
-				expressions[1] = new ConversionExp(declaringUnit, getLeftOperand(), op.getOperandsTypes()[0], true);
+				expressions[1] = new ConversionExp(getSource(), getLeftOperand(), op.getOperandsTypes()[0], true);
 			if(getROType() != operation.getOperandsTypes()[1])
-				expressions[0] = new ConversionExp(declaringUnit, getRightOperand(), op.getOperandsTypes()[1], true);
+				expressions[0] = new ConversionExp(getSource(), getRightOperand(), op.getOperandsTypes()[1], true);
 		}
 	}
 	

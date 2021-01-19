@@ -2,16 +2,16 @@ package fr.wonder.ahk.compiled.expressions;
 
 import java.util.Arrays;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class IndexingExp extends Expression {
 	
-	public IndexingExp(Unit unit, int sourceStart, int sourceStop, Expression array, Expression[] indices) {
-		super(unit, sourceStart, sourceStop, array, indices);
+	public IndexingExp(UnitSource source, int sourceStart, int sourceStop, Expression array, Expression[] indices) {
+		super(source, sourceStart, sourceStop, array, indices);
 	}
 	
 	public Expression getArray() {

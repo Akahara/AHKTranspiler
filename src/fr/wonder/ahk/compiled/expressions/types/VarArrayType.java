@@ -15,7 +15,7 @@ public class VarArrayType extends VarType {
 	
 	@Override
 	public String getSignature() {
-		return "["+componentType.getSignature();
+		return "A"+componentType.getSignature();
 	}
 	
 	@Override

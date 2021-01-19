@@ -14,7 +14,7 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class Tokenizer {
 
-	public static Token[] tokenize(UnitSource unitSource, ErrorWrapper errors) {
+	public static Token[] tokenize(UnitSource source, ErrorWrapper errors) {
 		List<Token> tokens = new ArrayList<>();
 		List<SectionToken> openedSections = new ArrayList<>();
 		List<Token> openedSectionTokens = new ArrayList<>();
@@ -22,19 +22,19 @@ public class Tokenizer {
 		boolean quoteIgnore = false;
 		
 		// find delimiters
-		for(int i = 0; i < unitSource.length(); i++) {
+		for(int i = 0; i < source.length(); i++) {
 			if(quoteBegin != null) {
 				if(quoteIgnore) {
 					quoteIgnore = false;
-				} else if(unitSource.charAt(i) == '\\') {
+				} else if(source.charAt(i) == '\\') {
 					quoteIgnore = true;
 				} else {
 					TokenBase closing = quoteBegin.stop != null ? quoteBegin.stop : quoteBegin.start;
 					int len = closing.syntax.length();
-					if(unitSource.matchesRaw(closing.syntax, i, i+len)) {
+					if(source.matchesRaw(closing.syntax, i, i+len)) {
 						int start = tokens.get(tokens.size()-1).sourceStop;
-						tokens.add(new Token(quoteBegin == SectionToken.SEC_COMMENTS ? null : LIT_STR, unitSource.substring(start, i), start));
-						tokens.add(new Token(null, unitSource.substring(i, i+len), i)); // quotes are removed later
+						tokens.add(new Token(source, quoteBegin == SectionToken.SEC_COMMENTS ? null : LIT_STR, source.substring(start, i), start));
+						tokens.add(new Token(source, null, source.substring(i, i+len), i)); // quotes are removed later
 						i += len-1;
 						quoteBegin = null;
 					}
@@ -48,8 +48,8 @@ public class Tokenizer {
 					int startSyntaxLen = del.start.syntax.length();
 					
 					// check for section stop
-					if(del == currentSection && unitSource.matchesRaw(del.stop.syntax, i, i+stopSyntaxLen)) {
-						Token t = new Token(del.stop, unitSource.substring(i, i+stopSyntaxLen), i);
+					if(del == currentSection && source.matchesRaw(del.stop.syntax, i, i+stopSyntaxLen)) {
+						Token t = new Token(source, del.stop, source.substring(i, i+stopSyntaxLen), i);
 						t.linkSectionPair(openedSectionTokens.get(openedSectionTokens.size()-1));
 						tokens.add(t);
 						i += stopSyntaxLen-1;
@@ -58,16 +58,16 @@ public class Tokenizer {
 						break;
 						
 					// check for section begin
-					} else if(unitSource.matchesRaw(del.start.syntax, i, i+startSyntaxLen)) {
+					} else if(source.matchesRaw(del.start.syntax, i, i+startSyntaxLen)) {
 						int stop = i+del.start.syntax.length();
 						if(del.repeatable)
-							while(unitSource.matchesRaw(del.start.syntax, stop, stop+startSyntaxLen))
+							while(source.matchesRaw(del.start.syntax, stop, stop+startSyntaxLen))
 								stop += startSyntaxLen;
 						if(del.quote) {
 							quoteBegin = del;
-							tokens.add(new Token(null, unitSource.substring(i, stop), i));
+							tokens.add(new Token(source, null, source.substring(i, stop), i));
 						} else {
-							Token t = new Token(del.start, unitSource.substring(i, stop), i);
+							Token t = new Token(source, del.start, source.substring(i, stop), i);
 							tokens.add(t);
 							if(del.stop != null) {
 								openedSections.add(del);
@@ -78,8 +78,8 @@ public class Tokenizer {
 						break;
 						
 					// check unexpected section stop
-					} else if(del.stop != null && unitSource.matchesRaw(del.stop.syntax, i, i+stopSyntaxLen)) {
-						errors.add("Unexpected section end:" + unitSource.getErr(i, i+stopSyntaxLen));
+					} else if(del.stop != null && source.matchesRaw(del.stop.syntax, i, i+stopSyntaxLen)) {
+						errors.add("Unexpected section end:" + source.getErr(i, i+stopSyntaxLen));
 						break;
 					}
 				}
@@ -96,17 +96,17 @@ public class Tokenizer {
 		// find non-delimiters
 		int lastOpening = 0;
 		int token = 0;
-		while(lastOpening != unitSource.length()) {
+		while(lastOpening != source.length()) {
 			if(token < tokens.size() && tokens.get(token).sourceStart == lastOpening) {
 				lastOpening = tokens.get(token++).sourceStop;
 			} else {
-				int stop = token == tokens.size() ? unitSource.length() : tokens.get(token).sourceStart;
-				String s = unitSource.substring(lastOpening, stop);
+				int stop = token == tokens.size() ? source.length() : tokens.get(token).sourceStart;
+				String s = source.substring(lastOpening, stop);
 				TokenBase b = getBase(s);
 				if(b != null) {
-					tokens.add(token++, new Token(b, unitSource.substring(lastOpening, lastOpening+s.length()), lastOpening));
+					tokens.add(token++, new Token(source, b, source.substring(lastOpening, lastOpening+s.length()), lastOpening));
 				} else {
-					errors.add("Unresolved token:" + unitSource.getErr(lastOpening, stop));
+					errors.add("Unresolved token:" + source.getErr(lastOpening, stop));
 				}
 				lastOpening = stop;
 			}
@@ -124,7 +124,7 @@ public class Tokenizer {
 				if(length > 0) {
 					int start = tokens.get(i).sourceStart;
 					int stop = tokens.get(i+length).sourceStop;
-					tokens.set(i, new Token(LIT_FLOAT, unitSource.substring(start, stop), start));
+					tokens.set(i, new Token(source, LIT_FLOAT, source.substring(start, stop), start));
 					if(length > 1)
 						tokens.remove(i+2);
 					tokens.remove(i+1);

@@ -19,6 +19,7 @@ module AHKTranspiler {
 	exports fr.wonder.ahk.compiled.expressions.types;
 	exports fr.wonder.ahk.transpilers.asm_x64;
 	exports fr.wonder.ahk.compiled.units.sections;
+	exports fr.wonder.ahk.handles;
 
 	requires transitive fr.wonder.commons;
 }

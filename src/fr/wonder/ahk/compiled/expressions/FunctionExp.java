@@ -1,8 +1,8 @@
 package fr.wonder.ahk.compiled.expressions;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -15,8 +15,8 @@ public class FunctionExp extends FunctionExpression {
 	
 	public final FunctionSection function;
 	
-	public FunctionExp(Unit unit, FunctionCallExp funcCall, FunctionSection function) {
-		super(unit, funcCall.sourceStart, funcCall.sourceStop, funcCall.getArguments());
+	public FunctionExp(UnitSource source, FunctionCallExp funcCall, FunctionSection function) {
+		super(source, funcCall.sourceStart, funcCall.sourceStop, funcCall.getArguments());
 		this.function = function;
 	}
 	

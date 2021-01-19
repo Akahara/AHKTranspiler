@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -9,8 +9,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public final T value;
 	
-	private LiteralExp(Unit unit, int sourceStart, int sourceStop, T value) {
-		super(unit, sourceStart, sourceStop);
+	private LiteralExp(UnitSource source, int sourceStart, int sourceStop, T value) {
+		super(source, sourceStart, sourceStop);
 		this.value = value;
 	}
 	
@@ -26,8 +26,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class IntLiteral extends LiteralExp<Long> {
 		
-		public IntLiteral(Unit unit, int sourceStart, int sourceStop, long i) {
-			super(unit, sourceStart, sourceStop, i);
+		public IntLiteral(UnitSource source, int sourceStart, int sourceStop, long i) {
+			super(source, sourceStart, sourceStop, i);
 		}
 		
 		@Override
@@ -39,8 +39,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class FloatLiteral extends LiteralExp<Float> {
 		
-		public FloatLiteral(Unit unit, int sourceStart, int sourceStop, float f) {
-			super(unit, sourceStart, sourceStop, f);
+		public FloatLiteral(UnitSource source, int sourceStart, int sourceStop, float f) {
+			super(source, sourceStart, sourceStop, f);
 		}
 
 		@Override
@@ -52,8 +52,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class BoolLiteral extends LiteralExp<Boolean> {
 		
-		public BoolLiteral(Unit unit, int sourceStart, int sourceStop, boolean b) {
-			super(unit, sourceStart, sourceStop, b);
+		public BoolLiteral(UnitSource source, int sourceStart, int sourceStop, boolean b) {
+			super(source, sourceStart, sourceStop, b);
 		}
 
 		@Override
@@ -65,8 +65,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class StrLiteral extends LiteralExp<String> {
 		
-		public StrLiteral(Unit unit, int sourceStart, int sourceStop, String s) {
-			super(unit, sourceStart, sourceStop, s);
+		public StrLiteral(UnitSource source, int sourceStart, int sourceStop, String s) {
+			super(source, sourceStart, sourceStop, s);
 		}
 
 		@Override

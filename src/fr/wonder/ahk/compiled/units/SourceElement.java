@@ -1,15 +1,15 @@
 package fr.wonder.ahk.compiled.units;
 
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.UnitSource;
 
 public interface SourceElement {
 	
-	public Unit getUnit();
+	public UnitSource getSource();
 	public int getSourceStart();
 	public int getSourceStop();
 	
 	public default String getErr() {
-		return getUnit().source.getErr(getSourceStart(), getSourceStop());
+		return getSource().getErr(getSourceStart(), getSourceStop());
 	}
 	
 }

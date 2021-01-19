@@ -2,11 +2,11 @@ package fr.wonder.ahk.compiled;
 
 import java.util.Arrays;
 
-import fr.wonder.ahk.AHKCompiledHandle;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.compiler.LinkedUnit;
+import fr.wonder.ahk.handles.AHKTranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.CallingConvention;
 import fr.wonder.ahk.transpilers.asm_x64.natives.OSInstrinsic;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -17,22 +17,23 @@ public class AHKManifest {
 	 * @param unitaryComp if false, some checks will not be made like finding the
 	 *                    entry point of the program
 	 */
-	public void validate(AHKCompiledHandle handle, ErrorWrapper errors, boolean unitaryComp) {
+	public void validate(AHKTranspilableHandle handle, ErrorWrapper errors, boolean unitaryComp) {
 		if (!unitaryComp) {
 			if (ENTRY_POINT == null || ENTRY_POINT.isBlank()) {
 				errors.add("The entry point must be specified");
 			} else {
-				checkEntryPoint(handle.units, errors);
+				searchEntryPoint(handle.units, errors);
 			}
 		}
 	}
 
-	private void checkEntryPoint(Unit[] units, ErrorWrapper errors) {
-		for (Unit u : units) {
-			if (u.getFullBase().equals(ENTRY_POINT)) {
+	private void searchEntryPoint(LinkedUnit[] units, ErrorWrapper errors) {
+		for (LinkedUnit u : units) {
+			if (u.fullBase.equals(ENTRY_POINT)) {
+				this.entryPointUnit = u;
 				for (FunctionSection f : u.functions) {
 					if (f.name.equals("main")) {
-						entryPointFunction = f;
+						this.entryPointFunction = f;
 						if (f.modifiers.hasModifier(Modifier.NATIVE))
 							errors.add("The main function cannot be native" + f.getErr());
 						if (f.returnType != VarType.INT)
@@ -43,7 +44,7 @@ public class AHKManifest {
 					}
 				}
 				if (entryPointFunction == null)
-					errors.add("The main function cannot be found in unit " + u.getFullBase());
+					errors.add("The main function cannot be found in unit " + u.fullBase);
 				break;
 			}
 		}
@@ -56,6 +57,7 @@ public class AHKManifest {
 	public boolean DEBUG_SYMBOLS;
 
 	/* set by #checkEntryPoint */
+	public LinkedUnit entryPointUnit;
 	public FunctionSection entryPointFunction;
 
 	/* -------------------------- Python section -------------------------- */

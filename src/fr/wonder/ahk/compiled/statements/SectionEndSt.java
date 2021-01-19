@@ -1,14 +1,14 @@
 package fr.wonder.ahk.compiled.statements;
 
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.UnitSource;
 
 public class SectionEndSt extends Statement {
 	
 	/** Set by the linker, see {@link LabeledStatement#sectionEnd} */
 	public LabeledStatement closedStatement;
 	
-	public SectionEndSt(Unit unit, int sourceStart, int sourceStop) {
-		super(unit, sourceStart, sourceStop);
+	public SectionEndSt(UnitSource source, int sourceStart, int sourceStop) {
+		super(source, sourceStart, sourceStop);
 	}
 	
 	/**
@@ -16,8 +16,8 @@ public class SectionEndSt extends Statement {
 	 * in this case the section end does not appear in the source file and therefore has no
 	 * text.
 	 */
-	public SectionEndSt(Unit unit, int sourcePos) {
-		this(unit, sourcePos, sourcePos);
+	public SectionEndSt(UnitSource source, int sourcePos) {
+		this(source, sourcePos, sourcePos);
 	}
 
 	@Override

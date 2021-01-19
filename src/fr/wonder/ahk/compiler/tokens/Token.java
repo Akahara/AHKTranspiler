@@ -1,5 +1,6 @@
 package fr.wonder.ahk.compiler.tokens;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.units.SourceObject;
 
 public class Token extends SourceObject {
@@ -10,8 +11,8 @@ public class Token extends SourceObject {
 	
 	public Token sectionPair;
 	
-	public Token(TokenBase base, String text, int sourceStart) {
-		super(null, sourceStart, sourceStart+text.length());
+	public Token(UnitSource source, TokenBase base, String text, int sourceStart) {
+		super(source, sourceStart, sourceStart+text.length());
 		this.base = base;
 		this.text = text;
 	}

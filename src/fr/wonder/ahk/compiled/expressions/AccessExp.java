@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -9,8 +9,8 @@ public class AccessExp extends Expression {
 	
 	public final String element;
 	
-	public AccessExp(Unit unit, int sourceStart, int sourceStop, Expression struct, String element) {
-		super(unit, sourceStart, sourceStop, struct);
+	public AccessExp(UnitSource source, int sourceStart, int sourceStop, Expression struct, String element) {
+		super(source, sourceStart, sourceStop, struct);
 		this.element = element;
 	}
 	

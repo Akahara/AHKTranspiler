@@ -53,7 +53,7 @@ class NativeFunctions {
 	
 	public static void writeNative(FunctionSection func, StringBuilder sb, ConversionTable conversions) {
 		sb.append("  @staticmethod\n");
-		sb.append("  def " + func.getUnitSignature() + "(");
+		sb.append("  def " + func.getSignature().computedSignature + "(");
 		for(int i = 0; i < func.arguments.length; i++) {
 			sb.append((char)(i+97));
 			if(i != func.arguments.length-1)
@@ -66,7 +66,7 @@ class NativeFunctions {
 	private static String getNativeSource(FunctionSection func, ConversionTable conversions) {
 		String sourcePath = getFunctionSourcePath(func, conversions);
 		if(sourcePath == null)
-			throw new IllegalStateException("Unknown native function " + func.getUnitSignature());
+			throw new IllegalStateException("Unknown native function " + func.getSignature().computedSignature);
 		// return already read source
 		if(functionSources.containsKey(sourcePath))
 			return functionSources.get(sourcePath);

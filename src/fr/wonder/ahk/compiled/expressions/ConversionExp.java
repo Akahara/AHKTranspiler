@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -10,15 +10,15 @@ public class ConversionExp extends Expression {
 	public final VarType castType;
 	public final boolean isImplicit;
 	
-	public ConversionExp(Unit unit, int sourceStart, int sourceStop, VarType castType, Expression value, boolean isImplicit) {
-		super(unit, sourceStart, sourceStop, value);
+	public ConversionExp(UnitSource source, int sourceStart, int sourceStop, VarType castType, Expression value, boolean isImplicit) {
+		super(source, sourceStart, sourceStop, value);
 		this.castType = castType;
 		this.isImplicit = isImplicit;
 	}
 	
 	/** Used by the linker only, to cast function argument (for implicit conversions) for example */
-	public ConversionExp(Unit unit, Expression value, VarType castType, boolean isImplicit) {
-		this(unit, value.sourceStart, value.sourceStop, castType, value, isImplicit);
+	public ConversionExp(UnitSource source, Expression value, VarType castType, boolean isImplicit) {
+		this(source, value.sourceStart, value.sourceStop, castType, value, isImplicit);
 		this.type = castType;
 	}
 	

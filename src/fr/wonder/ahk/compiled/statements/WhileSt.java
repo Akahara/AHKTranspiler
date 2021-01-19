@@ -1,12 +1,12 @@
 package fr.wonder.ahk.compiled.statements;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiler.Unit;
 
 public class WhileSt extends LabeledStatement {
 
-	public WhileSt(Unit unit, int sourceStart, int sourceStop, Expression condition, boolean singleLine) {
-		super(unit, sourceStart, sourceStop, singleLine, condition);
+	public WhileSt(UnitSource source, int sourceStart, int sourceStop, Expression condition, boolean singleLine) {
+		super(source, sourceStart, sourceStop, singleLine, condition);
 	}
 	
 	public Expression getCondition() {

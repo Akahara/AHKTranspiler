@@ -19,7 +19,7 @@ public class VarStructType extends VarType {
 	
 	@Override
 	public String getSignature() {
-		return String.format("%02d", Math.floorMod(name.hashCode(), 100));
+		return String.format("S%02d", Math.floorMod(name.hashCode(), 100)); // TODO rework the struct signature
 	}
 	
 	/**

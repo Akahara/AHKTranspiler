@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
@@ -12,52 +11,52 @@ import fr.wonder.ahk.utils.Utils;
 
 public class TokensFactory {
 
-	public static Token[][] splitTokens(UnitSource source, Token[] tokens) {
-			List<Token[]> lines = new ArrayList<>();
-			
-			int begin = 0;
-			int openedSections = 0;
-			for(int i = 0; i < tokens.length; i++) {
-				for(TokenBase b : Tokens.SPLITS) {
+	public static Token[][] splitTokens(Token[] tokens) {
+		List<Token[]> lines = new ArrayList<>();
+		
+		int begin = 0;
+		int openedSections = 0;
+		for(int i = 0; i < tokens.length; i++) {
+			for(TokenBase b : Tokens.SPLITS) {
+				if(tokens[i].base == b) {
+					if(i > begin) {
+						// keep the '{' at the end of the line
+						int end = i;
+//						if(openedSections != 0 && tokens[i].base != TokenBase.TK_LINE_BREAK)
+						if(tokens[i].base != TokenBase.TK_LINE_BREAK)
+							end++;
+						// add a line composed of all encountered tokens since last 
+						// section begin excluding split losses
+						lines.add(Arrays.copyOfRange(tokens, begin, end));
+					}
+					if(tokens[i].base == TokenBase.TK_BRACE_OPEN) {
+						openedSections++;
+					} else if(tokens[i].base == TokenBase.TK_BRACE_CLOSE) {
+						openedSections--;
+						// add a line only composed of '}'
+//						if(openedSections != 0)
+							lines.add(new Token[] { tokens[i] });
+					}
+					begin = i+1;
+					break;
+				}
+			}
+			if(begin == i) {
+				for(TokenBase b : Tokens.SPLIT_LOSSES) {
 					if(tokens[i].base == b) {
-						if(i > begin) {
-							// keep the '{' at the end of the line
-							int end = i;
-	//						if(openedSections != 0 && tokens[i].base != TokenBase.TK_LINE_BREAK)
-							if(tokens[i].base != TokenBase.TK_LINE_BREAK)
-								end++;
-							// add a line composed of all encountered tokens since last 
-							// section begin excluding split losses
-							lines.add(Arrays.copyOfRange(tokens, begin, end));
-						}
-						if(tokens[i].base == TokenBase.TK_BRACE_OPEN) {
-							openedSections++;
-						} else if(tokens[i].base == TokenBase.TK_BRACE_CLOSE) {
-							openedSections--;
-							// add a line only composed of '}'
-	//						if(openedSections != 0)
-								lines.add(new Token[] { tokens[i] });
-						}
-						begin = i+1;
+						begin++;
 						break;
 					}
 				}
-				if(begin == i) {
-					for(TokenBase b : Tokens.SPLIT_LOSSES) {
-						if(tokens[i].base == b) {
-							begin++;
-							break;
-						}
-					}
-				}
 			}
-			if(begin != tokens.length)
-				lines.add(Arrays.copyOfRange(tokens, begin, tokens.length));
-			
-			if(openedSections != 0)
-				throw new IllegalStateException("Unexpected unit end!" + tokens[tokens.length-1].getErr());
-			return lines.toArray(Token[][]::new);
 		}
+		if(begin != tokens.length)
+			lines.add(Arrays.copyOfRange(tokens, begin, tokens.length));
+		
+		if(openedSections != 0)
+			throw new IllegalStateException("Unexpected unit end!" + tokens[tokens.length-1].getErr());
+		return lines.toArray(Token[][]::new);
+	}
 
 	/**
 	 * Used to :
@@ -97,7 +96,8 @@ public class TokensFactory {
 					line.get(j+2).base == TokenBase.VAR_VARIABLE) {
 					
 					// replace 'Unit . variable' by 'variable'
-					line.set(j, new Token(TokenBase.VAR_VARIABLE, line.get(j).text+line.get(j+1).text+line.get(j+2).text, line.get(j).sourceStart));
+					line.set(j, new Token(line.get(j).getSource(), TokenBase.VAR_VARIABLE,
+							line.get(j).text+line.get(j+1).text+line.get(j+2).text, line.get(j).sourceStart));
 					line.remove(j+2);
 					line.remove(j+1);
 					modified = true;
@@ -108,7 +108,8 @@ public class TokensFactory {
 					line.get(j+1).base == TokenBase.LIT_FLOAT)) {
 					
 					// replace '- intL' by 'intL' or '- floatL' by 'floatL'
-					line.set(j, new Token(line.get(j+1).base, line.get(j).text+line.get(j+1).text, line.get(j).sourceStart));
+					line.set(j, new Token(line.get(j).getSource(), line.get(j+1).base,
+							line.get(j).text+line.get(j+1).text, line.get(j).sourceStart));
 					line.remove(j+1);
 					modified = true;
 				}

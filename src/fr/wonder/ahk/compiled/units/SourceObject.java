@@ -1,21 +1,21 @@
 package fr.wonder.ahk.compiled.units;
 
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.UnitSource;
 
 public class SourceObject implements SourceElement {
 	
-	public Unit declaringUnit;
+	private UnitSource source;
 	public final int sourceStart, sourceStop;
 	
-	public SourceObject(Unit declaringUnit, int sourceStart, int sourceStop) {
-		this.declaringUnit = declaringUnit;
+	public SourceObject(UnitSource source, int sourceStart, int sourceStop) {
+		this.source = source;
 		this.sourceStart = sourceStart;
 		this.sourceStop = sourceStop;
 	}
 	
 	@Override
-	public Unit getUnit() {
-		return declaringUnit;
+	public UnitSource getSource() {
+		return source;
 	}
 
 	@Override

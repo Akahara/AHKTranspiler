@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -9,8 +9,8 @@ public class NullExp extends Expression {
 	
 	public VarType type = VarType.NULL; // FIX set the type via the linker, the null type does NOT represent the type of this expression
 	
-	public NullExp(Unit unit, int sourceStart, int sourceStop) {
-		super(unit, sourceStart, sourceStop);
+	public NullExp(UnitSource source, int sourceStart, int sourceStop) {
+		super(source, sourceStart, sourceStop);
 	}
 	
 	@Override

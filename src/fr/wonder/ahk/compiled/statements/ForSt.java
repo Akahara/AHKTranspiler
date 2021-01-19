@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.statements;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiler.Unit;
 
 public class ForSt extends LabeledStatement {
 	
@@ -9,10 +9,10 @@ public class ForSt extends LabeledStatement {
 	public final Expression condition;
 	public final AffectationSt affectation;
 	
-	public ForSt(Unit unit, int sourceStart, int sourceStop, boolean singleLine, VariableDeclaration declaration,
-			Expression condition, AffectationSt affectation) {
+	public ForSt(UnitSource source, int sourceStart, int sourceStop, boolean singleLine,
+			VariableDeclaration declaration, Expression condition, AffectationSt affectation) {
 		
-		super(unit, sourceStart, sourceStop, singleLine, unwrapExpressions(condition, affectation));
+		super(source, sourceStart, sourceStop, singleLine, unwrapExpressions(condition, affectation));
 		this.declaration = declaration;
 		this.condition = condition;
 		this.affectation = affectation;
