@@ -20,6 +20,11 @@ import fr.wonder.commons.files.FilesUtils;
 
 public class AsmX64Transpiler implements Transpiler {
 	
+	/*
+	 * Fixes:
+	 *  - make a type table that knows the size of a data type
+	 */
+	
 	@Override
 	public String getName() {
 		return "AHK_Default//Assembly_x64";

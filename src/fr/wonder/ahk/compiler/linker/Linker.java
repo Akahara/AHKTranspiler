@@ -101,7 +101,6 @@ public class Linker {
 			prelinkUnit(lu);
 	}
 	
-	// TODO make this method ignore WrappedExceptions
 	public static LinkedUnit[] getNativeRequirements(String[] importations, ErrorWrapper errors) throws WrappedException {
 		List<Unit> nativeUnits = new ArrayList<>();
 		for(String importation : importations) {

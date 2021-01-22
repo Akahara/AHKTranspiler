@@ -20,7 +20,7 @@ public class OperationTable {
 			throw new IllegalStateException("An operation was overriden: " + lOperand + operator + rOperand);
 	}
 	
-	public VarType getResult(VarType lOperand, Operator operator, VarType rOperand) {
+	public VarType getResult(VarType lOperand, Operator operator, VarType rOperand) { // TODO check for uses, maybe return an Invalid instead of null
 		Operation op = getOperation(lOperand, operator, rOperand);
 		return op == null ? null : op.getResultType();
 	}

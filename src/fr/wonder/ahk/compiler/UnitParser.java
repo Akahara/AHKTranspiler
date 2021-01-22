@@ -140,15 +140,19 @@ public class UnitParser {
 			
 			if(line[0].base == TokenBase.KW_FUNC) {
 				// parse function section
-				int functionEnd = getSectionEnd(lines, i+1);
-				if(functionEnd == -1) {
-					errors.add("Unfinished function:" + source.getErr(lines[i]));
+				if(line[line.length-1].base != TokenBase.TK_BRACE_OPEN) {
+					errors.add("Expected '{' to begin function" + line[line.length-1].getErr());
 				} else {
-					FunctionSection func = parseFunctionSection(source, lines, i, functionEnd, errors);
-					i = functionEnd;
-					if(func != null)
-						func.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
-					functions.add(func);
+					int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
+					if(functionEnd == -1) {
+						errors.add("Unfinished function:" + source.getErr(lines[i]));
+					} else {
+						FunctionSection func = parseFunctionSection(source, lines, i, functionEnd, errors);
+						i = functionEnd;
+						if(func != null)
+							func.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
+						functions.add(func);
+					}
 				}
 				modifiers.clear();
 				
@@ -179,24 +183,15 @@ public class UnitParser {
 		return body;
 	}
 	
-	private static int getSectionEnd(Token[][] lines, int start) {
-		// there is no need to check for other section types because the
-		// syntax was already validated by the tokenizer
-		// TODO0 maybe search for Token#sectionPair instead
-		int opened = 1;
-		for(int i = start; i < lines.length; i++) {
-			if(lines[i].length == 1 && lines[i][0].base == TokenBase.TK_BRACE_CLOSE) {
-				opened--;
-				if(opened == 0)
-					return i;
-			} else if(lines[i][lines[i].length-1].base == TokenBase.TK_BRACE_OPEN) {
-				opened++;
-			}
+	private static int getSectionEnd(Token[][] lines, Token sectionStop, int start) {
+		for(int i = start+1; i < lines.length; i++) {
+			if(lines[i].length == 1 && lines[i][0] == sectionStop)
+				return i;
 		}
 		return -1;
 	}
 	
-	/** Assumes that the first line token is KW_FUNC */
+	/** Assumes that the first line token is KW_FUNC and the last TK_BRACE_OPEN */
 	private static FunctionSection parseFunctionSection(UnitSource source, Token[][] tokens,
 			int start, int stop, ErrorWrapper errors) {
 		Token[] declaration = tokens[start];
@@ -211,8 +206,6 @@ public class UnitParser {
 			declErrors.add("Expected function name:" + declaration[2].getErr());
 		if(declaration[3].base != TokenBase.TK_PARENTHESIS_OPEN)
 			declErrors.add("Expected '('" + declaration[3].getErr());
-		if(declaration[declaration.length-1].base != TokenBase.TK_BRACE_OPEN)
-			declErrors.add("Expected '{'" + declaration[declaration.length-1].getErr());
 		if(declaration[declaration.length-2].base != TokenBase.TK_PARENTHESIS_CLOSE)
 			declErrors.add("Expected ')'" + declaration[declaration.length-1].getErr());
 		if(!declErrors.noErrors())

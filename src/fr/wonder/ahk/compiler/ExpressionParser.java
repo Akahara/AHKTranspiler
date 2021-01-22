@@ -24,6 +24,7 @@ import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Tuple;
 
 public class ExpressionParser {
@@ -59,11 +60,8 @@ public class ExpressionParser {
 					return sec;
 				if(sec.start < stop && sec.stop >= start)
 					subSection.subSections.add(sec);
-//				if(sec.start == start+1 && sec.stop == stop-1)
-//					return sec.getSubSection(sec.start+1, sec.stop-1);
-				// TODO remove (should never occur)
 				if((sec.start < stop && sec.stop > stop) || (sec.stop > start && sec.start < start))
-					throw new IllegalStateException("Unexpected section overlap");
+					throw new UnreachableException("Unexpected section overlap");
 			}
 			for(Tuple<Operator, Integer> op : operators) {
 				if(start <= op.b && op.b < stop)

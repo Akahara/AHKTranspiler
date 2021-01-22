@@ -21,10 +21,6 @@ public abstract class VarType {
 		return getName();
 	}
 
-	public int getSize() {
-		return 8;	// TODO have specific sizes for different data types
-	}
-	
 	/**
 	 * This method must be used rather than the '==' operator, multiple instances of the
 	 * same logical variable type can exist at the same time (such as {@link VarArrayType}) 

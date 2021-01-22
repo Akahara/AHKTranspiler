@@ -8,7 +8,7 @@ import fr.wonder.commons.exceptions.UnimplementedException;
 
 public class NullExp extends Expression {
 	
-	public VarType type = null; // FIX implement, set type via the linker
+	public VarType type = null; // FIX implement null exceptions, set type via the linker
 	
 	public NullExp(UnitSource source, int sourceStart, int sourceStop) {
 		super(source, sourceStart, sourceStop);

@@ -4,7 +4,7 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 
-public class LinkedUnit {
+public class LinkedUnit { // FIX migrate LinkedUnit to fr.wonder.ahk.compiled
 
 	public final UnitSource source;
 	public final String base;

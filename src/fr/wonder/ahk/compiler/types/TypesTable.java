@@ -21,7 +21,7 @@ public class TypesTable {
 		return op == null ? null : op.getResultType();
 	}
 	
-	public Operation getOperation(OperationExp exp) { // TODO check for right struct operand only
+	public Operation getOperation(OperationExp exp) {
 		// only the left operand may be null
 		VarType leftOp = exp.getLOType();
 		VarType rightOp = exp.getROType();
@@ -55,6 +55,31 @@ public class TypesTable {
 				}
 				return operation;
 			}
+		}
+		
+		if(leftOp == null && rightOp instanceof VarStructType) {
+			// TODO check if - <struct> is interpreted as the negative operation or throws an expression error
+//			// check if this operation was already mapped
+//			Operation operation = operations.getOperation(null, operator, rightOp);
+//			if(operation != null)
+//				return operation;
+//			// else retrieve the operation
+//			VarType original = rightOp;
+//			do {
+//				// if no operation matches, check for super type
+//				rightOp = ((VarStructType) rightOp).superType;
+//				operation = operations.getOperation(null, operator, rightOp);
+//			} while (operation == null && rightOp != null);
+//			if(operation != null) {
+//				// map the found operation for future queries
+//				while(true) {
+//					operations.addOperation(null, operator, original, operation);
+//					original = ((VarStructType) original).superType;
+//					if(original == leftOp)
+//						break;
+//				}
+//				return operation;
+//			}
 		}
 		
 		return null;

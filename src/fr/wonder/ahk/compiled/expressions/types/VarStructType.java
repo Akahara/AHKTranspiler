@@ -5,7 +5,7 @@ import fr.wonder.ahk.compiler.types.TypesTable;
 public class VarStructType extends VarType {
 	
 	public final String name;
-	/** set by the linker (TODO not implemented) */
+	// set by the linked
 	public VarStructType superType;
 	
 	public VarStructType(String name) {
@@ -19,7 +19,7 @@ public class VarStructType extends VarType {
 	
 	@Override
 	public String getSignature() {
-		return String.format("S%02d", Math.floorMod(name.hashCode(), 100)); // TODO rework the struct signature
+		return String.format("S%02d", Math.floorMod(name.hashCode(), 100)); // FUTURE rework the struct signature
 	}
 	
 	/**
