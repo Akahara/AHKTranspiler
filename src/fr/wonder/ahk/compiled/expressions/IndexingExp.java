@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiled.expressions;
 import java.util.Arrays;
 
 import fr.wonder.ahk.UnitSource;
+import fr.wonder.ahk.compiled.Invalids;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.TypesTable;
@@ -34,7 +35,7 @@ public class IndexingExp extends Expression {
 			return ((VarArrayType) type).componentType;
 		} else {
 			errors.add("Type " + type + " cannot be indexed " + getErr());
-			return VarType.NULL;
+			return Invalids.TYPE;
 		}
 	}
 	

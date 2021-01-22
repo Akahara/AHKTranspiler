@@ -10,7 +10,6 @@ public class VarExp extends Expression {
 	public final String variable;
 	
 	// set by the linker
-	public VarType varType;
 	public ValueDeclaration declaration;
 	
 	public VarExp(UnitSource source, int sourceStart, int sourceStop, String variable) {
@@ -25,7 +24,7 @@ public class VarExp extends Expression {
 
 	@Override
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return varType;
+		return declaration.getType();
 	}
 
 }

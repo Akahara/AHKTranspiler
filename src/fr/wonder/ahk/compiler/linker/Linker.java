@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiler.linker;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.wonder.ahk.compiled.Invalids;
 import fr.wonder.ahk.compiled.expressions.ArrayExp;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
@@ -22,7 +23,6 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
-import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.LinkedUnit;
@@ -34,34 +34,22 @@ import fr.wonder.ahk.handles.AHKCompiledHandle;
 import fr.wonder.ahk.handles.AHKLinkedHandle;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
+import fr.wonder.commons.exceptions.UnimplementedException;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class Linker {
 	
 	public static AHKLinkedHandle link(AHKCompiledHandle handle, ErrorWrapper errors) throws WrappedException {
 		// search for all required native units
-		List<Unit> nativeUnits = new ArrayList<>();
+		ArrayOperator<LinkedUnit> nativesRequirements = new ArrayOperator<>();
 		for(Unit u : handle.units) {
 			ErrorWrapper nativeImportErrors = errors.subErrrors("Missive native import in unit " + u.fullBase);
-			for(String importation : u.importations) {
-				if(importation.startsWith(Natives.ahkImportBase)) {
-					List<Unit> importedUnits = Natives.getUnits(importation, nativeImportErrors);
-					
-					if(importedUnits != null) {
-						for(Unit iu : importedUnits) {
-							if(!nativeUnits.contains(iu))
-								nativeUnits.add(iu);
-						}
-					}
-				}
-			}
+			nativesRequirements.addIfAbsent(getNativeRequirements(u.importations, nativeImportErrors));
 		}
 		errors.assertNoErrors();
 		
-		// the list of linked native required units, separate from linkedUnits to
-		// be able to search for importations through native units only
-		LinkedUnit[] linkedNatives = new LinkedUnit[nativeUnits.size()];
-		// the list of linked units
-		LinkedUnit[] linkedUnits = new LinkedUnit[handle.units.length+nativeUnits.size()];
+		LinkedUnit[] linkedNatives = nativesRequirements.finish(LinkedUnit[]::new);
+		LinkedUnit[] linkedUnits = new LinkedUnit[handle.units.length + linkedNatives.length];
 		
 		// check unit duplicates
 		for(int u = 0; u < handle.units.length; u++) {
@@ -70,22 +58,13 @@ public class Linker {
 			for(int j = 0; j < u; j++) {
 				if(handle.units[j].fullBase.equals(unit.fullBase))
 					errors.add("Duplicate unit found with base " + unit.fullBase);
-			}	
+			}
 		}
-		// create linked native units, there cannot be duplicates at this point
-		// also bind importations as a native unit can only import other natives
-		for(int u = 0; u < linkedNatives.length; u++)
-			linkedNatives[u] = new LinkedUnit(nativeUnits.get(u));
-		for(int u = 0; u < linkedNatives.length; u++) {
-			LinkedUnit lu = linkedNatives[u];
-			for(int i = 0; i < lu.importations.length; i++)
-				lu.importations[i] = searchImportedUnit(linkedNatives, nativeUnits.get(u).importations[i]);
-			linkedUnits[handle.units.length + u] = lu;
-		}
-
 		errors.assertNoErrors();
 		
-		AHKLinkedHandle linkedHandle = new AHKLinkedHandle(linkedUnits, linkedNatives);
+		// fill the units array end with the (already importation-linked) native units
+		for(int u = 0; u < linkedNatives.length; u++)
+			linkedUnits[handle.units.length + u] = linkedNatives[u];
 		
 		// link all project unit importations (not native units)
 		for(int u = 0; u < handle.units.length; u++) {
@@ -101,21 +80,53 @@ public class Linker {
 		
 		errors.assertNoErrors();
 		
-		// prelink units
-		for(LinkedUnit lunit : linkedUnits) {
-			prelinkUnit(lunit);
-		}
+		// prelink units (project & natives)
+		prelinkUnits(linkedUnits);
+		
+		AHKLinkedHandle linkedHandle = new AHKLinkedHandle(linkedUnits, linkedNatives);
 		
 		// actually link unit statements
 		for(int u = 0; u < linkedUnits.length; u++) {
 			ErrorWrapper subErrors = errors.subErrrors("Unable to link unit " + linkedUnits[u].fullBase);
-			ValueDeclaration[] externFields = linkUnit(linkedHandle, linkedUnits[u], subErrors);
-			linkedHandle.externFields.put(linkedUnits[u], externFields);
+			linkUnit(linkedHandle.typesTable, linkedUnits[u], subErrors);
 		}
 		
 		errors.assertNoErrors();
 		
 		return linkedHandle;
+	}
+	
+	public static void prelinkUnits(LinkedUnit... units) {
+		for(LinkedUnit lu : units)
+			prelinkUnit(lu);
+	}
+	
+	// TODO make this method ignore WrappedExceptions
+	public static LinkedUnit[] getNativeRequirements(String[] importations, ErrorWrapper errors) throws WrappedException {
+		List<Unit> nativeUnits = new ArrayList<>();
+		for(String importation : importations) {
+			if(importation.startsWith(Natives.ahkImportBase)) {
+				List<Unit> importedUnits = Natives.getUnits(importation, errors);
+				
+				if(importedUnits != null) {
+					for(Unit iu : importedUnits) {
+						if(!nativeUnits.contains(iu))
+							nativeUnits.add(iu);
+					}
+				}
+			}
+		}
+		errors.assertNoErrors();
+		
+		LinkedUnit[] linkedNatives = new LinkedUnit[nativeUnits.size()];
+		for(int u = 0; u < linkedNatives.length; u++)
+			linkedNatives[u] = new LinkedUnit(nativeUnits.get(u));
+		for(int u = 0; u < linkedNatives.length; u++) {
+			LinkedUnit lu = linkedNatives[u];
+			for(int i = 0; i < lu.importations.length; i++)
+				lu.importations[i] = searchImportedUnit(linkedNatives, nativeUnits.get(u).importations[i]);
+		}
+		return linkedNatives;
 	}
 	
 	/** Returns the unit of {@code units} which full base is {@code fullBase}, null if none matches */
@@ -140,30 +151,23 @@ public class Linker {
 	 * 
 	 * @return all fields that can be accessed globally
 	 */
-	private static ValueDeclaration[] linkUnit(AHKLinkedHandle handle, LinkedUnit lunit, ErrorWrapper errors) {
-		List<ValueDeclaration> externFields = new ArrayList<>();
-		
-		for(int i = 0; i < lunit.variables.length; i++) {
-			VariableDeclaration var = lunit.variables[i];
-			if(var.getVisibility() == DeclarationVisibility.GLOBAL)
-				externFields.add(var);
-			linkExpressions(lunit, new UnitScope(lunit), var.getExpressions(), handle.typesTable, errors);
+	private static void linkUnit(TypesTable typesTable, LinkedUnit unit, ErrorWrapper errors) {
+		for(int i = 0; i < unit.variables.length; i++) {
+			VariableDeclaration var = unit.variables[i];
+			linkExpressions(unit, new UnitScope(unit), var.getExpressions(), typesTable, errors);
 			for(int j = 0; j < i; j++) {
-				if(lunit.variables[j].name.equals(var.name)) {
+				if(unit.variables[j].name.equals(var.name)) {
 					errors.add("Two variables have the same name: " + var.name +
-							lunit.variables[j].getErr() + lunit.variables[i].getErr());
+							unit.variables[j].getErr() + unit.variables[i].getErr());
 				}
 			}
 		}
 		
-		for(int i = 0; i < lunit.functions.length; i++) {
-			FunctionSection func = lunit.functions[i];
-			
-			if(func.getVisibility() == DeclarationVisibility.GLOBAL)
-				externFields.add(func);
+		for(int i = 0; i < unit.functions.length; i++) {
+			FunctionSection func = unit.functions[i];
 			
 			// check variable name conflicts
-			for(VariableDeclaration var : lunit.variables) {
+			for(VariableDeclaration var : unit.variables) {
 				if(var.name.equals(func.name))
 					errors.add("A function has the same name as a variable: " + var.name + func.getErr() + var.getErr());
 			}
@@ -171,9 +175,9 @@ public class Linker {
 			// check signatures duplicates
 			String funcSig = func.getSignature().computedSignature;
 			for(int j = 0; j < i; j++) {
-				if(lunit.functions[j].getSignature().computedSignature.equals(funcSig)) {
+				if(unit.functions[j].getSignature().computedSignature.equals(funcSig)) {
 					errors.add("Two functions have the same signature: " + funcSig +
-							lunit.functions[j].getErr() + lunit.functions[i].getErr());
+							unit.functions[j].getErr() + unit.functions[i].getErr());
 				}
 			}
 			
@@ -186,13 +190,11 @@ public class Linker {
 			}
 			
 			// link variables
-			linkStatements(handle, lunit, func, errors.subErrrors("Errors in function " + funcSig));
+			linkStatements(typesTable, unit, func, errors.subErrrors("Errors in function " + funcSig));
 		}
-		
-		return externFields.toArray(ValueDeclaration[]::new);
 	}
 	
-	private static void linkStatements(AHKLinkedHandle handle, LinkedUnit lunit, FunctionSection func, ErrorWrapper errors) {
+	private static void linkStatements(TypesTable typesTable, LinkedUnit lunit, FunctionSection func, ErrorWrapper errors) {
 		Scope scope = new UnitScope(lunit).innerScope();
 		List<LabeledStatement> openedSections = new ArrayList<>();
 		LabeledStatement latestClosedStatement = null;
@@ -224,12 +226,12 @@ public class Linker {
 			}
 			
 			if(st instanceof ForSt && ((ForSt) st).declaration != null) {
-				linkExpressions(lunit, scope, ((ForSt) st).declaration.expressions, handle.typesTable, errors);
+				linkExpressions(lunit, scope, ((ForSt) st).declaration.expressions, typesTable, errors);
 				declareVariable(lunit, ((ForSt) st).declaration, scope, errors);
 			}
 			
-			linkExpressions(lunit, scope, st.expressions, handle.typesTable, errors);
-			linkStatement(lunit, func, st, handle.typesTable, errors);
+			linkExpressions(lunit, scope, st.expressions, typesTable, errors);
+			linkStatement(lunit, func, st, typesTable, errors);
 			
 			if(st instanceof VariableDeclaration)
 				declareVariable(lunit, (VariableDeclaration) st, scope, errors);
@@ -256,19 +258,16 @@ public class Linker {
 				// search for the variable/function declaration
 				VarExp vexp = (VarExp) exp;
 				ValueDeclaration var = scope.getVariable(vexp.variable);
-				vexp.declaration = var;
-				
 				if(var == null) {
 					errors.add("Usage of undeclared variable " + vexp.variable + vexp.getErr());
-					vexp.varType = VarType.NULL;
-				} else {
-					vexp.varType = var.getType();
+					var = Invalids.VALUE;
 				}
+				vexp.declaration = var;
 				
 			} else if(exp instanceof ArrayExp) {
 				ArrayExp array = (ArrayExp) exp;
 				if(array.getLength() == 0) {
-					array.type = new VarArrayType(VarType.VOID);
+					array.type = VarArrayType.EMPTY_ARRAY;
 				} else {
 					Expression[] values = array.getValues();
 					VarType componentsType = values[0].getType();
@@ -279,7 +278,7 @@ public class Linker {
 					}
 					if(componentsType == null) {
 						errors.add("No shared type in array declaration" + array.getErr());
-						componentsType = VarType.VOID;
+						componentsType = Invalids.TYPE;
 					}
 					array.type = new VarArrayType(componentsType);
 				}
@@ -305,7 +304,7 @@ public class Linker {
 					}
 				} else {
 					// TODO implement functions as expressions
-					errors.add(">>> Unimplemented function call!" + fexp.getErr());
+					throw new UnimplementedException("Unimplemented function call " + fexp.getErr());
 				}
 				
 			} else if(exp instanceof OperationExp) {
@@ -313,11 +312,10 @@ public class Linker {
 				Operation op = typesTable.getOperation(oexp);
 				if(op == null) {
 					errors.add("Unimplemented operation! " + oexp.operationString() + oexp.getErr());
-					oexp.setOperation(Operation.NOOP);
-				} else {
-					// #setOperation replaces the operation expression operands by cast expressions if needed
-					oexp.setOperation(op);
+					op = Invalids.OPERATION;
 				}
+				// #setOperation replaces the operation expression operands by cast expressions if needed
+				oexp.setOperation(op);
 			}
 			
 			exp.computeValueType(typesTable, errors);

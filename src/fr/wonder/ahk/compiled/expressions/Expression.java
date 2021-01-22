@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.ExpressionHolder;
+import fr.wonder.ahk.compiled.Invalids;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiler.types.TypesTable;
@@ -28,12 +29,13 @@ public abstract class Expression extends SourceObject implements ExpressionHolde
 		this.expressions = exps;
 	}
 	
+	/** Implementations must add an error to {@code errors} if the returned value is {@code null} */
 	protected abstract VarType getValueType(TypesTable typesTable, ErrorWrapper errors);
 	
 	public void computeValueType(TypesTable typesTable, ErrorWrapper errors) {
 		this.type = getValueType(typesTable, errors);
 		if(this.type == null)
-			this.type = VarType.NULL;
+			this.type = Invalids.TYPE;
 	}
 	
 	public VarType getType() {

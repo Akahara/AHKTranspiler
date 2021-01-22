@@ -1,14 +1,6 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
-import fr.wonder.ahk.compiled.expressions.NullExp;
-
 public abstract class VarType {
-	
-	/**
-	 * Used to avoid exceptions when an the type of an expression cannot be computed
-	 * <br>Does <b>NOT<b> represent the type of the {@link NullExp null expression}
-	 */
-	public static final VarNativeType NULL = new VarNativeType("NULL");
 	
 	public static final VarNativeType VOID = new VarNativeType("void");
 	public static final VarNativeType INT = new VarNativeType("int");

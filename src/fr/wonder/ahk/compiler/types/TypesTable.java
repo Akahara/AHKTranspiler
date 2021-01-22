@@ -21,7 +21,7 @@ public class TypesTable {
 		return op == null ? null : op.getResultType();
 	}
 	
-	public Operation getOperation(OperationExp exp) {
+	public Operation getOperation(OperationExp exp) { // TODO check for right struct operand only
 		// only the left operand may be null
 		VarType leftOp = exp.getLOType();
 		VarType rightOp = exp.getROType();

@@ -60,7 +60,11 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 		this.signature = signature;
 	}
 	
-	/** global scope signature (declaring unit full base + unit scope signature) */
+	/**
+	 * global scope signature (declaring unit full base + unit scope signature),
+	 * must not be called before the linker prelinked the declaring unit of this
+	 * function
+	 */
 	public Signature getSignature() {
 		return signature;
 	}

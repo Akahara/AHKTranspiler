@@ -12,8 +12,8 @@ public class OperationExp extends Expression {
 	
 	public final Operator operator;
 	
-	/** set by the linker usin {@link #setOperation(Operation)} */
-	public Operation operation;
+	/** set by the linker using {@link #setOperation(Operation)} */
+	private Operation operation;
 	
 	public OperationExp(UnitSource source, int sourceStart, int sourceStop, Operator operator,
 			Expression leftOperand, Expression rightOperand) {
@@ -39,12 +39,16 @@ public class OperationExp extends Expression {
 	
 	public void setOperation(Operation op) {
 		this.operation = op;
-		if(op != Operation.NOOP) {
-			if(getLOType() != op.getOperandsTypes()[0])
-				expressions[1] = new ConversionExp(getSource(), getLeftOperand(), op.getOperandsTypes()[0], true);
-			if(getROType() != operation.getOperandsTypes()[1])
-				expressions[0] = new ConversionExp(getSource(), getRightOperand(), op.getOperandsTypes()[1], true);
-		}
+		if(op.getOperandsTypes().length != (getRightOperand() == null ? 1 : 2))
+			throw new IllegalStateException("Invalid operand count");
+		if(getLOType() != null && getLOType() != op.getOperandsTypes()[0])
+			expressions[1] = new ConversionExp(getSource(), getLeftOperand(), op.getOperandsTypes()[0], true);
+		if(getROType() != op.getOperandsTypes()[1])
+			expressions[0] = new ConversionExp(getSource(), getRightOperand(), op.getOperandsTypes()[1], true);
+	}
+	
+	public Operation getOperation() {
+		return operation;
 	}
 	
 	/** get left operand type, null if the expression does not have a left operand */
@@ -53,7 +57,7 @@ public class OperationExp extends Expression {
 	}
 	
 	public VarType getROType() {
-		return getRightOperand() == null ? null : getRightOperand().getType();
+		return getRightOperand().getType();
 	}
 	
 	@Override
