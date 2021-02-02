@@ -5,7 +5,7 @@ import java.util.Arrays;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
-import fr.wonder.ahk.compiler.LinkedUnit;
+import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.handles.AHKTranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.CallingConvention;
 import fr.wonder.ahk.transpilers.asm_x64.natives.OSInstrinsic;
@@ -27,8 +27,8 @@ public class AHKManifest {
 		}
 	}
 
-	private void searchEntryPoint(LinkedUnit[] units, ErrorWrapper errors) {
-		for (LinkedUnit u : units) {
+	private void searchEntryPoint(Unit[] units, ErrorWrapper errors) {
+		for (Unit u : units) {
 			if (u.fullBase.equals(ENTRY_POINT)) {
 				this.entryPointUnit = u;
 				for (FunctionSection f : u.functions) {
@@ -57,7 +57,7 @@ public class AHKManifest {
 	public boolean DEBUG_SYMBOLS;
 
 	/* set by #checkEntryPoint */
-	public LinkedUnit entryPointUnit;
+	public Unit entryPointUnit;
 	public FunctionSection entryPointFunction;
 
 	/* -------------------------- Python section -------------------------- */

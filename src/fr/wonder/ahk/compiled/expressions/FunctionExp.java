@@ -2,7 +2,7 @@ package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -10,12 +10,18 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 /**
  * Replaces {@link FunctionCallExp} when the {@link FunctionCallExp#getFunction() function argument}
  * is a {@link VarExp}. The replacement is done by the linker.
+ * 
+ * <blockquote><pre>
+ * func void a() {
+ *   a(); // FunctionExp
+ * }
+ * </pre></blockquote>
  */
 public class FunctionExp extends FunctionExpression {
 	
-	public final FunctionSection function;
+	public final FunctionPrototype function;
 	
-	public FunctionExp(UnitSource source, FunctionCallExp funcCall, FunctionSection function) {
+	public FunctionExp(UnitSource source, FunctionCallExp funcCall, FunctionPrototype function) {
 		super(source, funcCall.sourceStart, funcCall.sourceStop, funcCall.getArguments());
 		this.function = function;
 	}
@@ -31,6 +37,6 @@ public class FunctionExp extends FunctionExpression {
 
 	@Override
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return function.returnType;
+		return function.functionType.returnType;
 	}
 }

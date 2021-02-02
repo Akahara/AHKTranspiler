@@ -6,7 +6,7 @@ import java.io.IOException;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
-import fr.wonder.ahk.compiler.LinkedUnit;
+import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.handles.AHKExecutableHandle;
 import fr.wonder.ahk.handles.AHKTranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
@@ -65,7 +65,7 @@ public class PythonTranspiler implements Transpiler {
 		throw new IOException("Unsupported in python");
 	}
 	
-	private static void refactorUnit(AHKTranspilableHandle handle, LinkedUnit unit, ErrorWrapper errors) {
+	private static void refactorUnit(AHKTranspilableHandle handle, Unit unit, ErrorWrapper errors) {
 		for(int i = unit.functions.length-1; i >= 0; i--) {
 			FunctionSection func = unit.functions[i];
 			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
@@ -82,13 +82,13 @@ public class PythonTranspiler implements Transpiler {
 		}
 	}
 	
-	private static void exportUnit(AHKTranspilableHandle handle, LinkedUnit unit, File file, ErrorWrapper errors) throws IOException, WrappedException {
+	private static void exportUnit(AHKTranspilableHandle handle, Unit unit, File file, ErrorWrapper errors) throws IOException, WrappedException {
 		file.createNewFile();
 		
 		StringBuilder sb = new StringBuilder();
 		
-		for(LinkedUnit imported : unit.importations)
-			sb.append("from " + imported.fullBase.replaceAll("\\.", "_") + " import *\n");
+		for(String imported : unit.importations)
+			sb.append("from " + imported.replaceAll("\\.", "_") + " import *\n");
 		if(unit.importations.length != 0)
 			sb.append('\n');
 		

@@ -11,7 +11,7 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 public class VariableDeclaration extends Statement implements ValueDeclaration {
 	
 	public final String name;
-	public final VarType type;
+	private final VarType type;
 	public DeclarationModifiers modifiers;
 	public DeclarationVisibility visibility = DeclarationVisibility.GLOBAL; // TODO read variable declaration visibility
 	

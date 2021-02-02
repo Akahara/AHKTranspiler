@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.expressions.AccessExp;
+import fr.wonder.ahk.compiled.expressions.DirectAccessExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
@@ -231,7 +231,7 @@ public class StatementParser {
 					errors.add("Missing range target in for statement:" + source.getErr(line, 2, simpleRangeMarker));
 			} else {
 				rangeTarget = ExpressionParser.parseExpression(source, line, 2, equalsMarker, errors);
-				if(!(rangeTarget instanceof VarExp) && !(rangeTarget instanceof AccessExp))
+				if(!(rangeTarget instanceof VarExp) && !(rangeTarget instanceof DirectAccessExp))
 					errors.add("Invalid for-in-range over a non variable expression:" + source.getErr(line, 2, equalsMarker));
 			}
 			int maxStop = simpleRangeSecond == -1 ? conditionEnd : simpleRangeSecond;

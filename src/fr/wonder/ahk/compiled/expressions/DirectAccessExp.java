@@ -5,11 +5,11 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
-public class AccessExp extends Expression {
+public class DirectAccessExp extends Expression {
 	
 	public final String element;
 	
-	public AccessExp(UnitSource source, int sourceStart, int sourceStop, Expression struct, String element) {
+	public DirectAccessExp(UnitSource source, int sourceStart, int sourceStop, Expression struct, String element) {
 		super(source, sourceStart, sourceStop, struct);
 		this.element = element;
 	}

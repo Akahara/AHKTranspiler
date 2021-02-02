@@ -10,10 +10,9 @@ import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiler.types.ConversionTable;
-import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.utils.Utils;
 
-public class FunctionSection extends SourceObject implements Operation, ValueDeclaration {
+public class FunctionSection extends SourceObject implements ValueDeclaration {
 	
 	// set by the unit parser
 	public String name;
@@ -25,11 +24,7 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 	// set by the unit parser using the statement parser
 	public Statement[] body;
 	
-//	// set by the linker using #makeSignature
-//	/** the global scope signature of this function */
-//	private String signature;
-//	/** the signature that can be used when already inside the declaring unit */
-//	private String unitSignature;
+	// set by the linker using #makeSignature
 	private Signature signature;
 	
 	public FunctionSection(UnitSource source, int sourceStart, int sourceStop) {
@@ -70,16 +65,6 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 	}
 	
 	@Override
-	public VarType getResultType() {
-		return returnType;
-	}
-	
-	@Override
-	public VarType[] getOperandsTypes() {
-		return argumentTypes;
-	}
-	
-	@Override
 	public String getName() {
 		return name;
 	}
@@ -87,7 +72,7 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 	/** Beware, this is not the same as {@link #getFunctionType()} */
 	@Override
 	public VarType getType() {
-		return getResultType();
+		return returnType; // FIX check if this type must be the function return type or its function type
 	}
 	
 	@Override
@@ -99,7 +84,7 @@ public class FunctionSection extends SourceObject implements Operation, ValueDec
 	 * Returns the {@link VarFunctionType} associated with this function,
 	 * cannot be called before the linker linked types.
 	 */
-	public VarType getFunctionType() {
+	public VarFunctionType getFunctionType() {
 		return new VarFunctionType(returnType, argumentTypes);
 	}
 

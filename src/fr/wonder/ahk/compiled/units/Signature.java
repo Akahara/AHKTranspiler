@@ -1,17 +1,15 @@
 package fr.wonder.ahk.compiled.units;
 
-import fr.wonder.ahk.compiler.LinkedUnit;
-
 public class Signature {
 	
-	public final LinkedUnit declaringUnit;
+	public final String declaringUnit;
 	
 	/** In-Unit name, must not contain any unit-specific markers */
 	public final String name;
 	/** In-Unit signature, must not contain any unit-specific markers */
 	public final String computedSignature;
 	
-	public Signature(LinkedUnit declaringUnit, String name, String computedSignature) {
+	public Signature(String declaringUnit, String name, String computedSignature) {
 		this.declaringUnit = declaringUnit;
 		this.name = name;
 		this.computedSignature = computedSignature;

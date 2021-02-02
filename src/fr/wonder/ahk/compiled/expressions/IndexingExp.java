@@ -3,9 +3,9 @@ package fr.wonder.ahk.compiled.expressions;
 import java.util.Arrays;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.Invalids;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 

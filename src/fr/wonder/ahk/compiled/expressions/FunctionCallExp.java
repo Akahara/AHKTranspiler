@@ -9,6 +9,15 @@ import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
+/**
+ * A call to a variable (of function type) 
+ * <blockquote><pre>
+ * func void a() {
+ *   b = a;
+ *   b();
+ * }
+ * </pre></blockquote>
+ */
 public class FunctionCallExp extends FunctionExpression {
 	
 	// set by the linker

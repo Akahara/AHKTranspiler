@@ -2,17 +2,21 @@ package fr.wonder.ahk.compiler.linker;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.LinkedUnit;
 import fr.wonder.ahk.compiler.types.ConversionTable;
+import fr.wonder.commons.types.Tuple;
 
 class UnitScope implements Scope {
 	
-	final LinkedUnit declaringUnit;
+	private final UnitPrototype unit;
+	private final UnitPrototype[] importedUnits;
 	
-	UnitScope(LinkedUnit declaringUnit) {
-		this.declaringUnit = declaringUnit;
+	UnitScope(UnitPrototype unit, UnitPrototype[] units) {
+		this.unit = unit;
+		this.importedUnits = units;
 	}
 
 	@Override
@@ -30,28 +34,37 @@ class UnitScope implements Scope {
 		return this;
 	}
 	
-	@Override
-	public ValueDeclaration getVariable(String name) {
+	private Tuple<UnitPrototype, String> getUnitFromVarName(String name) {
 		int dot = name.indexOf('.');
-		LinkedUnit unit;
 		if(dot != -1) {
 			String unitName = name.substring(0, dot);
-			name = name.substring(dot+1);
-			unit = declaringUnit.getReachableUnit(unitName);
-			if(unit == null)
-				return null;
+			String varName = name.substring(dot+1);
+			for(UnitPrototype proto : importedUnits) {
+				if(proto.base.equals(unitName))
+					return new Tuple<>(proto, varName);
+			}
+			throw new IllegalStateException("Unknown unit " + unitName);
 		} else {
-			unit = declaringUnit;
+			return new Tuple<>(this.unit, name);
 		}
+	}
+	
+	@Override
+	public VarAccess getVariable(String name) {
+		Tuple<UnitPrototype, String> tuple = getUnitFromVarName(name);
+		UnitPrototype unit = tuple.a;
+		name = tuple.b;
+		if(unit == null)
+			return null;
 		// note that no function and variable can have the same name
-		for(VariableDeclaration var : unit.variables)
-			if(var.name.equals(name))
-				return var;
+		VarAccess varProto = unit.getVariable(name);
+		if(varProto != null)
+			return varProto;
 		// also the linker will do the job of searching for the right function, no need to do that here
 		// it only requires a function to be found to begin its work
-		for(FunctionSection func : unit.functions)
-			if(func.name.equals(name))
-				return func;
+		FunctionPrototype[] functions = unit.getFunctions(name);
+		if(functions.length != 0)
+			return functions[0];
 		return null;
 	}
 
@@ -67,46 +80,34 @@ class UnitScope implements Scope {
 	}
 	
 	private int countMatchingFunctions(String name, VarType[] args, ConversionTable conversions, ArgumentsMatchPredicate predicate) {
-		int dot = name.indexOf('.');
-		LinkedUnit unit;
-		if(dot != -1) {
-			String unitName = name.substring(0, dot);
-			name = name.substring(dot+1);
-			unit = declaringUnit.getReachableUnit(unitName);
-		} else {
-			unit = declaringUnit;
-		}
+		Tuple<UnitPrototype, String> tuple = getUnitFromVarName(name);
+		UnitPrototype unit = tuple.a;
+		name = tuple.b;
 		if(unit == null)
 			return 0;
 		int count = 0;
-		for(FunctionSection func : unit.functions) {
-			if(func.name.equals(name) && predicate.matches(func.argumentTypes, args, conversions))
+		for(FunctionPrototype func : unit.functions) {
+			if(func.name.equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
 				count++;
 		}
 		return count;
 	}
 	
-	private FunctionSection getFunction(String name, VarType[] args, ConversionTable conversions, ArgumentsMatchPredicate predicate) {
-		int dot = name.indexOf('.');
-		LinkedUnit unit;
-		if(dot != -1) {
-			String unitName = name.substring(0, dot);
-			name = name.substring(dot+1);
-			unit = declaringUnit.getReachableUnit(unitName);
-		} else {
-			unit = declaringUnit;
-		}
+	private FunctionPrototype getFunction(String name, VarType[] args, ConversionTable conversions, ArgumentsMatchPredicate predicate) {
+		Tuple<UnitPrototype, String> tuple = getUnitFromVarName(name);
+		UnitPrototype unit = tuple.a;
+		name = tuple.b;
 		if(unit == null)
 			return null;
-		for(FunctionSection func : unit.functions) {
-			if(func.name.equals(name) && predicate.matches(func.argumentTypes, args, conversions))
+		for(FunctionPrototype func : unit.functions) {
+			if(func.name.equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
 				return func;
 		}
 		return null;
 	}
 	
 	/** Returns the only function with parameters that exactly match <code>args</code> */
-	FunctionSection getFunctionStrict(String name, VarType[] args) {
+	FunctionPrototype getFunctionStrict(String name, VarType[] args) {
 		return getFunction(name, args, null, FunctionSection::argsMatch0c);
 	}
 	
@@ -116,7 +117,7 @@ class UnitScope implements Scope {
 	}
 	
 	/** Returns the first function that can be called used the given arguments with 1 implicit cast maximum */
-	FunctionSection getFunction1c(String name, VarType[] args, ConversionTable conversions) {
+	FunctionPrototype getFunction1c(String name, VarType[] args, ConversionTable conversions) {
 		return getFunction(name, args, conversions, FunctionSection::argsMatch1c);
 	}
 	
@@ -124,7 +125,7 @@ class UnitScope implements Scope {
 		return countMatchingFunctions(name, args, conversions, FunctionSection::argsMatchXc);
 	}
 	
-	FunctionSection getFunctionXc(String name, VarType[] args, ConversionTable conversions) {
+	FunctionPrototype getFunctionXc(String name, VarType[] args, ConversionTable conversions) {
 		return getFunction(name, args, conversions, FunctionSection::argsMatchXc);
 	}
 }

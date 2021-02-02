@@ -7,7 +7,7 @@ import fr.wonder.ahk.compiled.units.SourceObject;
 
 public abstract class Statement extends SourceObject implements ExpressionHolder {
 	
-	public final Expression[] expressions;
+	protected final Expression[] expressions;
 	
 	public Statement(UnitSource source, int sourceStart, int sourceStop, Expression... expressions) {
 		super(source, sourceStart, sourceStop);

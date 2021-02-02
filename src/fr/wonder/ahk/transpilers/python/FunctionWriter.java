@@ -17,13 +17,13 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.LinkedUnit;
+import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class FunctionWriter {
 	
-	static void writeFunction(LinkedUnit unit, FunctionSection func, StringBuilder sb, ErrorWrapper errors) {
+	static void writeFunction(Unit unit, FunctionSection func, StringBuilder sb, ErrorWrapper errors) {
 		sb.append("  @staticmethod\n");
 		sb.append("  def " + func.getSignature().computedSignature + "(");
 		sb.append(Utils.mapToString(func.arguments, arg->arg.name));
@@ -90,14 +90,14 @@ class FunctionWriter {
 			ForSt.class
 	);
 	
-	private static void writeIfStatement(LinkedUnit unit, IfSt s, StringBuilder sb, ErrorWrapper errors) {
+	private static void writeIfStatement(Unit unit, IfSt s, StringBuilder sb, ErrorWrapper errors) {
 		IfSt st = (IfSt) s;
 		sb.append("if ");
 		writeExpression(unit, st.getCondition(), sb, errors);
 		sb.append(":");
 	}
 	
-	private static void writeElseStatement(LinkedUnit unit, ElseSt st, StringBuilder sb, ErrorWrapper errors) {
+	private static void writeElseStatement(Unit unit, ElseSt st, StringBuilder sb, ErrorWrapper errors) {
 		if(st.getCondition() == null) {
 			sb.append("else:");
 		} else {
@@ -107,7 +107,7 @@ class FunctionWriter {
 		}
 	}
 	
-	private static void writeForStatement(LinkedUnit unit, ForSt st, StringBuilder sb, ErrorWrapper errors) {
+	private static void writeForStatement(Unit unit, ForSt st, StringBuilder sb, ErrorWrapper errors) {
 		// TODO write complex for statements
 		// for now only for statements such as:
 		// for(int <var> : <exp>..<exp>(..<exp>)) {
@@ -124,14 +124,14 @@ class FunctionWriter {
 		
 	}
 	
-	static void writeVarDeclaration(LinkedUnit unit, VariableDeclaration st, StringBuilder sb, ErrorWrapper errors) {
+	static void writeVarDeclaration(Unit unit, VariableDeclaration st, StringBuilder sb, ErrorWrapper errors) {
 		if(st.getDefaultValue() != null) {
 			sb.append(st.name + " = ");
 			writeExpression(unit, st.getDefaultValue(), sb, errors);
 		}
 	}
 	
-	private static void writeReturnStatement(LinkedUnit unit, ReturnSt st, StringBuilder sb, ErrorWrapper errors) {
+	private static void writeReturnStatement(Unit unit, ReturnSt st, StringBuilder sb, ErrorWrapper errors) {
 		sb.append("return");
 		if(st.getExpression() != null) {
 			sb.append(' ');
@@ -139,7 +139,7 @@ class FunctionWriter {
 		}
 	}
 	
-	private static void writeAffectationStatement(LinkedUnit unit, AffectationSt st, StringBuilder sb, ErrorWrapper errors) {
+	private static void writeAffectationStatement(Unit unit, AffectationSt st, StringBuilder sb, ErrorWrapper errors) {
 		writeExpression(unit, st.getVariable(), sb, errors);
 		sb.append(" = ");
 		writeExpression(unit, st.getValue(), sb, errors);

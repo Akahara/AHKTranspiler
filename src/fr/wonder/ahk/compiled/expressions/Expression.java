@@ -2,10 +2,11 @@ package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.ExpressionHolder;
-import fr.wonder.ahk.compiled.Invalids;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.TypesTable;
+import fr.wonder.commons.annotations.NonNull;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public abstract class Expression extends SourceObject implements ExpressionHolder {
@@ -44,6 +45,7 @@ public abstract class Expression extends SourceObject implements ExpressionHolde
 	
 	public abstract String toString();
 	
+	@NonNull
 	@Override
 	public Expression[] getExpressions() {
 		return expressions;

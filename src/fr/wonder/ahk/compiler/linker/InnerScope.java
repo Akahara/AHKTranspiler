@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 
 class InnerScope implements Scope {
 	
@@ -30,10 +32,10 @@ class InnerScope implements Scope {
 	}
 	
 	@Override
-	public ValueDeclaration getVariable(String name) {
+	public VarAccess getVariable(String name) {
 		for(ValueDeclaration var : variables)
 			if(var.getName().equals(name))
-				return var;
+				return new VariablePrototype(VarAccess.INNER_UNIT, var.getName(), var.getName(), var.getType());
 		return parent.getVariable(name);
 	}
 	

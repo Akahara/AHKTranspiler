@@ -1,8 +1,9 @@
-package fr.wonder.ahk.compiled;
+package fr.wonder.ahk.compiler;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
@@ -33,6 +34,13 @@ public class Invalids {
 	public static final Operation OPERATION = new Operation() {
 		public VarType getResultType() { return Invalids.TYPE; }
 		public VarType[] getOperandsTypes() { return new VarType[0]; }
+	};
+	
+	public static final VarAccess ACCESS = new VarAccess() {
+		public VarType getType() { return Invalids.TYPE; }
+		public String getUnitFullBase() { return "INVALID"; }
+		public String getName() { return "INVALID"; }
+		public String getSignature() { return "INVALID"; }
 	};
 	
 }

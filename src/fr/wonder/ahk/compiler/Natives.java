@@ -30,6 +30,9 @@ public class Natives {
 	 * Loads the native unit which full base is {@code importation} and all of its
 	 * dependencies recursively, returns a list containing all units needed by
 	 * {@code importation} (some may have already been loaded).
+	 * <br>
+	 * Here "loaded" means that the unit was parsed by the {@link UnitParser} but
+	 * not yet linked (nor pre-linked)
 	 * 
 	 * @param importation the full base of the native unit
 	 * @param errors      the error wrapper used to parse all native units, should

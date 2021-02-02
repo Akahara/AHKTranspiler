@@ -94,7 +94,7 @@ public class Utils {
 		System.out.println("Unit name: " + unit.name);
 		System.out.println("Unit base: " + unit.base);
 		for(VariableDeclaration var : unit.variables)
-			System.out.println(var.type + " " + var.name + " = " + var.getDefaultValue());
+			System.out.println(var.getType() + " " + var.name + " = " + var.getDefaultValue());
 		for(FunctionSection sec : unit.functions) {
 			System.out.println(sec);
 			for(Statement s : sec.body)
