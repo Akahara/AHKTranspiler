@@ -5,7 +5,7 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry excluding="fr/wonder/ahk/compiler/linker/dynamic/DynamicLinker.java" kind="src" path="src"/>
+	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="res"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/fr.wonder.commons">
 		<attributes>

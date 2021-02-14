@@ -21,7 +21,6 @@ module AHKTranspiler {
 	exports fr.wonder.ahk.compiled.units.sections;
 	exports fr.wonder.ahk.handles;
 	exports fr.wonder.ahk.compiled.units.prototypes;
-	exports fr.wonder.ahk.compiler.prototype;
 
 	requires transitive fr.wonder.commons;
 }

@@ -1,4 +1,4 @@
-package fr.wonder.ahk.compiler.prototype;
+package fr.wonder.ahk.compiler.linker;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,13 +16,8 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class Prototypes {
 
-	/** Returns AND affects computed prototypes to every unit */
-	public static UnitPrototype[] buildPrototypes(Unit[] units) {
-		return ArrayOperator.map(units, UnitPrototype[]::new, Prototypes::buildPrototype);
-	}
-	
-	/** Returns AND affects the computed prototype to unit.prototype */
-	public static UnitPrototype buildPrototype(Unit unit) {
+	/** Affects and returns the computed prototype of the unit */
+	static void buildPrototype(Unit unit) {
 		FunctionPrototype[] functions = new FunctionPrototype[unit.functions.length];
 		for(int i = 0; i < functions.length; i++) {
 			FunctionSection f = unit.functions[i];
@@ -41,14 +36,14 @@ public class Prototypes {
 					v.getSignature().computedSignature,
 					v.getType());
 		}
-		return unit.prototype = new UnitPrototype(
+		unit.prototype = new UnitPrototype(
 				unit.fullBase,
 				unit.importations,
 				functions,
 				variables);
 	}
 	
-	public static List<UnitPrototype> getRecompilableUnits(
+	public static List<UnitPrototype> getRecompilableUnits( // TODO move #getRecompilableUnits away from Prototypes
 			List<UnitPrototype> units,
 			UnitPrototype previousProto,
 			UnitPrototype newProto) {

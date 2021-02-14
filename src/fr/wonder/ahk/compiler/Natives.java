@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.Set;
 
 import fr.wonder.ahk.UnitSource;
+import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
+import fr.wonder.ahk.compiler.linker.Linker;
+import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
@@ -22,9 +25,8 @@ public class Natives {
 	private static final Set<String> loadedUnits = new HashSet<>();
 	
 	/**
-	 * Loads the native unit which full base is {@code importation} and all of its
-	 * dependencies recursively, returns a list containing all units needed by
-	 * {@code importation} (some may have already been loaded).
+	 * Loads the non-loaded natives units and their dependencies recursively.
+	 * Returns all required native units, already pre-linked and linked.
 	 * <br>
 	 * 
 	 * @param importation the full base of the native unit
@@ -47,9 +49,14 @@ public class Natives {
 				toBeLoaded.add(unit);
 		}
 		errors.assertNoErrors();
+		
 		// 'recursively' pass on all imported units
-		Unit u;
-		while ((u = toBeLoaded.pollFirst()) != null) {
+		while (!toBeLoaded.isEmpty()) {
+			Unit u = toBeLoaded.pollFirst();
+			if(u == null) {
+				errors.add("A native unit could not be loaded"); // TODO maybe keep track of unit names instead of
+				errors.assertNoErrors();
+			}
 			for(String ui : u.importations) {
 				if(units.add(nativeUnits.get(ui)))
 					toBeLoaded.add(nativeUnits.get(ui));
@@ -57,7 +64,7 @@ public class Natives {
 		}
 		return units;
 	}
-
+	
 	private static void loadUnit(String fullBase, ErrorWrapper errors) throws WrappedException {
 		if (!fullBase.startsWith(ahkImportBase))
 			throw new IllegalArgumentException("Unit '" + fullBase + "' is not part of the standard lib");
@@ -76,14 +83,24 @@ public class Natives {
 			UnitSource unitSource = new UnitSource(fullBase, new String(in.readAllBytes()));
 			Unit unit = UnitParser.parseUnit(unitSource, unitErrors);
 			unitErrors.assertNoErrors();
-//			Linker.prelinkUnit(unit, unitErrors); TODO link the native units here rather than in Linker#link
-//			unitErrors.assertNoErrors();
+			Linker.prelinkUnit(unit, unitErrors);
+			unitErrors.assertNoErrors();
 			nativeUnits.put(fullBase, unit);
 			for (String uimport : unit.importations)
 				loadUnit(uimport, unitErrors);
+			// TODO when struct type is implemented, fix the native units types table
+			Linker.linkUnit(unit, getImportedUnits(unit), new TypesTable(), unitErrors);
+			unitErrors.assertNoErrors();
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to read native source of " + fullBase, e);
 		}
+	}
+	
+	private static UnitPrototype[] getImportedUnits(Unit unit) {
+		UnitPrototype[] prototypes = new UnitPrototype[unit.importations.length];
+		for(int i = 0; i < prototypes.length; i++)
+			prototypes[i] = nativeUnits.get(unit.importations[i]).prototype;
+		return prototypes;
 	}
 
 }

@@ -4,7 +4,7 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.prototype.Prototypes;
+import fr.wonder.ahk.compiler.linker.Prototypes;
 
 public class Unit {
 	

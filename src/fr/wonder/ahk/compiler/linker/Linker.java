@@ -9,7 +9,6 @@ import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.Natives;
 import fr.wonder.ahk.compiler.Unit;
-import fr.wonder.ahk.compiler.prototype.Prototypes;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.handles.LinkedHandle;
@@ -64,21 +63,21 @@ public class Linker {
 			prelinkUnit(unit, errors);
 		errors.assertNoErrors();
 		
-		UnitPrototype[] prototypes = Prototypes.buildPrototypes(linkedUnits);
+		UnitPrototype[] prototypes = ArrayOperator.map(linkedUnits, UnitPrototype[]::new, u -> u.prototype);
 		
 		LinkedHandle linkedHandle = new LinkedHandle(linkedUnits, linkedNatives);
 		
 		// actually link unit statements and expressions
-		for(int u = 0; u < linkedUnits.length; u++) {
+		for(int u = 0; u < handle.units.length; u++) {
 			ErrorWrapper subErrors = errors.subErrrors("Unable to link unit " + linkedUnits[u].fullBase);
-			linkUnit(linkedHandle.typesTable, linkedUnits[u], prototypes, subErrors);
+			linkUnit(linkedUnits[u], prototypes, linkedHandle.typesTable, subErrors);
 		}
 		errors.assertNoErrors();
 		
 		return linkedHandle;
 	}
 	
-	/** Computes functions and variables signatures, validates units */
+	/** Computes functions and variables signatures, validates units and sets unit.prototype */
 	public static void prelinkUnit(Unit unit, ErrorWrapper errors) {
 		// TODO when struct types are implemented…
 		// make sure that the function argument types and return type are linked BEFORE computing its signature
@@ -135,12 +134,14 @@ public class Linker {
 				}
 			}
 		}
+		
+		Prototypes.buildPrototype(unit);
 	}
 	
 	/**
 	 * Assumes that the unit has been prelinked.
 	 */
-	private static void linkUnit(TypesTable typesTable, Unit unit, UnitPrototype[] units, ErrorWrapper errors) {
+	public static void linkUnit(Unit unit, UnitPrototype[] units, TypesTable typesTable, ErrorWrapper errors) {
 		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(units));
 		for(int i = 0; i < unit.variables.length; i++) {
 			VariableDeclaration var = unit.variables[i];
@@ -149,10 +150,13 @@ public class Linker {
 		
 		for(int i = 0; i < unit.functions.length; i++) {
 			FunctionSection func = unit.functions[i];
-			
-			// link variables
-			StatementLinker.linkStatements(typesTable, unit, unitScope.innerScope(),
-					func, errors.subErrrors("Errors in function " + func.getSignature().computedSignature));
+			ErrorWrapper ferrors = errors.subErrrors("Errors in function " + func.getSignature().computedSignature);
+			StatementLinker.linkStatements(
+					typesTable,
+					unit,
+					unitScope.innerScope(),
+					func,
+					ferrors);
 		}
 	}
 	
