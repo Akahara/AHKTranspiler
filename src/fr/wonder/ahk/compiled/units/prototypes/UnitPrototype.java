@@ -8,12 +8,17 @@ import fr.wonder.commons.utils.ArrayOperator;
 /** Dynamically linked unit */
 public class UnitPrototype {
 	
+	public static final UnitPrototype NULL_PROTOTYPE = 
+			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0], new VariablePrototype[0]);
+	
 	public final String base;
 	public final String fullBase;
 	public final String[] importations;
 	
 	public final FunctionPrototype[] functions;
 	public final VariablePrototype[] variables;
+	
+	public List<VarAccess> externalAccesses = new ArrayList<>();
 	
 	public UnitPrototype(String fullBase, String[] importations,
 			FunctionPrototype[] functions, VariablePrototype[] variables) {
@@ -22,6 +27,26 @@ public class UnitPrototype {
 		this.importations = importations;
 		this.functions = functions;
 		this.variables = variables;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if(!(o instanceof UnitPrototype))
+			return false;
+		UnitPrototype p = (UnitPrototype) o;
+		if(!fullBase.equals(p.fullBase))
+			return false;
+		if(functions.length != p.functions.length || variables.length != p.variables.length)
+			return false;
+		for(int i = 0; i < functions.length; i++) {
+			if(!functions[i].equals(p.functions[i]))
+				return false;
+		}
+		for(int i = 0; i < variables.length; i++) {
+			if(!variables[i].equals(p.variables[i]))
+				return false;
+		}
+		return true;
 	}
 	
 	@Override
@@ -42,12 +67,7 @@ public class UnitPrototype {
 	}
 	
 	public FunctionPrototype[] getFunctions(String name) {
-		List<FunctionPrototype> functions = new ArrayList<>();
-		for(FunctionPrototype f : this.functions) {
-			if(f.name.equals(name))
-				functions.add(f);
-		}
-		return functions.toArray(FunctionPrototype[]::new);
+		return ArrayOperator.filter(functions, f -> f.name.equals(name));
 	}
 	
 }

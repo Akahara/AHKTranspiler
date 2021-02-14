@@ -8,7 +8,7 @@ import fr.wonder.ahk.AHKTranspiler;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
-import fr.wonder.ahk.handles.AHKTranspilableHandle;
+import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.ahk.transpilers.asm_x64.natives.ProcessFiles;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
@@ -31,7 +31,7 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 
 	@Override
-	public void exportProject(AHKTranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, AssertionException {
+	public void exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, AssertionException {
 		validateProject(handle, errors);
 		errors.assertNoErrors();
 		
@@ -60,11 +60,11 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 
 	@Override
-	public void exportAPI(AHKTranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	public void exportAPI(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		// TODO export as api
 	}
 	
-	private void validateProject(AHKTranspilableHandle handle, ErrorWrapper errors) {
+	private void validateProject(TranspilableHandle handle, ErrorWrapper errors) {
 		handle.manifest.validateAsm(errors.subErrrors("Invalid manifest"));
 		
 		for(Unit u : handle.units)
@@ -73,7 +73,7 @@ public class AsmX64Transpiler implements Transpiler {
 			validateUnit(handle, u, errors.subErrrors("Unable to validate native unit " + u.getFullBase()));
 	}
 
-	private void validateUnit(AHKTranspilableHandle handle, Unit unit, ErrorWrapper errors) {
+	private void validateUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
 				if(!func.modifiers.getModifier(Modifier.NATIVE).validateArgs(func, NativeModifier::parseModifier))
@@ -82,7 +82,7 @@ public class AsmX64Transpiler implements Transpiler {
 		}
 	}
 
-	private static String writeUnit(AHKTranspilableHandle handle, Unit unit, File dir, ErrorWrapper errors) throws IOException {
+	private static String writeUnit(TranspilableHandle handle, Unit unit, File dir, ErrorWrapper errors) throws IOException {
 		String file = unit.getFullBase().replaceAll("\\.", "/");
 		TextBuffer tb = new TextBuffer();
 		UnitWriter.writeUnit(handle, unit, tb, errors);
@@ -92,7 +92,7 @@ public class AsmX64Transpiler implements Transpiler {
 		return file;
 	}
 	
-	private static void runCompiler(AHKTranspilableHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException {
+	private static void runCompiler(TranspilableHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException {
 		if(files.length == 0)
 			return;
 		
@@ -146,7 +146,7 @@ public class AsmX64Transpiler implements Transpiler {
 	};
 
 	@Override
-	public int runProject(AHKTranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	public int runProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		return runCommand("./" + handle.manifest.OUTPUT_NAME, dir);
 	}
 	

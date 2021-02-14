@@ -6,7 +6,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
-import fr.wonder.ahk.handles.AHKTranspilableHandle;
+import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.CallingConvention;
 import fr.wonder.ahk.transpilers.asm_x64.natives.OSInstrinsic;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -17,7 +17,7 @@ public class AHKManifest {
 	 * @param unitaryComp if false, some checks will not be made like finding the
 	 *                    entry point of the program
 	 */
-	public void validate(AHKTranspilableHandle handle, ErrorWrapper errors, boolean unitaryComp) {
+	public void validate(TranspilableHandle handle, ErrorWrapper errors, boolean unitaryComp) {
 		if (!unitaryComp) {
 			if (ENTRY_POINT == null || ENTRY_POINT.isBlank()) {
 				errors.add("The entry point must be specified");
@@ -39,7 +39,7 @@ public class AHKManifest {
 						if (f.returnType != VarType.INT)
 							errors.add("The main function must return an integer" + f.getErr());
 						if (!FunctionSection.argsMatch0c(f.argumentTypes, new VarType[] {}))
-							errors.add("The main function has an invalid signature" + f.getErr());
+							errors.add("The main function has an invalid signature, expecting int:main(void)" + f.getErr());
 						break;
 					}
 				}

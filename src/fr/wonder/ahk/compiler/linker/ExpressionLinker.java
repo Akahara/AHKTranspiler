@@ -35,6 +35,8 @@ class ExpressionLinker {
 				if(var == null) {
 					errors.add("Usage of undeclared variable " + vexp.variable + vexp.getErr());
 					var = Invalids.ACCESS;
+				} else if(!var.getUnitFullBase().equals(unit.fullBase)) {
+					unit.prototype.externalAccesses.add(var);
 				}
 				vexp.declaration = var;
 				
@@ -63,6 +65,8 @@ class ExpressionLinker {
 					// replace the FunctionCallExp by a FunctionExp
 					FunctionPrototype function = searchMatchingFunction(scope.getUnitScope(), fexp, typesTable, errors);
 					if(function != null) {
+						if(!function.getUnitFullBase().equals(unit.fullBase))
+							unit.prototype.externalAccesses.add(function);
 						FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
 						exp = expressions[i] = functionExpression;
 						for(int j = 0; j < fexp.getArguments().length; j++) {
@@ -75,7 +79,7 @@ class ExpressionLinker {
 						}
 					} else {
 						// TODO implement functions as variables
-						errors.add("No matching function " + fexp.getErr());
+						throw new UnimplementedException("No matching function " + fexp.getErr());
 					}
 				} else {
 					// TODO implement functions as expressions
@@ -85,6 +89,8 @@ class ExpressionLinker {
 			} else if(exp instanceof OperationExp) {
 				OperationExp oexp = (OperationExp) exp;
 				Operation op = typesTable.getOperation(oexp);
+				// TODO when operator overloading is implemented...
+				// if the operation refers to an overloaded operator add it to the external accesses of the unit prototype
 				if(op == null) {
 					errors.add("Unimplemented operation! " + oexp.operationString() + oexp.getErr());
 					op = Invalids.OPERATION;

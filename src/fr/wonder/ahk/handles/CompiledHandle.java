@@ -5,15 +5,17 @@ import fr.wonder.ahk.compiler.linker.Linker;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
-public class AHKCompiledHandle {
+public class CompiledHandle {
 
 	public final Unit[] units;
 	
-	public AHKCompiledHandle(Unit[] units) {
+	public CompiledHandle(Unit[] units) {
 		this.units = units;
 	}
 	
-	public AHKLinkedHandle link(ErrorWrapper errors) throws WrappedException {
+	public LinkedHandle link(ErrorWrapper errors) throws WrappedException {
+		for(Unit u : units)
+			Linker.prelinkUnit(u, errors);
 		return Linker.link(this, errors);
 	}
 

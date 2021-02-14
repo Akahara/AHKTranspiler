@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.AHKManifest;
-import fr.wonder.ahk.handles.AHKExecutableHandle;
-import fr.wonder.ahk.handles.AHKProjectHandle;
-import fr.wonder.ahk.handles.AHKTranspilableHandle;
+import fr.wonder.ahk.handles.ExecutableHandle;
+import fr.wonder.ahk.handles.ProjectHandle;
+import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.ahk.transpilers.python.PythonTranspiler;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -22,14 +22,14 @@ public class AHKTranspiler {
 	
 	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);
 	
-	public static AHKProjectHandle createProject(File dir) throws IOException {
+	public static ProjectHandle createProject(File dir) throws IOException {
 		List<File> files = FilesUtils.listFilesRecur(dir, f->f.isFile() && f.getName().endsWith(".ahk"));
 		UnitSource[] sources = new UnitSource[files.size()];
 		for(int i = 0; i < files.size(); i++) {
 			File f = files.get(i);
 			sources[i] = new UnitSource(f.getName(), FilesUtils.read(f));
 		}
-		return new AHKProjectHandle(sources);
+		return new ProjectHandle(sources);
 	}
 	
 //	public static AHKProjectHandle createUnitaryProject(File file) throws IOException {
@@ -97,7 +97,7 @@ public class AHKTranspiler {
 	
 	public static void main(String[] args) throws IOException {
 		File codeDir = new File("code");
-		AHKProjectHandle project = createProject(codeDir);
+		ProjectHandle project = createProject(codeDir);
 		Transpiler transpiler = new PythonTranspiler();
 		File dir = new File("exported_py");
 //		Transpiler transpiler = new AsmX64Transpiler();
@@ -106,11 +106,11 @@ public class AHKTranspiler {
 		AHKManifest manifest = ManifestUtils.buildManifestFromValues(man, AHKManifest.class,
 				ManifestUtils.CONVENTION_SCREAMING_SNAKE_CASE);
 		try {
-			AHKTranspilableHandle handle = project
+			TranspilableHandle handle = project
 				.compile(new ErrorWrapper("Unable to compile"))
 				.link(new ErrorWrapper("Unable to link"))
 				.prepare(manifest);
-			AHKExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export"));
+			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export"));
 			transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run"));
 		} catch (WrappedException e) {
 			e.errors.dump();

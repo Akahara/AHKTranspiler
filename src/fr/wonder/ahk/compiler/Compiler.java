@@ -1,8 +1,8 @@
 package fr.wonder.ahk.compiler;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.handles.AHKCompiledHandle;
-import fr.wonder.ahk.handles.AHKProjectHandle;
+import fr.wonder.ahk.handles.CompiledHandle;
+import fr.wonder.ahk.handles.ProjectHandle;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
@@ -12,7 +12,7 @@ public class Compiler {
 	 * @param unitaryComp whether the project should be compiled as a whole or as a
 	 *                    collection of units.
 	 */
-	public static AHKCompiledHandle compile(AHKProjectHandle project, ErrorWrapper errors) throws WrappedException {
+	public static CompiledHandle compile(ProjectHandle project, ErrorWrapper errors) throws WrappedException {
 		Unit[] units = new Unit[project.units.length];
 		for (int i = 0; i < project.units.length; i++) {
 			try {
@@ -27,7 +27,7 @@ public class Compiler {
 		}
 		errors.assertNoErrors();
 
-		return new AHKCompiledHandle(units);
+		return new CompiledHandle(units);
 	}
 
 }

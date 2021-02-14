@@ -4,7 +4,7 @@ import fr.wonder.ahk.compiled.AHKManifest;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 
-public class AHKLinkedHandle {
+public class LinkedHandle {
 	
 	/**
 	 * The list of units in this handle, contains both source units and all imported
@@ -15,13 +15,13 @@ public class AHKLinkedHandle {
 	
 	public final TypesTable typesTable = new TypesTable();
 	
-	public AHKLinkedHandle(Unit[] units, Unit[] nativeRequirements) {
+	public LinkedHandle(Unit[] units, Unit[] nativeRequirements) {
 		this.units = units;
 		this.nativeRequirements = nativeRequirements;
 	}
 	
-	public AHKTranspilableHandle prepare(AHKManifest manifest) {
-		return new AHKTranspilableHandle(units, nativeRequirements, typesTable, manifest);
+	public TranspilableHandle prepare(AHKManifest manifest) {
+		return new TranspilableHandle(units, nativeRequirements, typesTable, manifest);
 	}
 	
 }

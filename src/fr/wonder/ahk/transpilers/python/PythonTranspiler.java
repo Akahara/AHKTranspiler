@@ -7,8 +7,8 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
-import fr.wonder.ahk.handles.AHKExecutableHandle;
-import fr.wonder.ahk.handles.AHKTranspilableHandle;
+import fr.wonder.ahk.handles.ExecutableHandle;
+import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
@@ -22,8 +22,9 @@ public class PythonTranspiler implements Transpiler {
 	}
 	
 	@Override
-	public AHKExecutableHandle exportProject(AHKTranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
+	public ExecutableHandle exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
 		handle.manifest.validate(handle, errors, false);
+		errors.assertNoErrors();
 		ErrorWrapper[] unitErrors = new ErrorWrapper[handle.units.length+handle.nativeRequirements.length];
 		for(int i = 0; i < handle.units.length; i++) {
 			unitErrors[i] = errors.subErrrors("Unable to compile unit " + handle.units[i].fullBase);
@@ -50,7 +51,7 @@ public class PythonTranspiler implements Transpiler {
 		return new PythonExecutable(handle.manifest.ENTRY_POINT.replaceAll("\\.", "_")+".py");
 	}
 	
-	private static class PythonExecutable extends AHKExecutableHandle {
+	private static class PythonExecutable extends ExecutableHandle {
 		
 		private final String mainFile;
 		
@@ -61,11 +62,11 @@ public class PythonTranspiler implements Transpiler {
 	}
 
 	@Override
-	public void exportAPI(AHKTranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	public void exportAPI(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		throw new IOException("Unsupported in python");
 	}
 	
-	private static void refactorUnit(AHKTranspilableHandle handle, Unit unit, ErrorWrapper errors) {
+	private static void refactorUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
 		for(int i = unit.functions.length-1; i >= 0; i--) {
 			FunctionSection func = unit.functions[i];
 			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
@@ -82,8 +83,8 @@ public class PythonTranspiler implements Transpiler {
 		}
 	}
 	
-	private static void exportUnit(AHKTranspilableHandle handle, Unit unit, File file, ErrorWrapper errors) throws IOException, WrappedException {
-		file.createNewFile();
+	private static void exportUnit(TranspilableHandle handle, Unit unit, File file, ErrorWrapper errors) throws IOException, WrappedException {
+		FilesUtils.create(file);
 		
 		StringBuilder sb = new StringBuilder();
 		
@@ -119,16 +120,11 @@ public class PythonTranspiler implements Transpiler {
 	}
 	
 	@Override
-	public int runProject(AHKExecutableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	public Process runProject(ExecutableHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		ProcessBuilder pb = new ProcessBuilder("python3", ((PythonExecutable) handle).mainFile);
 		pb.directory(dir);
 		pb.inheritIO();
-		Process process = pb.start();
-		try {
-			return process.waitFor();
-		} catch (InterruptedException x) {
-			throw new IOException("The python process got interrupted");
-		}
+		return pb.start();
 	}
 	
 }

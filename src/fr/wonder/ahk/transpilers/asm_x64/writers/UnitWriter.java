@@ -14,8 +14,8 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
-import fr.wonder.ahk.handles.AHKTranspilableHandle;
-import fr.wonder.ahk.handles.AHKCompiledHandle;
+import fr.wonder.ahk.handles.TranspilableHandle;
+import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
@@ -23,7 +23,7 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitWriter {
 	
-	public static void writeUnit(AHKTranspilableHandle handle, Unit unit, TextBuffer tb, ErrorWrapper errors) {
+	public static void writeUnit(TranspilableHandle handle, Unit unit, TextBuffer tb, ErrorWrapper errors) {
 		UnitWriter uw = new UnitWriter(handle, unit, tb);
 		// variables that must be initialized (because they are not literals or computable constants)
 		List<VariableDeclaration> initializableVariables = new ArrayList<>();
@@ -42,7 +42,7 @@ public class UnitWriter {
 		uw.writeTextSegment(initializableVariables, errors);
 	}
 	
-	public final AHKTranspilableHandle projectHandle;
+	public final TranspilableHandle projectHandle;
 	public final Unit unit;
 	public final TextBuffer buffer;
 	public final MemoryManager mem;
@@ -53,7 +53,7 @@ public class UnitWriter {
 	
 	private int specialCallCount = 0;
 	
-	private UnitWriter(AHKTranspilableHandle handle, Unit unit, TextBuffer tb) {
+	private UnitWriter(TranspilableHandle handle, Unit unit, TextBuffer tb) {
 		this.projectHandle = handle;
 		this.unit = unit;
 		this.buffer = tb;

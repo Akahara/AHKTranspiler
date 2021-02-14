@@ -4,6 +4,7 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiler.prototype.Prototypes;
 
 public class Unit {
 	
@@ -17,6 +18,7 @@ public class Unit {
 	public final VariableDeclaration[] variables;
 	public final FunctionSection[] functions;
 	
+	/** Set by {@link Prototypes#buildPrototype(Unit)} */
 	public UnitPrototype prototype;
 	
 	public Unit(UnitSource source, String base, String name, String[] importations,

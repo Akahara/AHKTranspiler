@@ -4,7 +4,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 
 public interface VarAccess {
 	
-	public static final String INNER_UNIT = null;
+	public static final String INNER_UNIT = "local";
 	
 	public String getUnitFullBase();
 	public String getName();

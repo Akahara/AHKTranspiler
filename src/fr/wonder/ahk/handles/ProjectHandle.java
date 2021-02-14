@@ -5,15 +5,15 @@ import fr.wonder.ahk.compiler.Compiler;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
-public class AHKProjectHandle {
+public class ProjectHandle {
 	
 	public final UnitSource[] units;
 	
-	public AHKProjectHandle(UnitSource[] units) {
+	public ProjectHandle(UnitSource[] units) {
 		this.units = units;
 	}
 	
-	public AHKCompiledHandle compile(ErrorWrapper errors) throws WrappedException {
+	public CompiledHandle compile(ErrorWrapper errors) throws WrappedException {
 		return Compiler.compile(this, errors);
 	}
 	
