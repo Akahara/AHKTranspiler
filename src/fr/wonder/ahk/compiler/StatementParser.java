@@ -246,7 +246,7 @@ public class StatementParser {
 			OperationExp affectationValue = new OperationExp(source, incSourceStart, incSourceStop, Operator.ADD, rangeTarget, increment);
 			affectation = new AffectationSt(source, incSourceStart, incSourceStop, rangeTarget, affectationValue);
 			condition = new OperationExp(source, incSourceStart, incSourceStop, Operator.LOWER, rangeTarget, maximum);
-			
+			// FIX if possible convert complex to simple for
 		} else {
 			// parse complex for
 			int firstSplit = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, 2);

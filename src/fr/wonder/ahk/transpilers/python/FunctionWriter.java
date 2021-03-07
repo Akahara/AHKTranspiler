@@ -5,12 +5,6 @@ import static fr.wonder.ahk.transpilers.python.ExpressionWriter.writeExpression;
 import java.util.Arrays;
 import java.util.List;
 
-import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
-import fr.wonder.ahk.compiled.expressions.OperationExp;
-import fr.wonder.ahk.compiled.expressions.Operator;
-import fr.wonder.ahk.compiled.expressions.VarExp;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -18,6 +12,7 @@ import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
+import fr.wonder.ahk.compiled.statements.SimpleForSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -62,8 +57,8 @@ class FunctionWriter {
 			} else if(st instanceof ElseSt) {
 				writeElseStatement(unit, (ElseSt) st, sb, errors);
 				
-			} else if(st instanceof ForSt) {
-				writeForStatement(unit, (ForSt) st, sb, errors);
+			} else if(st instanceof SimpleForSt) {
+				writeSimpleForStatement(unit, (SimpleForSt) st, sb, errors);
 				
 			} else if(st instanceof ReturnSt) {
 				writeReturnStatement(unit, (ReturnSt) st, sb, errors);
@@ -111,64 +106,49 @@ class FunctionWriter {
 		}
 	}
 	
-	private static void writeForStatement(Unit unit, ForSt st, StringBuilder sb, ErrorWrapper errors) {
-		if(writeSimpleForStatement(unit, st, sb, errors)) {
-			// simple for statement written
-		} else {
-//			writeVarDeclaration(unit, st.declaration, sb, errors);
-//			sb.append("\nwhile true:");
-			sb.append("for _ in range(0,0):");
-			// FIX write while and affectation
-		}
-	}
-	
-	/**
-	 * Simple for statements are statements that can be written as
-	 * "<code>for x in range(a, b (,c)):</code>"<br>
-	 * Note that {@code b} and {@code c} must be fixed (integer literals) for the
-	 * for statement to be considered simple. Note again that
-	 * <code>sizeof(array)</code> is not fixed! the {@code array} reference may be
-	 * modified inside the for loop.
-	 */
-	private static boolean writeSimpleForStatement(Unit unit, ForSt st, StringBuilder sb, ErrorWrapper errors) {
-		if(st.declaration == null || st.declaration.getType() != VarType.INT)
-			return false;
-		String simpleForVar = st.declaration.name;
-		if(st.affectation == null || !(st.affectation.getVariable() instanceof VarExp))
-			return false;
-		if(!((VarExp) st.affectation.getVariable()).variable.equals(simpleForVar))
-			return false;
-		Expression affect = st.affectation.getValue();
-		if(!(affect instanceof OperationExp))
-			return false;
-		OperationExp affectOp = (OperationExp) affect;
-		if(affectOp.operator != Operator.ADD)
-			return false;
-		Expression alo = affectOp.getLeftOperand();
-		Expression aro = affectOp.getRightOperand();
-		if(!(aro instanceof IntLiteral) || !(alo instanceof VarExp) || !((VarExp) alo).variable.equals(simpleForVar))
-			return false;
-		if(st.condition == null || !(st.condition instanceof OperationExp))
-			return false;
-		OperationExp cond = (OperationExp) st.condition;
-		Expression clo = cond.getLeftOperand();
-		Expression cro = cond.getRightOperand();
-		if(!(cro instanceof IntLiteral) || !(clo instanceof VarExp) || !((VarExp) clo).variable.equals(simpleForVar))
-			return false;
-		String max;
-		if(cond.operator == Operator.LOWER)
-			max = ((IntLiteral) cro).value.toString();
-		else if(cond.operator == Operator.LEQUALS)
-			max = ((IntLiteral) cro).value.toString() + "+1";
-		else
-			return false;
-		sb.append("for " + simpleForVar + " in range(");
-		writeExpression(unit, st.declaration.getDefaultValue(), sb, errors);
-		sb.append(", " + max);
-		if(((IntLiteral) aro).value != 1)
-			sb.append(", " + ((IntLiteral) aro).value);
+	private static void writeSimpleForStatement(Unit unit, SimpleForSt st, StringBuilder sb, ErrorWrapper errors) {
+//		if(st.declaration == null || st.declaration.getType() != VarType.INT)
+//			return false;
+//		String simpleForVar = st.declaration.name;
+//		if(st.affectation == null || !(st.affectation.getVariable() instanceof VarExp))
+//			return false;
+//		if(!((VarExp) st.affectation.getVariable()).variable.equals(simpleForVar))
+//			return false;
+//		Expression affect = st.affectation.getValue();
+//		if(!(affect instanceof OperationExp))
+//			return false;
+//		OperationExp affectOp = (OperationExp) affect;
+//		if(affectOp.operator != Operator.ADD)
+//			return false;
+//		Expression alo = affectOp.getLeftOperand();
+//		Expression aro = affectOp.getRightOperand();
+//		if(!(aro instanceof IntLiteral) || !(alo instanceof VarExp) || !((VarExp) alo).variable.equals(simpleForVar))
+//			return false;
+//		if(st.condition == null || !(st.condition instanceof OperationExp))
+//			return false;
+//		OperationExp cond = (OperationExp) st.condition;
+//		Expression clo = cond.getLeftOperand();
+//		Expression cro = cond.getRightOperand();
+//		if(!(cro instanceof IntLiteral) || !(clo instanceof VarExp) || !((VarExp) clo).variable.equals(simpleForVar))
+//			return false;
+//		String max;
+//		if(cond.operator == Operator.LOWER)
+//			max = ((IntLiteral) cro).value.toString();
+//		else if(cond.operator == Operator.LEQUALS)
+//			max = ((IntLiteral) cro).value.toString() + "+1";
+//		else
+//			return false;
+//		sb.append("for " + simpleForVar + " in range(");
+//		writeExpression(unit, st.declaration.getDefaultValue(), sb, errors);
+//		sb.append(", " + max);
+//		if(((IntLiteral) aro).value != 1)
+//			sb.append(", " + ((IntLiteral) aro).value);
+//		sb.append("):");
+//		return true;
+		sb.append("for " + st.variable + " in range(" + st.min + ", " + st.max);
+		if(st.step != 1)
+			sb.append(", " + st.step);
 		sb.append("):");
-		return true;
 	}
 	
 	static void writeVarDeclaration(Unit unit, VariableDeclaration st, StringBuilder sb, ErrorWrapper errors) {
