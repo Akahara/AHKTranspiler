@@ -16,7 +16,7 @@ func int gcd(int x, int y) {
 }
 
 func int a(int a, int b) {
-	for(int i = -10..10) {
+	for(int i : -10..10) {
 		Kernel.print(i);
 		Kernel.print(" / 5 = ");
 		Kernel.print(i/5);
@@ -34,9 +34,10 @@ func int a(int a) {
 }
 
 func int main() {
-	for(int i =  0 : i < sizeof(array) : i++) {
+	for(int i = 0 : i < sizeof(array) : i++) {
 		Kernel.print(array[i]);
 		Kernel.println();
 	}
+	a(1, 1);
 	return 0;
 }

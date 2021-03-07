@@ -48,7 +48,7 @@ public class TypesTable {
 			if(operation != null) {
 				// map the found operation for future queries
 				while(true) {
-					operations.addOperation(original, operator, OperationTable.TYPE_ANY, operation);
+					operations.registerOperation(original, operator, OperationTable.TYPE_ANY, operation);
 					original = ((VarStructType) original).superType;
 					if(original == leftOp)
 						break;

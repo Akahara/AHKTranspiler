@@ -43,7 +43,7 @@ public class Prototypes {
 				variables);
 	}
 	
-	public static List<UnitPrototype> getRecompilableUnits( // TODO move #getRecompilableUnits away from Prototypes
+	public static List<UnitPrototype> getRecompilableUnits(
 			List<UnitPrototype> units,
 			UnitPrototype previousProto,
 			UnitPrototype newProto) {

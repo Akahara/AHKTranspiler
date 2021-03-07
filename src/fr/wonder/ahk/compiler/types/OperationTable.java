@@ -14,15 +14,10 @@ public class OperationTable {
 	private static final Map<VarType, Operation> emptyMap = Collections.emptyMap();
 	private static final Map<Tuple<VarType, Operator>, Map<VarType, Operation>> operations = new HashMap<>();
 	
-	public void addOperation(VarType lOperand, Operator operator, VarType rOperand, Operation operation) {
+	public void registerOperation(VarType lOperand, Operator operator, VarType rOperand, Operation operation) {
 		Operation overriden = operations.computeIfAbsent(new Tuple<>(lOperand, operator), x -> new HashMap<>()).put(rOperand, operation);
 		if(overriden != null)
 			throw new IllegalStateException("An operation was overriden: " + lOperand + operator + rOperand);
-	}
-	
-	public VarType getResult(VarType lOperand, Operator operator, VarType rOperand) { // TODO check for uses, maybe return an Invalid instead of null
-		Operation op = getOperation(lOperand, operator, rOperand);
-		return op == null ? null : op.getResultType();
 	}
 	
 	public Operation getOperation(VarType lOperand, Operator operator, VarType rOperand) {

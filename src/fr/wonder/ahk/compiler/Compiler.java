@@ -22,7 +22,6 @@ public class Compiler {
 				// catching there only results in skipping a part of
 				// the compilation of the current source, errors will
 				// still be reported in the error wrapper
-				// TODO search for uses of this function and make sure that errors are handled
 			}
 		}
 		errors.assertNoErrors();
