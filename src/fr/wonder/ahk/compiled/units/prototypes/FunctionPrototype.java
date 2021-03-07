@@ -3,8 +3,11 @@ package fr.wonder.ahk.compiled.units.prototypes;
 import java.util.Objects;
 
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
+import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiler.FuncArguments;
+import fr.wonder.ahk.compiler.Unit;
 
-public class FunctionPrototype implements VarAccess {
+public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> {
 
 	/** Full base of the unit declaring this function */
 	public final String declaringUnit;
@@ -42,14 +45,14 @@ public class FunctionPrototype implements VarAccess {
 	
 	@Override
 	public String toString() {
-		return functionType.toString() + ":" + declaringUnit + "." + name;
-	}
-
-	@Override
-	public String getUnitFullBase() {
-		return declaringUnit;
+		return declaringUnit + "." + name + ":" + functionType.toString();
 	}
 	
+	@Override
+	public String getDeclaringUnit() {
+		return declaringUnit;
+	}
+
 	@Override
 	public String getName() {
 		return name;
@@ -63,6 +66,17 @@ public class FunctionPrototype implements VarAccess {
 	@Override
 	public VarFunctionType getType() {
 		return functionType;
+	}
+
+	@Override
+	public FunctionSection getAccess(Unit unit) {
+		if(unit.fullBase.equals(declaringUnit))
+			throw new IllegalArgumentException("Function " + this + " is not declared in unit " + unit);
+		for(FunctionSection f : unit.functions) {
+			if(f.returnType.equals(functionType.returnType) && FuncArguments.argsMatch0c(functionType.arguments, f.argumentTypes))
+				return f;
+		}
+		return null;
 	}
 
 }

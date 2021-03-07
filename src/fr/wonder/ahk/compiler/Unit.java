@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiler;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.UnitDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.linker.Prototypes;
@@ -10,6 +11,7 @@ public class Unit {
 	
 	public final UnitSource source;
 	
+	public final UnitDeclaration declaration;
 	public final String base;
 	public final String name;
 	public final String fullBase;
@@ -21,8 +23,9 @@ public class Unit {
 	/** Set by {@link Prototypes#buildPrototype(Unit)} */
 	public UnitPrototype prototype;
 	
-	public Unit(UnitSource source, String base, String name, String[] importations,
-			VariableDeclaration[] variables, FunctionSection[] functions) {
+	public Unit(UnitSource source, String base, String name, int declarationStart, int declarationStop,
+			String[] importations, VariableDeclaration[] variables, FunctionSection[] functions) {
+		this.declaration = new UnitDeclaration(source, declarationStart, declarationStop, base);
 		this.source = source;
 		this.base = base;
 		this.name = name;
@@ -35,6 +38,11 @@ public class Unit {
 	@Override
 	public String toString() {
 		return fullBase;
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof Unit && fullBase.equals(((Unit) other).fullBase);
 	}
 	
 }

@@ -123,7 +123,6 @@ public class PythonTranspiler implements Transpiler {
 	public Process runProject(ExecutableHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		ProcessBuilder pb = new ProcessBuilder("python3", ((PythonExecutable) handle).mainFile);
 		pb.directory(dir);
-		pb.inheritIO();
 		return pb.start();
 	}
 	

@@ -8,6 +8,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.utils.ArrayOperator;
 
 /**
  * A call to a variable (of function type) 
@@ -46,11 +47,7 @@ public class FunctionCallExp extends FunctionExpression {
 	}
 
 	public VarType[] getArgumentsTypes() {
-		Expression[] arguments = getArguments();
-		VarType[] args = new VarType[arguments.length];
-		for(int i = 0; i < args.length; i++)
-			args[i] = arguments[i].getType();
-		return args;
+		return ArrayOperator.map(getArguments(), VarType[]::new, Expression::getType);
 	}
 	
 }

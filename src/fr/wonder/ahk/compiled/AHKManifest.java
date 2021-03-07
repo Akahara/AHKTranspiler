@@ -5,6 +5,7 @@ import java.util.Arrays;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiler.FuncArguments;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.CallingConvention;
@@ -38,7 +39,7 @@ public class AHKManifest {
 							errors.add("The main function cannot be native" + f.getErr());
 						if (f.returnType != VarType.INT)
 							errors.add("The main function must return an integer" + f.getErr());
-						if (!FunctionSection.argsMatch0c(f.argumentTypes, new VarType[] {}))
+						if (!FuncArguments.argsMatch0c(f.argumentTypes, new VarType[] {}))
 							errors.add("The main function has an invalid signature, expecting int:main(void)" + f.getErr());
 						break;
 					}

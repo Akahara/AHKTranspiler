@@ -17,13 +17,14 @@ import fr.wonder.commons.files.Manifest;
 import fr.wonder.commons.loggers.Logger;
 import fr.wonder.commons.loggers.SimpleLogger;
 import fr.wonder.commons.utils.ManifestUtils;
+import fr.wonder.commons.utils.ProcessUtils;
 
 public class AHKTranspiler {
 	
 	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);
 	
 	public static ProjectHandle createProject(File dir) throws IOException {
-		List<File> files = FilesUtils.listFilesRecur(dir, f->f.isFile() && f.getName().endsWith(".ahk"));
+		List<File> files = FilesUtils.listFiles(dir, f->f.isFile() && f.getName().endsWith(".ahk"));
 		UnitSource[] sources = new UnitSource[files.size()];
 		for(int i = 0; i < files.size(); i++) {
 			File f = files.get(i);
@@ -31,69 +32,6 @@ public class AHKTranspiler {
 		}
 		return new ProjectHandle(sources);
 	}
-	
-//	public static AHKProjectHandle createUnitaryProject(File file) throws IOException {
-//		UnitSource[] sources = { new UnitSource(file.getName(), FilesUtils.read(file)) };
-//		return new AHKProjectHandle(sources);
-//	}
-	
-//	public static AHKCompiledHandle compileAndLink(AHKProjectHandle project) {
-//		ErrorWrapper errors = null;
-//		try {
-//			errors = new ErrorWrapper("Cannot compile project");
-//			AHKCompiledHandle handle = project.compile(errors);
-//			errors = new ErrorWrapper("Cannot link project");
-//			Linker.link(handle, errors);
-//			return handle;
-//		} catch (WrappedException x) {
-//			errors.dump();
-//			return null;
-//		}
-//	}
-	
-//	public static boolean exportProject(AHKCompiledHandle project, File dir, Transpiler transpiler) {
-//		ErrorWrapper errors = new ErrorWrapper("Cannot export project using transpiler " + transpiler.getName());
-//		
-//		if(dir.isDirectory()) {
-//			try {
-//				FilesUtils.deleteContents(dir);
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//				return false;
-//			}
-//		} else {
-//			if(!dir.mkdirs()) {
-//				new IOException("Unable to create directory " + dir).printStackTrace();
-//				return false;
-//			}
-//		}
-//		try {
-//			transpiler.exportProject(project, dir, errors);
-//			errors.assertNoErrors();
-//			return true;
-//		} catch (WrappedException e) {
-//			errors.dump();
-//			return false;
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			return false;
-//		}
-//	}
-	
-//	public static boolean runProject(AHKCompiledHandle project, File dir, Transpiler transpiler) {
-//		ErrorWrapper errors = new ErrorWrapper("Cannot export project using transpiler " + transpiler.getName());
-//		try {
-//			transpiler.runProject(project, dir, errors);
-//			errors.assertNoErrors();
-//			return true;
-//		} catch (WrappedException e) {
-//			errors.dump();
-//			return false;
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			return false;
-//		}
-//	}
 	
 	public static void main(String[] args) throws IOException {
 		File codeDir = new File("code");
@@ -111,7 +49,7 @@ public class AHKTranspiler {
 				.link(new ErrorWrapper("Unable to link"))
 				.prepare(manifest);
 			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export"));
-			transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run"));
+			ProcessUtils.redirectOutputToStd(transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run")));
 		} catch (WrappedException e) {
 			e.errors.dump();
 		}

@@ -42,7 +42,7 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration, 
 	}
 
 	@Override
-	public String getUnitFullBase() {
+	public String getDeclaringUnit() {
 		return INNER_UNIT;
 	}
 

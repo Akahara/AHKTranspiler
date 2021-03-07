@@ -78,7 +78,7 @@ public class Linker {
 	}
 	
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
-	public static void prelinkUnit(Unit unit, ErrorWrapper errors) {
+	public static void prelinkUnit(Unit unit, ErrorWrapper errors) throws WrappedException {
 		// TODO when struct types are implemented…
 		// make sure that the function argument types and return type are linked BEFORE computing its signature
 		for(FunctionSection func : unit.functions) {
@@ -136,6 +136,7 @@ public class Linker {
 		}
 		
 		Prototypes.buildPrototype(unit);
+		errors.assertNoErrors();
 	}
 	
 	/**

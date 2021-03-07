@@ -1,7 +1,9 @@
 package fr.wonder.ahk;
 
 import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.annotations.PseudoFinal;
 
 public class UnitSource {
 	
@@ -11,6 +13,10 @@ public class UnitSource {
 	public final String source;
 	
 	private final int[] linebreaks;
+	
+	/** Set by the Tokenizer */
+	@PseudoFinal
+	public Token[] tokens;
 	
 	public UnitSource(String name, String rawSource) {
 		this.name = name;
@@ -59,6 +65,20 @@ public class UnitSource {
 
 	public String getLine(SourceElement s) {
 		return getLine(getLineIdx(s.getSourceStart()));
+	}
+	
+	public int getTokenIndexAt(int chrIdx) {
+		int i = 0;
+		while(i < tokens.length && tokens[i].sourceStop < chrIdx)
+			i++;
+		if(i == tokens.length || tokens[i].sourceStart > chrIdx)
+			return -1;
+		return i;
+	}
+	
+	public Token getTokenAt(int chrIdx) {
+		int idx = getTokenIndexAt(chrIdx);
+		return idx == -1 ? null : tokens[idx];
 	}
 	
 	public String getErr(int i) {

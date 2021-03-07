@@ -1,7 +1,5 @@
 package fr.wonder.ahk.compiled.units.sections;
 
-import java.util.Arrays;
-
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
@@ -9,10 +7,11 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
-import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.utils.Utils;
 
 public class FunctionSection extends SourceObject implements ValueDeclaration {
+	
+	public final int declarationStop;
 	
 	// set by the unit parser
 	public String name;
@@ -27,27 +26,19 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 	// set by the linker using #makeSignature
 	private Signature signature;
 	
-	public FunctionSection(UnitSource source, int sourceStart, int sourceStop) {
+	public FunctionSection(UnitSource source, int sourceStart, int sourceStop, int declarationStop) {
 		super(source, sourceStart, sourceStop);
+		this.declarationStop = declarationStop;
 	}
-	
-//	/**
-//	 * Used to create an dummy empty function, is currently used by the asm x64 {@link FunctionWriter}
-//	 * to have an empty initialization function.
-//	 */
-//	public FunctionSection(Unit unit) {
-//		super(unit.source, 0, 0);
-//		this.returnType = VarType.VOID;
-//		this.arguments = new FunctionArgument[0];
-//		this.argumentTypes = new VarType[0];
-//		this.modifiers = new DeclarationModifiers(new Modifier[0]);
-//		this.body = new Statement[0];
-//		this.makeSignature(unit.fullBase);
-//	}
 	
 	@Override
 	public String toString() {
 		return "func " + returnType + " " + name + "(" + Utils.toString(arguments) + ")";
+	}
+	
+	@Override
+	public String getErr() {
+		return getSource().getErr(getSourceStart(), declarationStop);
 	}
 
 	/** Called by the linker after the function argument types where computed */
@@ -69,10 +60,10 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 		return name;
 	}
 	
-	/** Beware, this is not the same as {@link #getFunctionType()} */
+	/** Overrides {@link ValueDeclaration#getType()} */
 	@Override
 	public VarType getType() {
-		return returnType; // FIX check if this type must be the function return type or its function type
+		return getFunctionType();
 	}
 	
 	@Override
@@ -91,39 +82,5 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 	@Override
 	public DeclarationVisibility getVisibility() {
 		return DeclarationVisibility.GLOBAL; // TODO read function visibility
-	}
-	
-	public static boolean argsMatch0c(VarType[] args, VarType[] provided) {
-		return Arrays.equals(args, provided);
-	}
-	
-	/** redirects to {@link #argsMatch0c(VarType[], VarType[])} */
-	public static boolean argsMatch0c(VarType[] args, VarType[] provided, ConversionTable conversions) {
-		return argsMatch0c(args, provided);
-	}
-	
-	public static boolean argsMatch1c(VarType[] args, VarType[] provided, ConversionTable conversions) {
-		if(args.length != provided.length)
-			return false;
-		boolean casted = false;
-		for(int i = 0; i < args.length; i++) {
-			if(args[i] == provided[i]) {
-				continue;
-			} else if(!casted && conversions.canConvertImplicitely(provided[i], args[i])) {
-				casted = true;
-			} else {
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	public static boolean argsMatchXc(VarType[] args, VarType[] provided, ConversionTable conversions) {
-		if(args.length != provided.length)
-			return false;
-		for(int i = 0; i < args.length; i++)
-			if(!conversions.canConvertImplicitely(provided[i], args[i]))
-				return false;
-		return true;
 	}
 }

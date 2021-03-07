@@ -33,8 +33,8 @@ public class UnitParser {
 		UnitBody body = parseSections(source, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
 		errors.assertNoErrors();
 		
-		Unit unit = new Unit(source, header.base, header.name, header.importations,
-				body.variables, body.functions);
+		Unit unit = new Unit(source, header.base, header.name, header.unitDeclarationStart, header.unitDeclarationStop,
+				header.importations, body.variables, body.functions);
 		
 		return unit;
 	}
@@ -44,6 +44,8 @@ public class UnitParser {
 		String base;
 		String name;
 		String[] importations;
+		
+		int unitDeclarationStart, unitDeclarationStop;
 		
 		int declarationEnd;
 		
@@ -123,6 +125,8 @@ public class UnitParser {
 			errors.add("Invalid unit declaration:" + unitLine[1].getErr());
 		} else {
 			header.name = unitLine[1].text;
+			header.unitDeclarationStart = unitLine[0].sourceStart;
+			header.unitDeclarationStop = unitLine[1].sourceStop;
 		}
 		
 		return header;
@@ -195,8 +199,11 @@ public class UnitParser {
 	private static FunctionSection parseFunctionSection(UnitSource source, Token[][] tokens,
 			int start, int stop, ErrorWrapper errors) {
 		Token[] declaration = tokens[start];
-		FunctionSection function = new FunctionSection(source,
-				declaration[0].sourceStart, declaration[declaration.length-1].sourceStop);
+		FunctionSection function = new FunctionSection(
+				source,
+				declaration[0].sourceStart, // source start
+				tokens[stop-1][tokens[stop-1].length-1].sourceStop, // source stop
+				declaration[declaration.length-1].sourceStop); // declaration stop
 		if(declaration.length < 6) {
 			errors.add("Incomplete function declaration:" + function.getErr());
 			return function;

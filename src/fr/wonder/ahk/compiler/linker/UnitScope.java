@@ -5,7 +5,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiler.FuncArguments;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.commons.types.Tuple;
 
@@ -43,6 +43,8 @@ class UnitScope implements Scope {
 				if(proto.base.equals(unitName))
 					return new Tuple<>(proto, varName);
 			}
+			// will occur if this unit scope is generated with missing unit prototypes
+			// (like missing native units for example)
 			throw new IllegalStateException("Unknown unit " + unitName);
 		} else {
 			return new Tuple<>(this.unit, name);
@@ -108,24 +110,24 @@ class UnitScope implements Scope {
 	
 	/** Returns the only function with parameters that exactly match <code>args</code> */
 	FunctionPrototype getFunctionStrict(String name, VarType[] args) {
-		return getFunction(name, args, null, FunctionSection::argsMatch0c);
+		return getFunction(name, args, null, FuncArguments::argsMatch0c);
 	}
 	
 	/** Returns the number of functions that can be called using <code>args</code> with 1 implicit cast maximum */
 	int countMatchingFunction1c(String name, VarType[] args, ConversionTable conversions) {
-		return countMatchingFunctions(name, args, conversions, FunctionSection::argsMatch1c);
+		return countMatchingFunctions(name, args, conversions, FuncArguments::argsMatch1c);
 	}
 	
 	/** Returns the first function that can be called used the given arguments with 1 implicit cast maximum */
 	FunctionPrototype getFunction1c(String name, VarType[] args, ConversionTable conversions) {
-		return getFunction(name, args, conversions, FunctionSection::argsMatch1c);
+		return getFunction(name, args, conversions, FuncArguments::argsMatch1c);
 	}
 	
 	int countMatchingFunctionXc(String name, VarType[] args, ConversionTable conversions) {
-		return countMatchingFunctions(name, args, conversions, FunctionSection::argsMatchXc);
+		return countMatchingFunctions(name, args, conversions, FuncArguments::argsMatchXc);
 	}
 	
 	FunctionPrototype getFunctionXc(String name, VarType[] args, ConversionTable conversions) {
-		return getFunction(name, args, conversions, FunctionSection::argsMatchXc);
+		return getFunction(name, args, conversions, FuncArguments::argsMatchXc);
 	}
 }

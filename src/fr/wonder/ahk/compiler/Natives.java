@@ -2,11 +2,11 @@ package fr.wonder.ahk.compiler;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,85 +22,105 @@ public class Natives {
 	public static final String ahkImportBase = "ahk.";
 
 	private static final Map<String, Unit> nativeUnits = new HashMap<>();
-	private static final Set<String> loadedUnits = new HashSet<>();
+
+	public static boolean isNativeBase(String unitBase) {
+		return unitBase.startsWith(ahkImportBase);
+	}
 	
 	/**
 	 * Loads the non-loaded natives units and their dependencies recursively.
-	 * Returns all required native units, already pre-linked and linked.
-	 * <br>
+	 * Returns all required native units, already fully linked. <br>
 	 * 
-	 * @param importation the full base of the native unit
-	 * @param errors      the error wrapper used to parse all native units, should
-	 *                    display the source of the import
+	 * @param importations the full base of required native units, must contain only
+	 *                     native unit bases
+	 * @param errors       the error wrapper used to parse all native units, should
+	 *                     display the source of the import
 	 * @return the list of units required to use the unit of {@code importation} or
 	 *         null if {@code importation} cannot be loaded
 	 * @throws WrappedException if a native unit cannot be loaded
 	 */
 	public static Set<Unit> getUnits(Collection<String> importations, ErrorWrapper errors) throws WrappedException {
-		for(String i : importations)
-			loadUnit(i, errors);
-		errors.assertNoErrors();
+		for(String imp : importations)
+			loadUnit(imp, errors.subErrrors("Loading dependency " + imp));
 
 		Set<Unit> units = new HashSet<>();
-		Deque<Unit> toBeLoaded = new ArrayDeque<>();
-		for(String i : importations) {
-			Unit unit = nativeUnits.get(i);
-			if(units.add(unit))
-				toBeLoaded.add(unit);
-		}
-		errors.assertNoErrors();
+		List<String> toBeLoaded = new ArrayList<>(new HashSet<>(importations)); // filter duplicates
 		
 		// 'recursively' pass on all imported units
-		while (!toBeLoaded.isEmpty()) {
-			Unit u = toBeLoaded.pollFirst();
+		for(int i = 0; i < toBeLoaded.size(); i++) {
+			String imp = toBeLoaded.get(i);
+			Unit u = nativeUnits.get(imp);
 			if(u == null) {
-				errors.add("A native unit could not be loaded"); // TODO maybe keep track of unit names instead of
-				errors.assertNoErrors();
-			}
-			for(String ui : u.importations) {
-				if(units.add(nativeUnits.get(ui)))
-					toBeLoaded.add(nativeUnits.get(ui));
+				errors.add("Native unit " + imp + " could not be loaded");
+			} else {
+				units.add(u);
+				for(String ui : u.importations) {
+					if(!toBeLoaded.contains(ui))
+						toBeLoaded.add(ui);
+				}
 			}
 		}
+		errors.assertNoErrors();
 		return units;
 	}
 	
-	private static void loadUnit(String fullBase, ErrorWrapper errors) throws WrappedException {
-		if (!fullBase.startsWith(ahkImportBase))
+	private static Unit loadUnit(String fullBase, ErrorWrapper errors) {
+		if (!isNativeBase(ahkImportBase))
 			throw new IllegalArgumentException("Unit '" + fullBase + "' is not part of the standard lib");
 		
-		if(!loadedUnits.add(fullBase))
-			return;
+		if(nativeUnits.containsKey(fullBase))
+			return nativeUnits.get(fullBase);
+		nativeUnits.put(fullBase, null); // to be replaced after the unit has been loaded
 
-		String path = "/ahk/natives/" + fullBase.substring(ahkImportBase.length()).replaceAll("\\.", "/") + ".ahk";
-		InputStream in = Natives.class.getResourceAsStream(path);
-		if (in == null) {
-			errors.add("Missing native unit:" + fullBase);
-			errors.assertNoErrors();
-		}
+		// read native unit
+		ErrorWrapper unitErrors = errors.subErrrors("Unable to compile unit");
+		String unitRawSource = readNativeSource(fullBase, errors);
+		if(unitRawSource == null)
+			return null;
+		// parse native unit
+		UnitSource unitSource = new UnitSource(fullBase, unitRawSource);
+		Unit unit;
 		try {
-			ErrorWrapper unitErrors = errors.subErrrors("Unable to compile native unit " + fullBase);
-			UnitSource unitSource = new UnitSource(fullBase, new String(in.readAllBytes()));
-			Unit unit = UnitParser.parseUnit(unitSource, unitErrors);
-			unitErrors.assertNoErrors();
+			unit = UnitParser.parseUnit(unitSource, unitErrors);
 			Linker.prelinkUnit(unit, unitErrors);
-			unitErrors.assertNoErrors();
-			nativeUnits.put(fullBase, unit);
-			for (String uimport : unit.importations)
-				loadUnit(uimport, unitErrors);
-			// TODO when struct type is implemented, fix the native units types table
-			Linker.linkUnit(unit, getImportedUnits(unit), new TypesTable(), unitErrors);
-			unitErrors.assertNoErrors();
-		} catch (IOException e) {
-			throw new IllegalStateException("Unable to read native source of " + fullBase, e);
+		} catch (WrappedException e) {
+			return null;
+		}
+		nativeUnits.put(fullBase, unit);
+		// load dependencies
+		UnitPrototype[] importedUnits = new UnitPrototype[unit.importations.length];
+		boolean loadedSuccessfully = true;
+		for (int i = 0; i < unit.importations.length; i++) {
+			Unit u = loadUnit(unit.importations[i], unitErrors);
+			if(u != null)
+				importedUnits[i] = u.prototype;
+			else
+				loadedSuccessfully = false;
+		}
+		// FUTURE when struct type is implemented, fix the native units types table
+		if(loadedSuccessfully) {
+			Linker.linkUnit(unit, importedUnits, new TypesTable(), unitErrors);
+			return unit;
+		} else {
+			nativeUnits.put(fullBase, null);
+			return null;
 		}
 	}
 	
-	private static UnitPrototype[] getImportedUnits(Unit unit) {
-		UnitPrototype[] prototypes = new UnitPrototype[unit.importations.length];
-		for(int i = 0; i < prototypes.length; i++)
-			prototypes[i] = nativeUnits.get(unit.importations[i]).prototype;
-		return prototypes;
+	private static String readNativeSource(String fullBase, ErrorWrapper errors) {
+		String path = "/ahk/natives/" + fullBase.substring(ahkImportBase.length()).replaceAll("\\.", "/") + ".ahk";
+		InputStream in = Natives.class.getResourceAsStream(path);
+		if (in == null) {
+			errors.add("Missing source");
+			return null;
+		}
+		String unitRawSource;
+		try {
+			unitRawSource = new String(in.readAllBytes());
+		} catch (IOException e) {
+			throw new IllegalStateException("Unable to read unit source", e);
+		}
+		return unitRawSource;
 	}
 
 }

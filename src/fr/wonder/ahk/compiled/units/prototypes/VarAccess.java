@@ -6,12 +6,12 @@ public interface VarAccess {
 	
 	public static final String INNER_UNIT = "local";
 	
-	public String getUnitFullBase();
+	public String getDeclaringUnit();
 	public String getName();
 	public String getSignature();
 	public VarType getType();
 	public default String getUnitName() {
-		String fullBase = getUnitFullBase();
+		String fullBase = getDeclaringUnit();
 		return fullBase.substring(fullBase.lastIndexOf('.')+1);
 	}
 	

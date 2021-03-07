@@ -3,10 +3,12 @@ package fr.wonder.ahk.compiled.units.prototypes;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.wonder.ahk.compiled.units.UnitDeclaration;
+import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.commons.utils.ArrayOperator;
 
 /** Dynamically linked unit */
-public class UnitPrototype {
+public class UnitPrototype implements Prototype<UnitDeclaration> {
 	
 	public static final UnitPrototype NULL_PROTOTYPE = 
 			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0], new VariablePrototype[0]);
@@ -48,6 +50,11 @@ public class UnitPrototype {
 		}
 		return true;
 	}
+
+	@Override
+	public String getDeclaringUnit() {
+		return fullBase;
+	}
 	
 	@Override
 	public String toString() {
@@ -68,6 +75,13 @@ public class UnitPrototype {
 	
 	public FunctionPrototype[] getFunctions(String name) {
 		return ArrayOperator.filter(functions, f -> f.name.equals(name));
+	}
+
+	@Override
+	public UnitDeclaration getAccess(Unit unit) {
+		if(!unit.fullBase.equals(fullBase))
+			throw new IllegalArgumentException("Unit " + unit + " does not match prototype " + this);
+		return unit.declaration;
 	}
 	
 }

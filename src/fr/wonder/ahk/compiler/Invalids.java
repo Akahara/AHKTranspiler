@@ -38,7 +38,7 @@ public class Invalids {
 	
 	public static final VarAccess ACCESS = new VarAccess() {
 		public VarType getType() { return Invalids.TYPE; }
-		public String getUnitFullBase() { return "INVALID"; }
+		public String getDeclaringUnit() { return "INVALID"; }
 		public String getName() { return "INVALID"; }
 		public String getSignature() { return "INVALID"; }
 	};

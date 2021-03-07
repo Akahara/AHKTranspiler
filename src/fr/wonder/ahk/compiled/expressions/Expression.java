@@ -43,12 +43,12 @@ public abstract class Expression extends SourceObject implements ExpressionHolde
 		return type;
 	}
 	
-	public abstract String toString();
-	
 	@NonNull
 	@Override
 	public Expression[] getExpressions() {
 		return expressions;
 	}
+	
+	public abstract String toString();
 	
 }

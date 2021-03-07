@@ -137,7 +137,7 @@ public class Tokenizer {
 			if(tokens.get(i).base == null || tokens.get(i).base == TokenBase.TK_SPACE)
 				tokens.remove(i);
 		
-		return tokens.toArray(Token[]::new);
+		return source.tokens = tokens.toArray(Token[]::new);
 	}
 	
 	private static TokenBase getBase(String split) {

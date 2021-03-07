@@ -35,7 +35,7 @@ class ExpressionLinker {
 				if(var == null) {
 					errors.add("Usage of undeclared variable " + vexp.variable + vexp.getErr());
 					var = Invalids.ACCESS;
-				} else if(!var.getUnitFullBase().equals(unit.fullBase)) {
+				} else if(!var.getDeclaringUnit().equals(unit.fullBase)) {
 					unit.prototype.externalAccesses.add(var);
 				}
 				vexp.declaration = var;
@@ -65,7 +65,7 @@ class ExpressionLinker {
 					// replace the FunctionCallExp by a FunctionExp
 					FunctionPrototype function = searchMatchingFunction(scope.getUnitScope(), fexp, typesTable, errors);
 					if(function != null) {
-						if(!function.getUnitFullBase().equals(unit.fullBase))
+						if(!function.getDeclaringUnit().equals(unit.fullBase))
 							unit.prototype.externalAccesses.add(function);
 						FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
 						exp = expressions[i] = functionExpression;
