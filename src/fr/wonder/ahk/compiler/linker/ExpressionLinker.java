@@ -78,6 +78,7 @@ class ExpressionLinker {
 							}
 						}
 					} else {
+						errors.dump();
 						// TODO implement functions as variables
 						throw new UnimplementedException("No matching function " + fexp.getErr());
 					}

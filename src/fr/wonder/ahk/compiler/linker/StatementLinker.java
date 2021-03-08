@@ -9,6 +9,7 @@ import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
+import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -55,6 +56,7 @@ class StatementLinker {
 				latestClosedStatement = null;
 			}
 			
+			// handle special statements
 			if(st instanceof ForSt && ((ForSt) st).declaration != null) {
 				ExpressionLinker.linkExpressions(unit, scope, ((ForSt) st).declaration.getExpressions(), typesTable, errors);
 				declareVariable(((ForSt) st).declaration, scope, errors);
@@ -65,6 +67,8 @@ class StatementLinker {
 			
 			if(st instanceof VariableDeclaration)
 				declareVariable((VariableDeclaration) st, scope, errors);
+			if(st instanceof RangedForSt)
+				declareVariable(((RangedForSt) st).getVariableDeclaration(), scope, errors);
 		}
 	}
 

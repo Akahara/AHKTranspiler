@@ -6,14 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.expressions.DirectAccessExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
-import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
-import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
@@ -22,6 +20,7 @@ import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
+import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -206,80 +205,79 @@ public class StatementParser {
 			return null;
 		
 		int simpleRangeMarker = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, 2);
+		
+		if(simpleRangeMarker != -1)
+			return parseRangedFor(source, line, conditionEnd, simpleRangeMarker, singleLine, errors);
+		else
+			return parseComplexFor(source, line, conditionEnd, singleLine, errors);
+	}
+
+	private static Statement parseComplexFor(UnitSource source, Token[] line, int conditionEnd, boolean singleLine,
+			ErrorWrapper errors) {
 		VariableDeclaration declaration = null;
-		Expression condition = null;
+		Expression condition;
 		AffectationSt affectation = null;
-		
-		if(simpleRangeMarker != -1) {
-			int simpleRangeSecond = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, simpleRangeMarker+1);
-			int equalsMarker = Utils.getTokenIdx(line, TokenBase.KW_EQUAL, 2);
-			if(equalsMarker == -1)
-				equalsMarker = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, 2);
-			// parse simple range for
-			if(equalsMarker == -1) {
-				errors.add("Invalid for-in-range declaration:" + source.getErr(line));
-				return null;
-			}
-			// replace ':' by '=' (necessary to parse declaration)
-			line[equalsMarker] = new Token(source, TokenBase.KW_EQUAL, "=", line[equalsMarker].sourceStart);
-			Expression rangeTarget = null;
-			if(Tokens.isVarType(line[2].base)) {
-				declaration = parseVariableDeclaration(source, Arrays.copyOfRange(line, 2, simpleRangeMarker), errors);
-				if(declaration != null)
-					rangeTarget = new VarExp(source, declaration.sourceStart, declaration.sourceStop, declaration.getName());
-				else
-					errors.add("Missing range target in for statement:" + source.getErr(line, 2, simpleRangeMarker));
-			} else {
-				rangeTarget = ExpressionParser.parseExpression(source, line, 2, equalsMarker, errors);
-				if(!(rangeTarget instanceof VarExp) && !(rangeTarget instanceof DirectAccessExp))
-					errors.add("Invalid for-in-range over a non variable expression:" + source.getErr(line, 2, equalsMarker));
-			}
-			int maxStop = simpleRangeSecond == -1 ? conditionEnd : simpleRangeSecond;
-			Expression maximum = ExpressionParser.parseExpression(source, line, simpleRangeMarker+1, maxStop, errors);
-			Expression increment;
-			if(simpleRangeSecond != -1)
-				increment = ExpressionParser.parseExpression(source, line, simpleRangeSecond+1, conditionEnd, errors);
-			else
-				increment = new LiteralExp.IntLiteral(source, line[conditionEnd].sourceStart, line[conditionEnd].sourceStart, 1);
-			int incSourceStart = line[2].sourceStart;
-			int incSourceStop = line[conditionEnd-1].sourceStop;
-			OperationExp affectationValue = new OperationExp(source, incSourceStart, incSourceStop, Operator.ADD, rangeTarget, increment);
-			affectation = new AffectationSt(source, incSourceStart, incSourceStop, rangeTarget, affectationValue);
-			condition = new OperationExp(source, incSourceStart, incSourceStop, Operator.LOWER, rangeTarget, maximum);
-			// FIX if possible convert complex to simple for
-		} else {
-			// parse complex for
-			int firstSplit = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, 2);
-			int secondSplit = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, firstSplit+1);
-			if(firstSplit == -1 || secondSplit == -1) {
-				errors.add("Invalid for statement:" + source.getErr(line));
-				return null;
-			}
-			
-			if(firstSplit != 2 && !Tokens.isVarType(line[2].base)) {
-				errors.add("Expected variable declaration in for statement:" + source.getErr(line, 2, firstSplit));
-				return null;
-			}
-			
-			if(firstSplit != 2)
-				declaration = parseVariableDeclaration(source, Arrays.copyOfRange(line, 2, firstSplit),
-						errors.subErrrors("Expected variable declaration in for statement"));
-			if(secondSplit != firstSplit+1)
-				condition = ExpressionParser.parseExpression(source, line, firstSplit+1, secondSplit, 
-						errors.subErrrors("Expected condition in for statement"));
-			if(conditionEnd != secondSplit+1) {
-				Token[] affectationTokens = Arrays.copyOfRange(line, secondSplit+1, conditionEnd);
-				ErrorWrapper subErrors = errors.subErrrors("Expected affectation in for statement");
-				if(Tokens.isDirectAffectation(affectationTokens[affectationTokens.length-1].base))
-					affectation = parseDirectAffectationStatement(source, affectationTokens, subErrors);
-				else
-					affectation = parseAffectationStatement(source, affectationTokens, subErrors);
-			}
-			
+		// parse complex for
+		int firstSplit = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, 2);
+		int secondSplit = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, firstSplit+1);
+		if(firstSplit == -1 || secondSplit == -1) {
+			errors.add("Invalid for statement:" + source.getErr(line));
+			return null;
 		}
-		
+		if(firstSplit != 2 && !Tokens.isVarType(line[2].base)) {
+			errors.add("Expected variable declaration in for statement:" + source.getErr(line, 2, firstSplit));
+			return null;
+		}
+		if(firstSplit != 2) {
+			declaration = parseVariableDeclaration(source, Arrays.copyOfRange(line, 2, firstSplit),
+					errors.subErrrors("Expected variable declaration in for statement"));
+		}
+		if(secondSplit != firstSplit+1) {
+			condition = ExpressionParser.parseExpression(source, line, firstSplit+1, secondSplit, 
+					errors.subErrrors("Expected condition in for statement"));
+		} else {
+			condition = new BoolLiteral(source, line[firstSplit].sourceStop, line[secondSplit].sourceStart, true);
+		}
+		if(conditionEnd != secondSplit+1) {
+			Token[] affectationTokens = Arrays.copyOfRange(line, secondSplit+1, conditionEnd);
+			ErrorWrapper subErrors = errors.subErrrors("Expected affectation in for statement");
+			if(Tokens.isDirectAffectation(affectationTokens[affectationTokens.length-1].base))
+				affectation = parseDirectAffectationStatement(source, affectationTokens, subErrors);
+			else
+				affectation = parseAffectationStatement(source, affectationTokens, subErrors);
+		}
+		// TODO if possible, convert to ranged for
 		return new ForSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
 				singleLine, declaration, condition, affectation);
+	}
+
+	private static Statement parseRangedFor(UnitSource source, Token[] line, int conditionEnd,
+			int simpleRangeMarker, boolean singleLine, ErrorWrapper errors) {
+		int simpleRangeSecond = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, simpleRangeMarker+1);
+		int equalsMarker = Utils.getTokenIdx(line, TokenBase.KW_EQUAL, 2);
+		if(equalsMarker == -1)
+			equalsMarker = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, 2);
+		// parse simple range for
+		if(equalsMarker == -1) {
+			errors.add("Invalid for-in-range declaration:" + source.getErr(line));
+			return null;
+		}
+		// replace ':' by '=' (necessary to parse declaration)
+		line[equalsMarker] = new Token(source, TokenBase.KW_EQUAL, "=", line[equalsMarker].sourceStart);
+		if(line[2].base != TokenBase.TYPE_INT) {
+			errors.add("Missing range target in for statement:" + source.getErr(line, 2, simpleRangeMarker));
+			return null;
+		}
+		VariableDeclaration declaration = parseVariableDeclaration(source, Arrays.copyOfRange(line, 2, simpleRangeMarker), errors);
+		int maxStop = simpleRangeSecond == -1 ? conditionEnd : simpleRangeSecond;
+		Expression maximum = ExpressionParser.parseExpression(source, line, simpleRangeMarker+1, maxStop, errors);
+		Expression increment;
+		if(simpleRangeSecond != -1)
+			increment = ExpressionParser.parseExpression(source, line, simpleRangeSecond+1, conditionEnd, errors);
+		else
+			increment = new IntLiteral(source, line[conditionEnd].sourceStart, line[conditionEnd].sourceStart, 1);
+		return new RangedForSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
+				singleLine, declaration.name, declaration.getDefaultValue(), maximum, increment);
 	}
 	
 	/** Assumes that the first token is KW_RETURN */

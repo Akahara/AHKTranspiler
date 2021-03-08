@@ -97,7 +97,7 @@ public class PythonTranspiler implements Transpiler {
 		
 		for(FunctionSection func : unit.functions) {
 			if(!func.modifiers.hasModifier(Modifier.NATIVE)) {
-				FunctionWriter.writeFunction(unit, func, sb, errors);
+				FunctionWriter.writeFunction(func, sb, errors);
 			} else {
 				NativeFunctions.writeNative(func, sb, handle.typesTable.conversions);
 			}
@@ -105,7 +105,7 @@ public class PythonTranspiler implements Transpiler {
 		}
 		
 		for(VariableDeclaration decl : unit.variables) {
-			FunctionWriter.writeVarDeclaration(unit, decl, sb, errors);
+			FunctionWriter.writeVarDeclaration(decl, sb, errors);
 			sb.append('\n');
 		}
 		

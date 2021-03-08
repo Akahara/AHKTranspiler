@@ -16,12 +16,11 @@ import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class ExpressionWriter {
 
-	static void writeExpression(Unit unit, Expression exp, StringBuilder sb, ErrorWrapper errors) {
+	static void writeExpression(Expression exp, StringBuilder sb, ErrorWrapper errors) {
 		if(exp instanceof StrLiteral) {
 			sb.append('"' + ((StrLiteral)exp).value + '"');
 			
@@ -37,30 +36,30 @@ class ExpressionWriter {
 		} else if(exp instanceof OperationExp) {
 			OperationExp o = (OperationExp) exp;
 			if(o.getLeftOperand() != null)
-				writeExpression(unit, o.getLeftOperand(), sb, errors);
+				writeExpression(o.getLeftOperand(), sb, errors);
 			sb.append(getOperatorString(o.operator));
-			writeExpression(unit, o.getRightOperand(), sb, errors);
+			writeExpression(o.getRightOperand(), sb, errors);
 			
 		} else if(exp instanceof FunctionExp) {
 			FunctionExp f = (FunctionExp) exp;
 			sb.append(f.function.getUnitName() + "." + f.function.signature);
 			sb.append("(");
-			writeExpressions(unit, f.getArguments(), sb, errors);
+			writeExpressions(f.getArguments(), sb, errors);
 			sb.append(")");
 			
 		} else if(exp instanceof FunctionCallExp) {
 			FunctionCallExp f = (FunctionCallExp) exp;
-			writeExpression(unit, f.getFunction(), sb, errors);
+			writeExpression(f.getFunction(), sb, errors);
 			sb.append("(");
-			writeExpressions(unit, f.getArguments(), sb, errors);
+			writeExpressions(f.getArguments(), sb, errors);
 			sb.append(")");
 			
 		} else if(exp instanceof IndexingExp) {
 			IndexingExp i = (IndexingExp) exp;
-			writeExpression(unit, i.getArray(), sb, errors);
+			writeExpression(i.getArray(), sb, errors);
 			for(Expression index : i.getIndices()) {
 				sb.append("[");
-				writeExpression(unit, index, sb, errors);
+				writeExpression(index, sb, errors);
 				sb.append("]");
 			}
 			
@@ -69,23 +68,23 @@ class ExpressionWriter {
 			if(!c.isImplicit && c.castType instanceof VarNativeType) {
 				sb.append(c.castType.getName());
 				sb.append('(');
-				writeExpression(unit, c.getValue(), sb, errors);
+				writeExpression(c.getValue(), sb, errors);
 				sb.append(')');
 			} else {
-				writeExpression(unit, c.getValue(), sb, errors);
+				writeExpression(c.getValue(), sb, errors);
 			}
 			
 		} else if(exp instanceof SizeofExp) {
 			SizeofExp s = (SizeofExp) exp;
 			sb.append("len(");
-			writeExpression(unit, s.getExpression(), sb, errors);
+			writeExpression(s.getExpression(), sb, errors);
 			sb.append(")");
 			
 		} else if(exp instanceof ArrayExp) {
 			ArrayExp a = (ArrayExp) exp;
 			sb.append("[");
 			for(Expression e : a.getExpressions()) {
-				writeExpression(unit, e, sb, errors);
+				writeExpression(e, sb, errors);
 				sb.append(", ");
 			}
 			if(a.getExpressions().length != 0)
@@ -97,9 +96,9 @@ class ExpressionWriter {
 		}
 	}
 	
-	private static void writeExpressions(Unit unit, Expression[] expressions, StringBuilder sb, ErrorWrapper errors) {
+	private static void writeExpressions(Expression[] expressions, StringBuilder sb, ErrorWrapper errors) {
 		for(int i = 0; i < expressions.length; i++) {
-			writeExpression(unit, expressions[i], sb, errors);
+			writeExpression(expressions[i], sb, errors);
 			if(i != expressions.length-1)
 				sb.append(", ");
 		}
