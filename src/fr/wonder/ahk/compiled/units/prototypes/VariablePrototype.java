@@ -1,23 +1,18 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
-import java.util.Objects;
-
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiler.Unit;
 
 public class VariablePrototype implements VarAccess, Prototype<VariableDeclaration> {
 	
-	public final String declaringUnit;
-	public final String name;
-	public final String signature;
+	public final Signature signature;
 	public final VarType type;
 	
-	public VariablePrototype(String declaringUnit, String name, String signature, VarType type) {
-		this.declaringUnit = Objects.requireNonNull(declaringUnit);
-		this.name = Objects.requireNonNull(name);
-		this.signature = Objects.requireNonNull(signature);
-		this.type = Objects.requireNonNull(type);
+	public VariablePrototype(Signature signature, VarType type) {
+		this.signature = signature;
+		this.type = type;
 	}
 	
 	@Override
@@ -34,7 +29,7 @@ public class VariablePrototype implements VarAccess, Prototype<VariableDeclarati
 	
 	@Override
 	public String toString() {
-		return declaringUnit + "." + name + ":" + type.toString();
+		return signature.declaringUnitName + "." + signature.name + ":" + type.toString();
 	}
 
 	@Override
@@ -44,25 +39,24 @@ public class VariablePrototype implements VarAccess, Prototype<VariableDeclarati
 
 	@Override
 	public String getDeclaringUnit() {
-		return declaringUnit;
+		return signature.declaringUnit;
 	}
 
-	@Override
 	public String getName() {
-		return name;
+		return signature.name;
 	}
 
 	@Override
-	public String getSignature() {
+	public Signature getSignature() {
 		return signature;
 	}
 
 	@Override
 	public VariableDeclaration getAccess(Unit unit) {
-		if(unit.fullBase.equals(declaringUnit))
+		if(unit.fullBase.equals(getDeclaringUnit()))
 			throw new IllegalArgumentException("Variable " + this + " is not declared in unit " + unit);
 		for(VariableDeclaration v : unit.variables) {
-			if(v.name.equals(name) && v.getType().equals(type))
+			if(v.name.equals(signature.name) && v.getType().equals(type))
 				return v;
 		}
 		return null;

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 
@@ -33,9 +34,12 @@ class InnerScope implements Scope {
 	
 	@Override
 	public VarAccess getVariable(String name) {
-		for(ValueDeclaration var : variables)
-			if(var.getName().equals(name))
-				return new VariablePrototype(VarAccess.INNER_UNIT, var.getName(), var.getName(), var.getType());
+		for(ValueDeclaration var : variables) {
+			if(var.getName().equals(name)) {
+				Signature signature = new Signature(VarAccess.INNER_UNIT, var.getName(), var.getName());
+				return new VariablePrototype(signature, var.getType());
+			}
+		}
 		return parent.getVariable(name);
 	}
 	

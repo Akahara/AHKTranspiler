@@ -32,7 +32,8 @@ public class FunctionExp extends FunctionExpression {
 	
 	@Override
 	public String toString() {
-		return function.name + "(" + Utils.toString(getArguments()) + ")"; // TODO0 modify the function prototype to be able to display Unit.func(...) instead of func(...)
+		return function.getDeclaringUnit() + "." + function.getName() +
+				"(" + Utils.toString(getArguments()) + ")";
 	}
 
 	@Override

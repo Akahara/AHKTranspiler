@@ -1,28 +1,20 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
-import java.util.Objects;
-
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.FuncArguments;
 import fr.wonder.ahk.compiler.Unit;
 
 public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> {
 
-	/** Full base of the unit declaring this function */
-	public final String declaringUnit;
-	/** The name of this function */
-	public final String name;
-	/** Contains the name information in some way */
-	public final String signature;
+	public final Signature signature;
 	/** The type of this function, contains its arguments and return type */
 	public final VarFunctionType functionType;
 	
-	public FunctionPrototype(String declaringUnit, String name, String signature, VarFunctionType functionType) {
-		this.declaringUnit = Objects.requireNonNull(declaringUnit);
-		this.name = Objects.requireNonNull(name);
-		this.signature = Objects.requireNonNull(signature);
-		this.functionType = Objects.requireNonNull(functionType);
+	public FunctionPrototype(Signature signature, VarFunctionType functionType) {
+		this.signature = signature;
+		this.functionType = functionType;
 	}
 	
 	@Override
@@ -45,21 +37,20 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 	
 	@Override
 	public String toString() {
-		return declaringUnit + "." + name + ":" + functionType.toString();
+		return signature.declaringUnit + "." + signature.name + ":" + functionType.toString();
 	}
 	
 	@Override
 	public String getDeclaringUnit() {
-		return declaringUnit;
+		return signature.declaringUnit;
 	}
 
-	@Override
 	public String getName() {
-		return name;
+		return signature.name;
 	}
 
 	@Override
-	public String getSignature() {
+	public Signature getSignature() {
 		return signature;
 	}
 
@@ -70,7 +61,7 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 
 	@Override
 	public FunctionSection getAccess(Unit unit) {
-		if(unit.fullBase.equals(declaringUnit))
+		if(unit.fullBase.equals(getDeclaringUnit()))
 			throw new IllegalArgumentException("Function " + this + " is not declared in unit " + unit);
 		for(FunctionSection f : unit.functions) {
 			if(f.returnType.equals(functionType.returnType) && FuncArguments.argsMatch0c(functionType.arguments, f.argumentTypes))

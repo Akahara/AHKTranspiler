@@ -32,4 +32,5 @@ public abstract class VarType {
 	 */
 	@Override
 	public abstract boolean equals(Object o);
+	
 }

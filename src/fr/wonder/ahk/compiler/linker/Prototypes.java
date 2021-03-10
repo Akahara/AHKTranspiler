@@ -22,18 +22,14 @@ public class Prototypes {
 		for(int i = 0; i < functions.length; i++) {
 			FunctionSection f = unit.functions[i];
 			functions[i] = new FunctionPrototype(
-					unit.fullBase,
-					f.name,
-					f.getSignature().computedSignature,
+					f.getSignature(),
 					f.getFunctionType());
 		}
 		VariablePrototype[] variables = new VariablePrototype[unit.variables.length];
 		for(int i = 0; i < variables.length; i++) {
 			VariableDeclaration v = unit.variables[i];
 			variables[i] = new VariablePrototype(
-					unit.fullBase,
-					v.name,
-					v.getSignature().computedSignature,
+					v.getSignature(),
 					v.getType());
 		}
 		unit.prototype = new UnitPrototype(
@@ -53,7 +49,7 @@ public class Prototypes {
 		
 		List<VarAccess> affectedAccesses = new ArrayList<>();
 		for(FunctionPrototype func : previousProto.functions) {
-			FunctionPrototype[] functions = newProto.getFunctions(func.name);
+			FunctionPrototype[] functions = newProto.getFunctions(func.getName());
 			if(functions.length == 0) {
 				affectedAccesses.add(func);
 			} else {
@@ -69,7 +65,7 @@ public class Prototypes {
 			}
 		}
 		for(VariablePrototype var : previousProto.variables) {
-			if(!Objects.equals(var, newProto.getVariable(var.name)))
+			if(!Objects.equals(var, newProto.getVariable(var.getName())))
 				affectedAccesses.add(var);
 		}
 		if(affectedAccesses.isEmpty())

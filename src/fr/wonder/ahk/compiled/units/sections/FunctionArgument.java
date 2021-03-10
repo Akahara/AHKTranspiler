@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 
@@ -9,11 +10,13 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration, 
 	
 	public final String name;
 	public final VarType type;
+	public final Signature signature;
 	
-	public FunctionArgument(int sourceStart, int sourceStop, String name, VarType type) {
+	public FunctionArgument(int sourceStart, int sourceStop, String name, VarType type) { // FIX add unit source
 		super(null, sourceStart, sourceStop);
 		this.name = name;
 		this.type = type;
+		this.signature = new Signature(INNER_UNIT, getName(), "arg_" + getName());
 	}
 	
 	@Override
@@ -42,13 +45,8 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration, 
 	}
 
 	@Override
-	public String getDeclaringUnit() {
-		return INNER_UNIT;
-	}
-
-	@Override
-	public String getSignature() {
-		return "arg_" + getName();
+	public Signature getSignature() {
+		return signature;
 	}
 	
 }

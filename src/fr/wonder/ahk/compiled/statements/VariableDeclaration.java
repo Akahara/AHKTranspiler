@@ -23,13 +23,6 @@ public class VariableDeclaration extends Statement implements ValueDeclaration {
 		this.name = name;
 		this.type = type;
 	}
-	
-	public VariableDeclaration(UnitSource source, int sourceStart, int sourceStop,
-			String name, VarType type) {
-		super(source, sourceStart, sourceStop);
-		this.name = name;
-		this.type = type;
-	}
 
 	/** Called by the linker after types where computed */
 	public void setSignature(Signature signature) {
@@ -41,7 +34,7 @@ public class VariableDeclaration extends Statement implements ValueDeclaration {
 	}
 	
 	public Expression getDefaultValue() {
-		return expressions.length != 0 ? expressions[0] : null;
+		return expressions[0];
 	}
 	
 	@Override

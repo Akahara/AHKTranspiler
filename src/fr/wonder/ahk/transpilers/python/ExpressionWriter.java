@@ -42,7 +42,7 @@ class ExpressionWriter {
 			
 		} else if(exp instanceof FunctionExp) {
 			FunctionExp f = (FunctionExp) exp;
-			sb.append(f.function.getUnitName() + "." + f.function.signature);
+			sb.append(f.function.getSignature().declaringUnitName + "." + f.function.getSignature().name);
 			sb.append("(");
 			writeExpressions(f.getArguments(), sb, errors);
 			sb.append(")");
@@ -111,8 +111,10 @@ class ExpressionWriter {
 		case MULTIPLY:	return "*";
 		case DIVIDE:	return "/";
 		case MOD:		return "%";
+		case NOT:		return "!";
 		case EQUALS:	return "==";
 		case SEQUALS:	return "==";
+		case NEQUALS:	return "!=";
 		case GEQUALS:	return ">=";
 		case GREATER:	return ">";
 		case LEQUALS:	return "<=";

@@ -9,10 +9,13 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
+import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
@@ -32,6 +35,7 @@ import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnreachableException;
 
 public class StatementParser {
 
@@ -114,18 +118,35 @@ public class StatementParser {
 		String varName = line[t].text;
 		VarType varType = Tokens.getType(line[0]);
 		
-		if(varType == null)
+		if(varType == null) {
 			subErrors.add("Unknown value type:" + line[0].getErr());
+			varType = Invalids.TYPE;
+		}
 		
 		for(int i = 0; i < arrayDimensions; i++)
 			varType = new VarArrayType(varType);
 		
+		Expression defaultValue;
+		
 		if(line.length == t+1) {
-			return new VariableDeclaration(source, line[0].sourceStart, line[line.length-1].sourceStop, varName, varType);
+			// get default value
+			int sourceLoc = line[t].sourceStop;
+			if(varType == VarType.INT)
+				defaultValue = new IntLiteral(source, sourceLoc, sourceLoc, 0);
+			else if(varType == VarType.FLOAT)
+				defaultValue = new FloatLiteral(source, sourceLoc, sourceLoc, 0);
+			else if(varType == VarType.BOOL)
+				defaultValue = new BoolLiteral(source, sourceLoc, sourceLoc, false);
+			else if(varType == VarType.STR || varType instanceof VarStructType)
+				defaultValue = new NullExp(source, sourceLoc, sourceLoc);
+			else if(varType == Invalids.TYPE)
+				defaultValue = Invalids.EXPRESSION;
+			else
+				throw new UnreachableException("Unimplemented type default value");
 		} else {
-			Expression defaultValue = ExpressionParser.parseExpression(source, line, t+2, line.length, subErrors);
-			return new VariableDeclaration(source, line[0].sourceStart, line[line.length-1].sourceStop, varName, varType, defaultValue);
+			defaultValue = ExpressionParser.parseExpression(source, line, t+2, line.length, subErrors);
 		}
+		return new VariableDeclaration(source, line[0].sourceStart, line[line.length-1].sourceStop, varName, varType, defaultValue);
 	}
 	
 	/** Assumes that the first token is KW_IF */

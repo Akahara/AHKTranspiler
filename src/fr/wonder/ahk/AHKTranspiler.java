@@ -49,7 +49,8 @@ public class AHKTranspiler {
 				.link(new ErrorWrapper("Unable to link"))
 				.prepare(manifest);
 			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export"));
-			ProcessUtils.redirectOutputToStd(transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run")));
+			Process process = transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run"));
+			ProcessUtils.redirectOutputToStd(process);
 		} catch (WrappedException e) {
 			e.errors.dump();
 		}

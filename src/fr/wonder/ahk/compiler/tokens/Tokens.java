@@ -126,7 +126,6 @@ public class Tokens {
 	
 	/**
 	 * Used to get the operator corresponding with an operator token (like +, -, ==...)
-	 * @see #getOperator(TokenBase)
 	 */
 	public static Operator getOperator(TokenBase base) {
 		return operatorsMap.get(base);
@@ -144,6 +143,8 @@ public class Tokens {
 			operatorsMap.put(OP_LOWER,	Operator.LOWER);
 			operatorsMap.put(OP_GREATER,Operator.GREATER);
 			operatorsMap.put(OP_GEQUALS,Operator.GEQUALS);
+			operatorsMap.put(OP_NEQUALS,Operator.NEQUALS);
 			operatorsMap.put(OP_MOD,	Operator.MOD);
+			operatorsMap.put(OP_NOT,	Operator.NOT);
 	}
 }

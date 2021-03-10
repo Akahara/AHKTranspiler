@@ -15,6 +15,15 @@ func int gcd(int x, int y) {
 		return gcd(y, x%y);
 }
 
+func int gcd2(int x, int y) {
+	while(y != 0) {
+		int t = x;
+		x = y;
+		y = t*y;
+	}
+	return x;
+}
+
 func int a(int a, int b) {
 	for(int i : -10..10) {
 		Kernel.print(i);
@@ -38,6 +47,11 @@ func int main() {
 		Kernel.print(array[i]);
 		Kernel.println();
 	}
-	a(1, 1);
+	int a;
+	a(1, 2);
+	while(a < 4) {
+		a++;
+		Kernel.print(a);
+	}
 	return 0;
 }

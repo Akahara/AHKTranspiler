@@ -62,6 +62,7 @@ public class NativeOperation implements Operation {
 		add(INT, INT, GEQUALS, BOOL);
 		add(INT, INT, LOWER, BOOL);
 		add(INT, INT, LEQUALS, BOOL);
+		add(INT, INT, NEQUALS, BOOL);
 		
 		add(FLOAT, FLOAT, ADD, FLOAT);
 		add(FLOAT, FLOAT, SUBSTRACT, FLOAT);
@@ -73,8 +74,9 @@ public class NativeOperation implements Operation {
 		add(FLOAT, FLOAT, GEQUALS, BOOL);
 		add(FLOAT, FLOAT, LOWER, BOOL);
 		add(FLOAT, FLOAT, LEQUALS, BOOL);
-		
+
 		add(BOOL, BOOL, EQUALS, BOOL);
+		add(BOOL, BOOL, NEQUALS, BOOL);
 		
 		add(STR, STR, ADD, STR);
 	}

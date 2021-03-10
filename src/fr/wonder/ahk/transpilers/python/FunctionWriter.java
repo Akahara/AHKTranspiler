@@ -17,6 +17,7 @@ import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.statements.WhileSt;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -91,7 +92,8 @@ class FunctionWriter {
 			IfSt.class,
 			ElseSt.class,
 			ForSt.class,
-			RangedForSt.class
+			RangedForSt.class,
+			WhileSt.class
 	);
 	
 	private static void writeStatement(Statement st, StringBuilder sb, ErrorWrapper errors) {
@@ -116,11 +118,20 @@ class FunctionWriter {
 		} else if(st instanceof AffectationSt) {
 			writeAffectationStatement((AffectationSt) st, sb, errors);
 			
+		} else if(st instanceof WhileSt) {
+			writeWhileStatement((WhileSt) st, sb, errors);
+			
 		} else {
 			errors.add("Unhandled statement type: " + st.getClass().getSimpleName() + " " + st.getErr());
 		}
 	}
 	
+	private static void writeWhileStatement(WhileSt st, StringBuilder sb, ErrorWrapper errors) {
+		sb.append("while ");
+		writeExpression(st.getCondition(), sb, errors);
+		sb.append(':');
+	}
+
 	private static void writeIfStatement(IfSt s, StringBuilder sb, ErrorWrapper errors) {
 		IfSt st = (IfSt) s;
 		sb.append("if ");

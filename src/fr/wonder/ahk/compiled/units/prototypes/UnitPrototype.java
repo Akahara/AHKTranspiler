@@ -67,14 +67,14 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 	
 	public VariablePrototype getVariable(String name) {
 		for(VariablePrototype var : variables) {
-			if(var.getName().equals(name))
+			if(var.signature.name.equals(name))
 				return var;
 		}
 		return null;
 	}
 	
 	public FunctionPrototype[] getFunctions(String name) {
-		return ArrayOperator.filter(functions, f -> f.name.equals(name));
+		return ArrayOperator.filter(functions, f -> f.getName().equals(name));
 	}
 
 	@Override

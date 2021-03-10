@@ -89,7 +89,7 @@ class UnitScope implements Scope {
 			return 0;
 		int count = 0;
 		for(FunctionPrototype func : unit.functions) {
-			if(func.name.equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
+			if(func.getName().equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
 				count++;
 		}
 		return count;
@@ -102,7 +102,7 @@ class UnitScope implements Scope {
 		if(unit == null)
 			return null;
 		for(FunctionPrototype func : unit.functions) {
-			if(func.name.equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
+			if(func.getName().equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
 				return func;
 		}
 		return null;

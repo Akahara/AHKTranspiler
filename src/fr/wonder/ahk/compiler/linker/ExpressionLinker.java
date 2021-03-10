@@ -35,7 +35,7 @@ class ExpressionLinker {
 				if(var == null) {
 					errors.add("Usage of undeclared variable " + vexp.variable + vexp.getErr());
 					var = Invalids.ACCESS;
-				} else if(!var.getDeclaringUnit().equals(unit.fullBase)) {
+				} else if(!var.getSignature().declaringUnit.equals(unit.fullBase)) {
 					unit.prototype.externalAccesses.add(var);
 				}
 				vexp.declaration = var;

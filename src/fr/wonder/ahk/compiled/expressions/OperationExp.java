@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -39,6 +40,8 @@ public class OperationExp extends Expression {
 	
 	public void setOperation(Operation op) {
 		this.operation = op;
+		if(op == Invalids.OPERATION)
+			return;
 		if(op.getOperandsTypes().length != (getRightOperand() == null ? 1 : 2))
 			throw new IllegalStateException("Invalid operand count");
 		if(getLOType() != null && getLOType() != op.getOperandsTypes()[0])
