@@ -2,7 +2,7 @@ package fr.wonder.ahk.compiler;
 
 import static fr.wonder.ahk.compiler.tokens.TokenBase.*;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import fr.wonder.ahk.UnitSource;
@@ -13,105 +13,144 @@ import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class Tokenizer {
-
-	public static Token[] tokenize(UnitSource source, ErrorWrapper errors) {
-		List<Token> tokens = new ArrayList<>();
-		List<SectionToken> openedSections = new ArrayList<>();
-		List<Token> openedSectionTokens = new ArrayList<>();
-		SectionToken quoteBegin = null;
-		boolean quoteIgnore = false;
+	
+	private final UnitSource source;
+	private final ErrorWrapper errors;
+	
+	private final List<Token> tokens = new LinkedList<>();
+	private final LinkedList<SectionToken> openedSections = new LinkedList<>();
+	private final LinkedList<Token> openedSectionTokens = new LinkedList<>();
+	
+	private Tokenizer(UnitSource source, ErrorWrapper errors) {
+		this.source = source;
+		this.errors = errors;
+	}
+	
+	private void tokenize() {
+		TokenBase quoteEnd = null;
+		boolean quoteIgnored = false;
+		int quoteBeginPosition = -1;
 		
-		// find delimiters
-		for(int i = 0; i < source.length(); i++) {
-			if(quoteBegin != null) {
-				if(quoteIgnore) {
-					quoteIgnore = false;
-				} else if(source.charAt(i) == '\\') {
-					quoteIgnore = true;
+		TokenBase latestOpenedSection = null;
+		
+		int currentTokenBegin = 0;
+		
+		for(int i = 0; i < source.length(); ) {
+			// read a text character
+			if(quoteEnd != null) {
+				if(source.charAt(i) == '\\') {
+					if(i == source.length()-1)
+						errors.add("Unexpected source end " + source.getErr(i));
+					i += 2;
 				} else {
-					TokenBase closing = quoteBegin.stop != null ? quoteBegin.stop : quoteBegin.start;
-					int len = closing.syntax.length();
-					if(source.matchesRaw(closing.syntax, i, i+len)) {
-						int start = tokens.get(tokens.size()-1).sourceStop;
-						tokens.add(new Token(source, quoteBegin == SectionToken.SEC_COMMENTS ? null : LIT_STR, source.substring(start, i), start));
-						tokens.add(new Token(source, null, source.substring(i, i+len), i)); // quotes are removed later
-						i += len-1;
-						quoteBegin = null;
+					if(source.matchesRaw(quoteEnd.syntax, i)) {
+						if(!quoteIgnored)
+							tokens.add(new Token(source, LIT_STR, source.substring(quoteBeginPosition, i), quoteBeginPosition));
+						i += quoteEnd.syntax.length();
+						quoteEnd = null;
+						currentTokenBegin = i;
+					} else {
+						// advance by 1 text character
+						i++;
 					}
 				}
-			} else {
-				SectionToken currentSection = openedSections.size()==0 ? 
-						null : openedSections.get(openedSections.size()-1);
-				
-				for(SectionToken del : Tokens.SECTIONS) {
-					int stopSyntaxLen = del.stop==null ? 0 : del.stop.syntax.length();
-					int startSyntaxLen = del.start.syntax.length();
-					
-					// check for section stop
-					if(del == currentSection && source.matchesRaw(del.stop.syntax, i, i+stopSyntaxLen)) {
-						Token t = new Token(source, del.stop, source.substring(i, i+stopSyntaxLen), i);
-						t.linkSectionPair(openedSectionTokens.get(openedSectionTokens.size()-1));
-						tokens.add(t);
-						i += stopSyntaxLen-1;
-						openedSections.remove(openedSections.size()-1);
-						openedSectionTokens.remove(openedSectionTokens.size()-1);
-						break;
-						
-					// check for section begin
-					} else if(source.matchesRaw(del.start.syntax, i, i+startSyntaxLen)) {
-						int stop = i+del.start.syntax.length();
-						if(del.repeatable)
-							while(source.matchesRaw(del.start.syntax, stop, stop+startSyntaxLen))
-								stop += startSyntaxLen;
-						if(del.quote) {
-							quoteBegin = del;
-							tokens.add(new Token(source, null, source.substring(i, stop), i));
-						} else {
-							Token t = new Token(source, del.start, source.substring(i, stop), i);
-							tokens.add(t);
-							if(del.stop != null) {
-								openedSections.add(del);
-								openedSectionTokens.add(t);
-							}
-						}
-						i = stop-1;
-						break;
-						
-					// check unexpected section stop
-					} else if(del.stop != null && source.matchesRaw(del.stop.syntax, i, i+stopSyntaxLen)) {
-						errors.add("Unexpected section end:" + source.getErr(i, i+stopSyntaxLen));
-						break;
-					}
-				}
+				continue;
 			}
+			
+			// check if the section closes
+			if(latestOpenedSection != null && source.matchesRaw(latestOpenedSection.syntax, i)) {
+				readNonSectionToken(currentTokenBegin, i);
+				
+				Token t = new Token(source, latestOpenedSection, source.substring(i, i+latestOpenedSection.syntax.length()), i);
+				t.linkSectionPair(openedSectionTokens.getLast());
+				tokens.add(t);
+				openedSections.removeLast();
+				openedSectionTokens.removeLast();
+				
+				i += latestOpenedSection.syntax.length();
+				latestOpenedSection = getLatestOpenedSection();
+				currentTokenBegin = i;
+				continue;
+			}
+			
+			// check for a section begin
+			SectionToken del = getMatchingSection(i);
+			if(del != null) {
+				readNonSectionToken(currentTokenBegin, i);
+				
+				int delLen = del.start.syntax.length();
+				int stop = i+delLen;
+				if(del.repeatable)
+					while(source.matchesRaw(del.start.syntax, stop))
+						stop += delLen;
+				if(del.quote) {
+					quoteEnd = del.stop;
+					quoteBeginPosition = stop;
+					quoteIgnored = del == SectionToken.SEC_COMMENTS;
+				} else {
+					Token t = new Token(source, del.start, source.substring(i, stop), i);
+					tokens.add(t);
+					if(del.stop != null) {
+						openedSections.add(del);
+						openedSectionTokens.add(t);
+						latestOpenedSection = del.stop;
+					}
+				}
+				
+				i = stop;
+				currentTokenBegin = i;
+				continue;
+			}
+			
+			// no token could be read, advance by 1
+			i++;
 		}
+		
+		// read the last non section token
+		readNonSectionToken(currentTokenBegin, source.length());
 		
 		// check unclosed sections
-		if(openedSections.size() != 0) {
-			errors.add("Unclosed section:" + openedSectionTokens.get(openedSectionTokens.size()-1).getErr());
-		} else if(quoteBegin != null) {
-			errors.add("Unclosed text section:" + tokens.get(tokens.size()-1).getErr());
+		if(!openedSections.isEmpty()) {
+			errors.add("Unclosed section:" + openedSectionTokens.getLast().getErr());
+		} else if(quoteEnd != null) {
+			errors.add("Unclosed text section:" + source.getErr(quoteBeginPosition));
 		}
 		
-		// find non-delimiters
-		int lastOpening = 0;
-		int token = 0;
-		while(lastOpening != source.length()) {
-			if(token < tokens.size() && tokens.get(token).sourceStart == lastOpening) {
-				lastOpening = tokens.get(token++).sourceStop;
-			} else {
-				int stop = token == tokens.size() ? source.length() : tokens.get(token).sourceStart;
-				String s = source.substring(lastOpening, stop);
-				TokenBase b = getBase(s);
-				if(b != null) {
-					tokens.add(token++, new Token(source, b, source.substring(lastOpening, lastOpening+s.length()), lastOpening));
-				} else {
-					errors.add("Unresolved token:" + source.getErr(lastOpening, stop));
-				}
-				lastOpening = stop;
+	}
+	
+	private TokenBase getLatestOpenedSection() {
+		if(openedSections.isEmpty())
+			return null;
+		return openedSections.getLast().stop;
+	}
+	
+	private SectionToken getMatchingSection(int loc) {
+		for(SectionToken del : Tokens.SECTIONS) {
+			if(source.matchesRaw(del.start.syntax, loc)) {
+				return del;
 			}
 		}
-		
+		return null;
+	}
+	
+	private void readNonSectionToken(int begin, int end) {
+		if(begin == end)
+			return;
+		TokenBase b = getBase(source.substring(begin, end));
+		if(b == null)
+			errors.add("Unresolved token:" + source.getErr(begin, end));
+		else
+			tokens.add(new Token(source, b, source.substring(begin, end), begin));
+	}
+	
+	private static TokenBase getBase(String split) {
+		for(TokenBase b : Tokens.BASES)
+			if(split.matches(b.syntax))
+				return b;
+		return null;
+	}
+	
+	private void finalizeTokens() {
 		// replace <int dot int> by <float>
 		for(int i = 0; i < tokens.size(); i++) {
 			if(tokens.get(i).base == LIT_INT) {
@@ -132,19 +171,17 @@ public class Tokenizer {
 			}
 		}
 		
-		// remove quotes markers and spaces
+		// remove spaces
 		for(int i = tokens.size()-1; i >= 0; i--)
-			if(tokens.get(i).base == null || tokens.get(i).base == TokenBase.TK_SPACE)
+			if(tokens.get(i).base == TokenBase.TK_SPACE)
 				tokens.remove(i);
-		
-		return source.tokens = tokens.toArray(Token[]::new);
 	}
-	
-	private static TokenBase getBase(String split) {
-		for(TokenBase b : Tokens.BASES)
-			if(split.matches(b.syntax))
-				return b;
-		return null;
+
+	public static Token[] tokenize(UnitSource source, ErrorWrapper errors) {
+		Tokenizer instance = new Tokenizer(source, errors);
+		instance.tokenize();
+		instance.finalizeTokens();
+		return source.tokens = instance.tokens.toArray(Token[]::new);
 	}
 	
 }

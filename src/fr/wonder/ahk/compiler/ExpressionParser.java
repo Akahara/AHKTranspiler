@@ -23,6 +23,7 @@ import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
+import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Tuple;
@@ -125,8 +126,10 @@ public class ExpressionParser {
 	
 	private static Expression parseExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
 		if(section.stop == section.start) {
+			Utils.dump(line);
+			System.out.println(section.start + "  " + section.stop);
 			errors.add("Empty expression:" + line[section.start].getErr());
-			return null;
+			return Invalids.EXPRESSION;
 		}
 		
 		Section firstSection = section.subSections.isEmpty() ? null : section.subSections.get(0);
@@ -182,7 +185,7 @@ public class ExpressionParser {
 		}
 		
 		errors.add("Unknown expression type " + source.getErr(line, section.start, section.stop-1));
-		return null;
+		return Invalids.EXPRESSION;
 	}
 	
 	public static LiteralExp<?> parseLiteral(Token t, ErrorWrapper errors) {
@@ -192,14 +195,14 @@ public class ExpressionParser {
 				return new IntLiteral(t.getSource(), t.sourceStart, t.sourceStop, Integer.parseInt(t.text));
 			} catch (NumberFormatException e) {
 				errors.add("Unable to parse int literal: " + e.getMessage() + t.getErr());
-				return null;
+				return Invalids.LITERAL_EXPRESSION;
 			}
 		case LIT_FLOAT:
 			try {
 				return new FloatLiteral(t.getSource(), t.sourceStart, t.sourceStop, Float.parseFloat(t.text));
 			} catch (NumberFormatException e) {
 				errors.add("Unable to parse float literal: " + e.getMessage() + t.getErr());
-				return null;
+				return Invalids.LITERAL_EXPRESSION;
 			}
 		case LIT_STR:
 			return new StrLiteral(t.getSource(), t.sourceStart, t.sourceStop, t.text);
@@ -209,7 +212,7 @@ public class ExpressionParser {
 			return new BoolLiteral(t.getSource(), t.sourceStart, t.sourceStop, false);
 		default:
 			errors.add("Unable to parse literal: Token is not a literal value" + t.getErr());
-			return null;
+			return Invalids.LITERAL_EXPRESSION;
 		}
 	}
 

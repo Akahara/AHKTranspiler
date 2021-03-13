@@ -8,9 +8,9 @@ public enum SectionToken {
 	
 	SEC_SPACE		(TK_SPACE, Mod.REPEATABLE),
 	SEC_LINE_BREAK	(TK_LINE_BREAK, Mod.REPEATABLE),
-	SEC_QUOTES1		(TK_DOUBLE_QUOTE, Mod.QUOTE),
-	SEC_QUOTES2		(TK_APOSTROPHE, Mod.QUOTE),
-	SEC_QUOTES3		(TK_BACK_APOSTROPHE, Mod.QUOTE),
+	SEC_QUOTES1		(TK_DOUBLE_QUOTE, TK_DOUBLE_QUOTE, Mod.QUOTE),
+	SEC_QUOTES2		(TK_APOSTROPHE, TK_APOSTROPHE, Mod.QUOTE),
+	SEC_QUOTES3		(TK_BACK_APOSTROPHE, TK_BACK_APOSTROPHE, Mod.QUOTE),
 	SEC_COMMENTS	(TK_COMMENT_OPEN, TK_COMMENT_CLOSE, Mod.QUOTE),
 	
 	SEC_DOUBLE_DOT	(TK_DOUBLE_DOT),
@@ -29,7 +29,7 @@ public enum SectionToken {
 	SEC_OP_DIRECT_PLUS	(OP_DIRECT_PLUS),
 	SEC_OP_DIRECT_MINUS	(OP_DIRECT_MINUS),
 	/* 
-	 * do not mistake an operator (OP_) for a keyword (KW), the latter looks like "+="
+	 * do not mistake an operator (OP_) for a keyword (KW_), the latter looks like "+="
 	 * and must be placed BEFORE both operators "+" and "="
 	 */
 	SEC_OP_SEQUALS		(OP_SEQUALS),
@@ -77,8 +77,10 @@ public enum SectionToken {
 	private SectionToken(TokenBase start, TokenBase stop, int mod) {
 		this.start = start;
 		this.stop = stop;
-		this.quote = mod == Mod.QUOTE;
-		this.repeatable = mod == Mod.REPEATABLE;
+		this.quote = (mod & Mod.QUOTE) != 0;
+		this.repeatable = (mod &= Mod.REPEATABLE) != 0;
+		if((mod & Mod.QUOTE) != 0 && stop == null)
+			throw new IllegalArgumentException("Quote tokens must have an end base");
 	}
 	
 }

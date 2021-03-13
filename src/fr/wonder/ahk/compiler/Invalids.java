@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiler;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
@@ -64,5 +65,10 @@ public class Invalids {
 			Invalids.STRING, Invalids.TYPE, Invalids.EXPRESSION);
 	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(Invalids.SOURCE, 0, 0,
 			Invalids.EXPRESSION, Invalids.EXPRESSION);
+
+	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(Invalids.SOURCE, 0, 0, null) {
+		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return Invalids.TYPE; }
+		
+	};
 	
 }

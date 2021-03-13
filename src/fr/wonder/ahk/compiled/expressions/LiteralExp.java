@@ -9,7 +9,7 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public final T value;
 	
-	private LiteralExp(UnitSource source, int sourceStart, int sourceStop, T value) {
+	protected LiteralExp(UnitSource source, int sourceStart, int sourceStop, T value) {
 		super(source, sourceStart, sourceStop);
 		this.value = value;
 	}

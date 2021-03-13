@@ -45,8 +45,8 @@ public class UnitSource {
 		return length() >= stop && source.substring(start, stop).matches(regex);
 	}
 	
-	public boolean matchesRaw(String syntax, int start, int stop) {
-		return length() >= stop && source.substring(start, stop).equals(syntax);
+	public boolean matchesRaw(String syntax, int start) {
+		return source.startsWith(syntax, start);
 	}
 	
 	private int getLineIdx(int chrIdx) {

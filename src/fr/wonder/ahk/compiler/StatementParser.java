@@ -124,7 +124,7 @@ public class StatementParser {
 			return Invalids.VARIABLE_DECLARATION;
 		}
 		
-		if(line.length > t+1 && line[t+1].base != TokenBase.KW_EQUAL) {
+		if(line.length > t+1 && (line[t+1].base != TokenBase.KW_EQUAL || line.length == t+2)) {
 			subErrors.add("Expected affectation value:" + line[t+1].getErr());
 			return Invalids.VARIABLE_DECLARATION;
 		}
