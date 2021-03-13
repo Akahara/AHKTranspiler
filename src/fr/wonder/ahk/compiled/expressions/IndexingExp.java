@@ -7,6 +7,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.TypesTable;
+import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class IndexingExp extends Expression {
@@ -25,7 +26,7 @@ public class IndexingExp extends Expression {
 	
 	@Override
 	public String toString() {
-		return getArray() + "[" + getIndices() + "]";
+		return getArray() + "[" + Utils.toString(getIndices()) + "]";
 	}
 
 	@Override

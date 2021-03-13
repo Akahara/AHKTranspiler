@@ -53,5 +53,10 @@ public class RangedForSt extends LabeledStatement {
 								new VarExp(getSource(), sourceStart, sourceStop, variable),
 								getStep())));
 	}
+	
+	@Override
+	public String toString() {
+		return "for(int " + variable + " : " + getMin() + " .. " + getMax() + " .. " + getStep() + ")";
+	}
 
 }

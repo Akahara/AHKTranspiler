@@ -19,4 +19,6 @@ public abstract class Statement extends SourceObject implements ExpressionHolder
 		return expressions;
 	}
 	
+	public abstract String toString();
+	
 }

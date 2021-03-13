@@ -252,8 +252,7 @@ public class UnitParser {
 		for(int i = start+1; i < stop; i++)
 			function.body[i-start-1] = StatementParser.parseStatement(source, tokens[i], functionErrors);
 		if(functionErrors.noErrors())
-			StatementParser.finalizeStatements(source, function);
-//		Utils.dump(Arrays.copyOfRange(tokens, start, stop));
+			StatementsFinalizer.finalizeStatements(source, function);
 		return function;
 	}
 	

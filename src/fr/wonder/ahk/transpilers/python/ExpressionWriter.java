@@ -42,7 +42,7 @@ class ExpressionWriter {
 			
 		} else if(exp instanceof FunctionExp) {
 			FunctionExp f = (FunctionExp) exp;
-			sb.append(f.function.getSignature().declaringUnitName + "." + f.function.getSignature().name);
+			sb.append(f.function.getSignature().declaringUnitName + "." + f.function.getSignature().computedSignature);
 			sb.append("(");
 			writeExpressions(f.getArguments(), sb, errors);
 			sb.append(")");

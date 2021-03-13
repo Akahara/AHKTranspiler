@@ -6,6 +6,7 @@ import java.util.List;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.ElseSt;
+import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
@@ -67,8 +68,10 @@ class StatementLinker {
 			
 			if(st instanceof VariableDeclaration)
 				declareVariable((VariableDeclaration) st, scope, errors);
-			if(st instanceof RangedForSt)
+			else if(st instanceof RangedForSt)
 				declareVariable(((RangedForSt) st).getVariableDeclaration(), scope, errors);
+			else if(st instanceof ForEachSt)
+				declareVariable(((ForEachSt) st).declaration, scope, errors);
 		}
 	}
 

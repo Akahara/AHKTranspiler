@@ -24,6 +24,7 @@ public enum TokenBase {
 	KW_IF("if"),
 	KW_ELSE("else"),
 	KW_FOR("for"),
+	KW_FOREACH("foreach"),
 	KW_WHILE("while"),
 	KW_FUNC("func"),
 	KW_STRUCT("struct"),

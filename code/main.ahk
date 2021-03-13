@@ -49,9 +49,11 @@ func int main() {
 	}
 	int a;
 	a(1, 2);
-	while(a < 4) {
+	while(a < sizeof(array)) {
 		a++;
-		Kernel.print(a);
+		Kernel.println(a);
 	}
+	foreach(int i : array)
+		Kernel.println(i);
 	return 0;
 }

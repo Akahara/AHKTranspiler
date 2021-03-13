@@ -1,9 +1,6 @@
 package fr.wonder.ahk.compiler;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
@@ -19,17 +16,16 @@ import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
+import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
-import fr.wonder.ahk.compiled.statements.LabeledStatement;
 import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
-import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
@@ -51,6 +47,8 @@ public class StatementParser {
 			return parseWhileStatement(source, line, errors);
 		case KW_FOR:
 			return parseForStatement(source, line, errors);
+		case KW_FOREACH:
+			return parseForeachStatement(source, line, errors);
 		case KW_RETURN:
 			return parseReturnStatement(source, line, errors);
 		case TK_BRACE_CLOSE:
@@ -73,12 +71,28 @@ public class StatementParser {
 			return parseFunctionStatement(source, line, errors);
 		
 		errors.add("Unknown statement:" + source.getErr(line));
-		return null;
+		return Invalids.STATEMENT;
+	}
+	
+	
+	private static boolean assertParentheses(Token[] line, int begin, int end, ErrorWrapper errors) {
+		boolean success = true;
+		if(begin != -1 && line[begin].base != TokenBase.TK_PARENTHESIS_OPEN) {
+			errors.add("Expected ')' :" + line[begin].getErr());
+			success = false;
+		}
+		if(end != -1 && line[end].base != TokenBase.TK_PARENTHESIS_CLOSE) {
+			errors.add("Expected ')' :" + line[end].getErr());
+			success = false;
+		}
+		return success;
 	}
 
 	private static AffectationSt parseDirectAffectationStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
 		ErrorWrapper subErrors = errors.subErrrors("Unable to parse variable affectation");
 		Expression leftOperand = ExpressionParser.parseExpression(source, line, 0, line.length-1, subErrors);
+		if(!subErrors.noErrors())
+			return Invalids.AFFECTATION_STATEMENT;
 		Token last = line[line.length-1];
 		Expression rightOperand = new IntLiteral(source, last.sourceStart, last.sourceStop, 1);
 		Operator op = Tokens.getDirectOperation(last.base);
@@ -93,7 +107,7 @@ public class StatementParser {
 		
 		if(line.length < 2) {
 			subErrors.add("Invalid variable declaration:" + line[0].getErr());
-			return null;
+			return Invalids.VARIABLE_DECLARATION;
 		}
 		
 		int arrayDimensions = 0;
@@ -107,12 +121,12 @@ public class StatementParser {
 		
 		if(line[t].base != TokenBase.VAR_VARIABLE) {
 			subErrors.add("Expected variable name:" + line[t].getErr());
-			return null;
+			return Invalids.VARIABLE_DECLARATION;
 		}
 		
 		if(line.length > t+1 && line[t+1].base != TokenBase.KW_EQUAL) {
 			subErrors.add("Expected affectation value:" + line[t+1].getErr());
-			return null;
+			return Invalids.VARIABLE_DECLARATION;
 		}
 		
 		String varName = line[t].text;
@@ -153,21 +167,12 @@ public class StatementParser {
 	private static Statement parseIfStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
 		if(line.length < 3) {
 			errors.add("Incomplete if statement:" + source.getErr(line));
-			return null;
-		}
-		boolean err = false;
-		if(line[1].base != TokenBase.TK_PARENTHESIS_OPEN) {
-			errors.add("Expected '('" + line[1].getErr());
-			err = true;
+			return Invalids.STATEMENT;
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(line[conditionEnd].base != TokenBase.TK_PARENTHESIS_CLOSE) {
-			errors.add("Expected ')'" + line[conditionEnd].getErr());
-			err = true;
-		}
-		if(err) {
-			return null;
+		if(!assertParentheses(line, 1, conditionEnd, errors)) {
+			return Invalids.STATEMENT;
 		} else {
 			Expression condition = ExpressionParser.parseExpression(source, line, 2, conditionEnd, errors);
 			return new IfSt(source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
@@ -182,23 +187,14 @@ public class StatementParser {
 	
 	/** Assumes that the first token is KW_WHILE */
 	private static Statement parseWhileStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
-		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		if(line.length < 3) {
 			errors.add("Incomplete while statement:" + source.getErr(line));
-			return null;
+			return Invalids.STATEMENT;
 		}
-		boolean err = false;
-		if(line[1].base != TokenBase.TK_PARENTHESIS_OPEN) {
-			errors.add("Expected '('" + line[1].getErr());
-			err = true;
-		}
+		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(line[conditionEnd].base != TokenBase.TK_PARENTHESIS_CLOSE) {
-			errors.add("Expected ')'" + line[conditionEnd].getErr());
-			err = true;
-		}
-		if(err) {
-			return null;
+		if(!assertParentheses(line, 1, conditionEnd, errors)) {
+			return Invalids.STATEMENT;
 		} else {
 			Expression condition = ExpressionParser.parseExpression(source, line, 2, conditionEnd, errors);
 			return new WhileSt(source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
@@ -207,23 +203,14 @@ public class StatementParser {
 	
 	/** Assumes that the first token is KW_FOR */
 	private static Statement parseForStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
-		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		if(line.length < 3) {
 			errors.add("Incomplete for statement:" + source.getErr(line));
-			return null;
+			return Invalids.STATEMENT;
 		}
-		boolean err = false;
-		if(line[1].base != TokenBase.TK_PARENTHESIS_OPEN) {
-			errors.add("Expected '('" + line[1].getErr());
-			err = true;
-		}
+		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(line[conditionEnd].base != TokenBase.TK_PARENTHESIS_CLOSE) {
-			errors.add("Expected ')'" + line[conditionEnd].getErr());
-			err = true;
-		}
-		if(err)
-			return null;
+		if(!assertParentheses(line, 1, conditionEnd, errors))
+			return Invalids.STATEMENT;
 		
 		int simpleRangeMarker = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, 2);
 		
@@ -243,11 +230,11 @@ public class StatementParser {
 		int secondSplit = Utils.getTokenIdx(line, TokenBase.TK_COLUMN, firstSplit+1);
 		if(firstSplit == -1 || secondSplit == -1) {
 			errors.add("Invalid for statement:" + source.getErr(line));
-			return null;
+			return Invalids.STATEMENT;
 		}
 		if(firstSplit != 2 && !Tokens.isVarType(line[2].base)) {
 			errors.add("Expected variable declaration in for statement:" + source.getErr(line, 2, firstSplit));
-			return null;
+			return Invalids.STATEMENT;
 		}
 		if(firstSplit != 2) {
 			declaration = parseVariableDeclaration(source, Arrays.copyOfRange(line, 2, firstSplit),
@@ -281,13 +268,13 @@ public class StatementParser {
 		// parse simple range for
 		if(equalsMarker == -1) {
 			errors.add("Invalid for-in-range declaration:" + source.getErr(line));
-			return null;
+			return Invalids.STATEMENT;
 		}
 		// replace ':' by '=' (necessary to parse declaration)
 		line[equalsMarker] = new Token(source, TokenBase.KW_EQUAL, "=", line[equalsMarker].sourceStart);
 		if(line[2].base != TokenBase.TYPE_INT) {
 			errors.add("Missing range target in for statement:" + source.getErr(line, 2, simpleRangeMarker));
-			return null;
+			return Invalids.STATEMENT;
 		}
 		VariableDeclaration declaration = parseVariableDeclaration(source, Arrays.copyOfRange(line, 2, simpleRangeMarker), errors);
 		int maxStop = simpleRangeSecond == -1 ? conditionEnd : simpleRangeSecond;
@@ -299,6 +286,31 @@ public class StatementParser {
 			increment = new IntLiteral(source, line[conditionEnd].sourceStart, line[conditionEnd].sourceStart, 1);
 		return new RangedForSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
 				singleLine, declaration.name, declaration.getDefaultValue(), maximum, increment);
+	}
+
+	/** Assumes that the first token is KW_FOREACH */
+	private static Statement parseForeachStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
+		if(line.length < 5) {
+			errors.add("Incomplete foreach statement" + source.getErr(line));
+			return Invalids.STATEMENT;
+		}
+		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
+		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
+		if(!assertParentheses(line, 1, conditionEnd, errors))
+			return Invalids.STATEMENT;
+		if(!Tokens.isVarType(line[2].base) || line[3].base != TokenBase.VAR_VARIABLE) {
+			errors.add("Expected variable declaration " + source.getErr(line, 2, 3));
+			return Invalids.STATEMENT;
+		}
+		if(line[4].base != TokenBase.TK_COLUMN) {
+			errors.add("Expected ':' at" + line[4].getErr());
+			return Invalids.STATEMENT;
+		}
+		VariableDeclaration var = new VariableDeclaration(source, line[2].sourceStart, line[3].sourceStop,
+				line[3].text, Tokens.getType(line[2]), null);
+		Expression iterable = ExpressionParser.parseExpression(source, line, 5, conditionEnd, errors);
+		
+		return new ForEachSt(source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine, var, iterable);
 	}
 	
 	/** Assumes that the first token is KW_RETURN */
@@ -350,59 +362,6 @@ public class StatementParser {
 			return new FunctionSt(source, line[0].sourceStart, line[line.length-1].sourceStop, (FunctionCallExp) exp);
 		else
 			throw new IllegalStateException("Statement is not a function " + source.getErr(line));
-	}
-
-	/** Adds functionEndSt to complete single line ifs, elses ... */
-	public static void finalizeStatements(UnitSource source, FunctionSection function) {
-		List<Statement> statements = new ArrayList<>(Arrays.asList(function.body));
-		
-		// close single line statements
-		for(int s = 0; s < statements.size(); s++) {
-			Statement st = statements.get(s);
-			if(st instanceof LabeledStatement) {
-				s = closeStatement(source, statements, s)-1;
-			}
-		}
-		
-		function.body = statements.toArray(Statement[]::new);
-	}
-	
-	private static Map<Class<? extends LabeledStatement>, Class<? extends LabeledStatement>> sectionsPairs = Map.of(
-			IfSt.class, ElseSt.class
-	);
-	
-	private static int closeStatement(UnitSource source, List<Statement> statements, int idx) {
-		LabeledStatement toClose = (LabeledStatement) statements.get(idx);
-		if(toClose.singleLine) {
-			if(statements.size() == idx) {
-				statements.add(new SectionEndSt(source, statements.get(statements.size()-1).sourceStop));
-				return statements.size();
-			} else if(statements.get(idx+1) instanceof LabeledStatement) {
-				idx = closeStatement(source, statements, idx+1);
-			} else {
-				idx += 2;
-			}
-			statements.add(idx, new SectionEndSt(source, statements.get(idx-1).sourceStop));
-			idx++;
-			// handle section-end special cases
-			if(statements.size() != idx && sectionsPairs.get(toClose.getClass()) == statements.get(idx).getClass())
-				idx = closeStatement(source, statements, idx);
-			return idx;
-		} else {
-			for(int s = idx+1; s < statements.size(); s++) {
-				Statement st = statements.get(s);
-				if(st instanceof LabeledStatement) {
-					s = closeStatement(source, statements, s);
-				} else if(st instanceof SectionEndSt) {
-					s++;
-					// handle section-end special cases
-					if(statements.size() != s && sectionsPairs.get(toClose.getClass()) == statements.get(idx).getClass())
-						s = closeStatement(source, statements, s);
-					return s;
-				}
-			}
-			return statements.size();
-		}
 	}
 	
 }

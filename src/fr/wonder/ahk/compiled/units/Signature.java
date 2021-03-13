@@ -14,7 +14,7 @@ public class Signature {
 	
 	public Signature(String declaringUnit, String name, String computedSignature) {
 		this.declaringUnit = declaringUnit;
-		this.declaringUnitName = declaringUnit.substring(declaringUnit.indexOf('.')+1);
+		this.declaringUnitName = declaringUnit.substring(declaringUnit.lastIndexOf('.')+1);
 		this.name = name;
 		this.computedSignature = computedSignature;
 	}

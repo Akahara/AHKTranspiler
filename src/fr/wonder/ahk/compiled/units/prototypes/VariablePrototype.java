@@ -7,7 +7,7 @@ import fr.wonder.ahk.compiler.Unit;
 
 public class VariablePrototype implements VarAccess, Prototype<VariableDeclaration> {
 	
-	public final Signature signature;
+	public final Signature signature; // FIX ? make signatures private
 	public final VarType type;
 	
 	public VariablePrototype(Signature signature, VarType type) {

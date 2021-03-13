@@ -14,8 +14,6 @@ public class CompiledHandle {
 	}
 	
 	public LinkedHandle link(ErrorWrapper errors) throws WrappedException {
-		for(Unit u : units)
-			Linker.prelinkUnit(u, errors);
 		return Linker.link(this, errors);
 	}
 

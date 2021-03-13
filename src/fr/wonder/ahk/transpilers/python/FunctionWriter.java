@@ -9,6 +9,7 @@ import java.util.List;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
+import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
@@ -93,6 +94,7 @@ class FunctionWriter {
 			ElseSt.class,
 			ForSt.class,
 			RangedForSt.class,
+			ForEachSt.class,
 			WhileSt.class
 	);
 	
@@ -108,6 +110,9 @@ class FunctionWriter {
 			
 		} else if(st instanceof RangedForSt) {
 			writeRangedForStatement((RangedForSt) st, sb, errors);
+			
+		} else if(st instanceof ForEachSt) {
+			writeForeachStatement((ForEachSt) st, sb, errors);
 			
 		} else if(st instanceof ReturnSt) {
 			writeReturnStatement((ReturnSt) st, sb, errors);
@@ -160,6 +165,12 @@ class FunctionWriter {
 		if(((IntLiteral) st.getStep()).value != 1)
 			sb.append(", " + ((IntLiteral) st.getStep()).value);
 		sb.append("):");
+	}
+	
+	private static void writeForeachStatement(ForEachSt st, StringBuilder sb, ErrorWrapper errors) {
+		sb.append("for " + st.declaration.name + " in ");
+		writeExpression(st.getIterable(), sb, errors);
+		sb.append(":");
 	}
 	
 	static void writeVarDeclaration(VariableDeclaration st, StringBuilder sb, ErrorWrapper errors) {

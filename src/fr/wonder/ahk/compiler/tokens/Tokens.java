@@ -27,7 +27,7 @@ public class Tokens {
 			LIT_INT, LIT_FLOAT, LIT_BOOL_TRUE,					// literals
 			LIT_BOOL_FALSE, LIT_NULL,
 			DECL_BASE, DECL_IMPORT, DECL_UNIT,					// declarations
-			KW_VAR, KW_IF, KW_ELSE, KW_FOR,						// keywords
+			KW_VAR, KW_IF, KW_ELSE, KW_FOR, KW_FOREACH,			// keywords
 			KW_WHILE, KW_FUNC, KW_STRUCT, KW_RETURN,
 			KW_SIZEOF,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,			// types
@@ -50,6 +50,7 @@ public class Tokens {
 			KW_IF,
 			KW_ELSE,
 			KW_FOR,
+			KW_FOREACH,
 			KW_WHILE
 	};
 

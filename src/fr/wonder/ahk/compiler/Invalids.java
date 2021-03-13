@@ -4,6 +4,9 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.statements.AffectationSt;
+import fr.wonder.ahk.compiled.statements.Statement;
+import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
@@ -49,8 +52,17 @@ public class Invalids {
 	};
 
 	public static final Expression EXPRESSION = new Expression(Invalids.SOURCE, 0, 0) {
-		public String toString() { return "INVALID"; }
+		public String toString() { return Invalids.STRING; }
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return Invalids.TYPE; }
 	};
+	
+	public static final Statement STATEMENT = new Statement(Invalids.SOURCE, 0, 0) {
+		public String toString() { return Invalids.STRING; }
+	};
+
+	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(Invalids.SOURCE, 0, 0,
+			Invalids.STRING, Invalids.TYPE, Invalids.EXPRESSION);
+	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(Invalids.SOURCE, 0, 0,
+			Invalids.EXPRESSION, Invalids.EXPRESSION);
 	
 }
