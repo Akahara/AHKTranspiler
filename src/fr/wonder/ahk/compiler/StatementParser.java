@@ -20,12 +20,14 @@ import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
+import fr.wonder.ahk.compiled.statements.MultipleAffectationSt;
 import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
+import fr.wonder.ahk.compiler.ExpressionParser.Section;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
@@ -63,10 +65,13 @@ public class StatementParser {
 			break;
 		}
 		TokenBase lastToken = line[line.length-1].base;
+		int affectationTokenPos = getAffectationTokenPos(line);
 		if(Tokens.isDirectAffectation(lastToken))
 			return parseDirectAffectationStatement(source, line, errors);
-		if(isAffectationStatement(line))
-			return parseAffectationStatement(source, line, errors);
+		if(affectationTokenPos != -1 && isMultipleAffectationStatement(line, affectationTokenPos))
+			return parseMultipleAffectationStatement(source, line, affectationTokenPos, errors);
+		if(affectationTokenPos != -1)
+			return parseAffectationStatement(source, line, affectationTokenPos, errors);
 		if(isFunctionStatement(line))
 			return parseFunctionStatement(source, line, errors);
 		
@@ -249,12 +254,16 @@ public class StatementParser {
 		if(conditionEnd != secondSplit+1) {
 			Token[] affectationTokens = Arrays.copyOfRange(line, secondSplit+1, conditionEnd);
 			ErrorWrapper subErrors = errors.subErrrors("Expected affectation in for statement");
-			if(Tokens.isDirectAffectation(affectationTokens[affectationTokens.length-1].base))
+			if(Tokens.isDirectAffectation(affectationTokens[affectationTokens.length-1].base)) {
 				affectation = parseDirectAffectationStatement(source, affectationTokens, subErrors);
-			else
-				affectation = parseAffectationStatement(source, affectationTokens, subErrors);
+			} else {
+				int opPos = getAffectationTokenPos(affectationTokens);
+				if(opPos != -1)
+					affectation = parseAffectationStatement(source, affectationTokens, opPos, subErrors);
+				else
+					subErrors.add("Not an affectation" + source.getErr(affectationTokens));
+			}
 		}
-		// TODO if possible, convert to ranged for
 		return new ForSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
 				singleLine, declaration, condition, affectation);
 	}
@@ -323,25 +332,36 @@ public class StatementParser {
 		}
 	}
 	
-	private static boolean isAffectationStatement(Token[] line) {
-		for(Token t : line) {
-			if(Tokens.isAffectationOperator(t.base))
+	/**
+	 * Returns the index of the first affectation operator token (see
+	 * {@link Tokens#isAffectationOperator(TokenBase)}) or {@code -1} if there is
+	 * none. The first token is not accounted for so 0 cannot be returned.
+	 */
+	private static int getAffectationTokenPos(Token[] line) {
+		for(int i = 1; i < line.length; i++) {
+			if(Tokens.isAffectationOperator(line[i].base))
+				return i;
+		}
+		return -1;
+	}
+	
+	/**
+	 * Returns {@code true} if there is an unenclosed comma before the affectation
+	 * token or -1 if there is none. This method not returning -1 does NOT mean that
+	 * the line is a correct affectation statement.
+	 */
+	private static boolean isMultipleAffectationStatement(Token[] line, int affectationTokenPos) {
+		Section sec = ExpressionParser.getVisibleSection(line, 0, affectationTokenPos);
+		for(int i = 0; i < affectationTokenPos; i = sec.getPointerPos(i+1)) {
+			if(line[i].base == TokenBase.TK_COMMA)
 				return true;
 		}
 		return false;
 	}
 	
-	private static AffectationSt parseAffectationStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
-		int opPos = -1;
-		for(int i = 0; i < line.length; i++) {
-			if(Tokens.isAffectationOperator(line[i].base)) {
-				opPos = i;
-				break;
-			}
-		}
-		if(opPos == -1)
-			throw new IllegalAccessError("Not an affectation " + source.getErr(line));
-		
+	/** Assumes that {@code opPos != -1} */
+	private static AffectationSt parseAffectationStatement(UnitSource source, Token[] line, int opPos,
+			ErrorWrapper errors) {
 		Expression leftOperand = ExpressionParser.parseExpression(source, line, 0, opPos, errors);
 		Expression rightOperand = ExpressionParser.parseExpression(source, line, opPos+1, line.length, errors);
 		if(line[opPos].base != TokenBase.KW_EQUAL) {
@@ -349,7 +369,36 @@ public class StatementParser {
 			rightOperand = new OperationExp(source, line[0].sourceStart, line[line.length-1].sourceStop,
 					op, leftOperand, rightOperand);
 		}
-		return new AffectationSt(source, line[0].sourceStart, line[line.length-1].sourceStop, leftOperand, rightOperand);
+		return new AffectationSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
+				leftOperand, rightOperand);
+	}
+	
+	/** Assumes that {@code opPos != -1} and {@link #isMultipleAffectationStatement(Token[], int)} returned true */
+	private static MultipleAffectationSt parseMultipleAffectationStatement(UnitSource source, Token[] line,
+			int opPos, ErrorWrapper errors) {
+
+		String[] variables = new String[(opPos+1)/2];
+		
+		for(int i = 0; i < opPos; i++) {
+			if(i % 2 == 0) {
+				if(line[i].base != TokenBase.VAR_VARIABLE)
+					errors.add("Expected variable name" + line[i].getErr());
+				else
+					variables[i/2] = line[i].text;
+			} else if(line[i].base != TokenBase.TK_COMMA) {
+				errors.add("Expected ','" + line[i].getErr());
+			}
+		}
+		if(opPos % 2 != 1)
+			errors.add("Unfinished multiple affectation statement" + line[opPos-1].getErr());
+		if(line[opPos].base != TokenBase.KW_EQUAL)
+			errors.add("Multiple affectations only support the '=' operator" + line[opPos].getErr());
+		
+		Expression[] values = ExpressionParser.parseArgumentList(source, line, opPos+1, line.length,
+				errors.subErrrors("Cannot parse affectation values"));
+		
+		return new MultipleAffectationSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
+				line[opPos-1].sourceStop, variables, values);
 	}
 	
 	private static boolean isFunctionStatement(Token[] line) {

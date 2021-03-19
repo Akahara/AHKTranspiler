@@ -52,7 +52,7 @@ public enum TokenBase {
 	TK_LINE_BREAK(";"),
 	TK_DOUBLE_DOT(".."),
 	TK_DOT("."),
-	TK_COMA(","),
+	TK_COMMA(","),
 	TK_COLUMN(":"),
 	TK_BRACE_OPEN("{"), TK_BRACE_CLOSE("}"),
 	TK_BRACKET_OPEN("["), TK_BRACKET_CLOSE("]"),

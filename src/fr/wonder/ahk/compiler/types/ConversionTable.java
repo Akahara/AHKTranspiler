@@ -35,9 +35,10 @@ public class ConversionTable {
 	}
 	
 	public boolean canConvertImplicitely(VarType from, VarType to) {
-		if(from == to || implicitConversions.computeIfAbsent(from, x -> new HashSet<>()).contains(to))
+		if(from == to || (implicitConversions.containsKey(from) && implicitConversions.get(from).contains(to)))
 			return true;
-		if(from instanceof VarStructType && to instanceof VarStructType && isParentOf((VarStructType)to, (VarStructType)from)) {
+		if(from instanceof VarStructType && to instanceof VarStructType &&
+				isParentOf((VarStructType)to, (VarStructType)from)) {
 			implicitConversions.computeIfAbsent(from, x -> new HashSet<>()).add(to);
 			return true;
 		}

@@ -48,6 +48,8 @@ func int main() {
 		Kernel.println();
 	}
 	int a;
+	int b;
+	a,b = b,a;
 	a(1, 2);
 	while(a < sizeof(array)) {
 		a++;

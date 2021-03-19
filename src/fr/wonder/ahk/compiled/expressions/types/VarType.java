@@ -11,14 +11,16 @@ public abstract class VarType {
 		return type == INT || type == FLOAT;
 	}
 	
-	public static final VarStructType STR = new VarStructType("str") {
+	public static final VarStructType STR = new VarStructType("str") { // FIX rework the string type
 		@Override
 		public String getSignature() {
 			return "s";
 		}
 	};
 	
+	/** Returns the user-friendly name of this type */
 	public abstract String getName();
+	/** Returns a non user-friendly descriptor (signature) of this type */
 	public abstract String getSignature();
 	
 	@Override

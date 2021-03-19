@@ -3,9 +3,13 @@ package fr.wonder.ahk.transpilers.python;
 import static fr.wonder.ahk.transpilers.python.ExpressionWriter.writeExpression;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
+import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
@@ -13,12 +17,14 @@ import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
+import fr.wonder.ahk.compiled.statements.MultipleAffectationSt;
 import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -37,6 +43,22 @@ class FunctionWriter {
 		}
 		
 		// write statements
+		
+		Set<String> globalVariables = new HashSet<>();
+		
+		for(Statement st : func.body) {
+			for(Expression e : st.getExpressions())
+				if(e instanceof VarExp && ((VarExp) e).declaration.getSignature().declaringUnit != VarAccess.INNER_UNIT)
+					globalVariables.add(((VarExp) e).variable);		
+		}
+		
+		if(!globalVariables.isEmpty()) {
+			sb.append("    global ");
+			for(String s : globalVariables)
+				sb.append(s + ", ");
+			sb.delete(sb.length()-2, sb.length());
+			sb.append('\n');
+		}
 		
 		int indent = 2;
 		boolean indentHasStatement = true;
@@ -123,6 +145,9 @@ class FunctionWriter {
 		} else if(st instanceof AffectationSt) {
 			writeAffectationStatement((AffectationSt) st, sb, errors);
 			
+		} else if(st instanceof MultipleAffectationSt) {
+			writeMultipleAffectationStatement((MultipleAffectationSt) st, sb, errors);
+			
 		} else if(st instanceof WhileSt) {
 			writeWhileStatement((WhileSt) st, sb, errors);
 			
@@ -192,6 +217,23 @@ class FunctionWriter {
 		writeExpression(st.getVariable(), sb, errors);
 		sb.append(" = ");
 		writeExpression(st.getValue(), sb, errors);
+	}
+	
+	private static void writeMultipleAffectationStatement(MultipleAffectationSt st, StringBuilder sb,
+			ErrorWrapper errors) {
+		String[] variables = st.getVariablesNames();
+		for(int i = 0; i < variables.length; i++) {
+			sb.append(variables[i]);
+			if(i != variables.length-1)
+				sb.append(",");
+		}
+		sb.append(" = ");
+		Expression[] values = st.getValues();
+		for(int i = 0; i < variables.length; i++) {
+			writeExpression(values[i], sb, errors);
+			if(i != values.length-1)
+				sb.append(",");
+		}
 	}
 	
 }

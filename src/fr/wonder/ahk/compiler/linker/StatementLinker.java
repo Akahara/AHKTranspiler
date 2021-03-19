@@ -4,12 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.FunctionExpression;
+import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
+import fr.wonder.ahk.compiled.statements.MultipleAffectationSt;
 import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
@@ -22,6 +26,7 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.utils.ArrayOperator;
 
 class StatementLinker {
 
@@ -114,6 +119,43 @@ class StatementLinker {
 			if(condition != null && !typesTable.conversions.canConvertImplicitely(condition.getType(), VarType.BOOL))
 				errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 			
+		} else if(st instanceof AffectationSt) {
+			AffectationSt a = (AffectationSt) st;
+			VarType from = a.getValue().getType();
+			VarType to = a.getVariable().getType();
+			if(!typesTable.conversions.canConvertImplicitely(from, to))
+				errors.add("Invalid affectation, " + from.getName() + " cannot be converted to " + to.getName() + st.getErr());
+			
+		} else if(st instanceof MultipleAffectationSt) {
+			MultipleAffectationSt a = (MultipleAffectationSt) st;
+			Expression[] variables = a.getVariables();
+			Expression[] values = a.getValues();
+			VarType[] valuesTypes;
+			if(values.length == 1) {
+				if(!(values[0] instanceof FunctionExpression) || !(values[0].getType() instanceof VarCompositeType)) {
+					errors.add("Invalid affectation, the right hand side of the assignement is not a composite type "
+							+ values[0].getErr());
+					valuesTypes = null;
+				} else {
+					valuesTypes = ((VarCompositeType) values[0].getType()).types;
+				}
+			} else {
+				valuesTypes = ArrayOperator.map(values, VarType[]::new, Expression::getType);
+			}
+			if(valuesTypes != null) {
+				if(valuesTypes.length != variables.length) {
+					errors.add("Invalid affectation, " + variables.length + " variables for " 
+							+ valuesTypes.length + " values");
+				} else {
+					for(int i = 0; i < variables.length; i++) {
+						VarType from = valuesTypes[i];
+						VarType to = variables[i].getType();
+						if(!typesTable.conversions.canConvertImplicitely(from, to))
+							errors.add("Invalid affectation, " + from.getName() + " cannot be casted to "
+									+ to.getName() + st.getErr());
+					}
+				}
+			}
 		}
 	}
 

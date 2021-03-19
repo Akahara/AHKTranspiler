@@ -22,7 +22,8 @@ public class PythonTranspiler implements Transpiler {
 	}
 	
 	@Override
-	public ExecutableHandle exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
+	public ExecutableHandle exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) 
+			throws IOException, WrappedException {
 		handle.manifest.validate(handle, errors, false);
 		errors.assertNoErrors();
 		ErrorWrapper[] unitErrors = new ErrorWrapper[handle.units.length+handle.nativeRequirements.length];
@@ -83,7 +84,8 @@ public class PythonTranspiler implements Transpiler {
 		}
 	}
 	
-	private static void exportUnit(TranspilableHandle handle, Unit unit, File file, ErrorWrapper errors) throws IOException, WrappedException {
+	private static void exportUnit(TranspilableHandle handle, Unit unit, File file, ErrorWrapper errors) 
+			throws IOException, WrappedException {
 		FilesUtils.create(file);
 		
 		StringBuilder sb = new StringBuilder();

@@ -23,14 +23,13 @@ import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
-import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Tuple;
 
 public class ExpressionParser {
 	
-	private static class Section {
+	public static class Section {
 		
 		SectionToken type;
 		/** Inner positions (line[start|stop] won't likely be a parenthesis) */
@@ -88,7 +87,7 @@ public class ExpressionParser {
 		
 	}
 
-	private static Section getVisibleSection(Token[] line, int start, int stop) {
+	public static Section getVisibleSection(Token[] line, int start, int stop) {
 		List<Section> sections = new ArrayList<>();
 		Section current = new Section(start, stop);
 		
@@ -126,11 +125,11 @@ public class ExpressionParser {
 	
 	private static Expression parseExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
 		if(section.stop == section.start) {
-			Utils.dump(line);
-			System.out.println(section.start + "  " + section.stop);
 			errors.add("Empty expression:" + line[section.start].getErr());
 			return Invalids.EXPRESSION;
 		}
+		
+		// TODO optimize the expression parser a bit, refactor the most part
 		
 		Section firstSection = section.subSections.isEmpty() ? null : section.subSections.get(0);
 		
@@ -251,12 +250,16 @@ public class ExpressionParser {
 		}
 	}
 	
+	public static Expression[] parseArgumentList(UnitSource source, Token[] line, int start, int stop, ErrorWrapper errors) {
+		return parseArgumentList(source, line, getVisibleSection(line, start, stop), errors);
+	}
+	
 	private static Expression[] parseArgumentList(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
 		List<Expression> arguments = new ArrayList<>();
 		if(section.stop-section.start != 0) {
 			int last = section.start;
 			for(int i = section.start; i < section.stop; i = section.getPointerPos(i+1)) {
-				if(line[i].base == TokenBase.TK_COMA) {
+				if(line[i].base == TokenBase.TK_COMMA) {
 					arguments.add(parseExpression(source, line, section.getSubSection(last, i), errors));
 					last = i+1;
 				}

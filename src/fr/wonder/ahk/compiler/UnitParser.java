@@ -232,7 +232,7 @@ public class UnitParser {
 				} else {
 					VarType argType = Tokens.getType(declaration[i]);
 					int argIdx = (i-4)/3;
-					function.arguments[argIdx] = new FunctionArgument(declaration[i].sourceStart,
+					function.arguments[argIdx] = new FunctionArgument(source, declaration[i].sourceStart,
 							declaration[i+1].sourceStop, declaration[i+1].text, argType);
 					function.argumentTypes[argIdx] = argType;
 					
@@ -240,7 +240,7 @@ public class UnitParser {
 						errors.add("Unknown argument type:" + declaration[i].getErr());
 				}
 			} else if((i-4)%3 == 2) {
-				if(declaration[i].base != TokenBase.TK_COMA)
+				if(declaration[i].base != TokenBase.TK_COMMA)
 					declErrors.add("Expected ','" + declaration[i].getErr());
 			}
 		}
@@ -279,7 +279,7 @@ public class UnitParser {
 						arguments[(i-2)/2] = ExpressionParser.parseLiteral(line[i], subErrors);
 						
 				} else {
-					if(line[i].base != TokenBase.TK_COMA)
+					if(line[i].base != TokenBase.TK_COMMA)
 						errors.add("Invalid modifier syntax:" + line[i].getErr());
 				}
 			}
