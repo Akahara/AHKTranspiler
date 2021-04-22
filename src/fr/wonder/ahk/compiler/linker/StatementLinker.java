@@ -131,7 +131,7 @@ class StatementLinker {
 			Expression[] variables = a.getVariables();
 			Expression[] values = a.getValues();
 			VarType[] valuesTypes;
-			if(values.length == 1) {
+			if(a.isUnwrappedFunction()) {
 				if(!(values[0] instanceof FunctionExpression) || !(values[0].getType() instanceof VarCompositeType)) {
 					errors.add("Invalid affectation, the right hand side of the assignement is not a composite type "
 							+ values[0].getErr());

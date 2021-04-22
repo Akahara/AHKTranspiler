@@ -15,6 +15,8 @@ func int gcd(int x, int y) {
 		return gcd(y, x%y);
 }
 
+func void vOid() {}
+
 func int gcd2(int x, int y) {
 	while(y != 0) {
 		int t = x;
@@ -57,5 +59,12 @@ func int main() {
 	}
 	foreach(int i : array)
 		Kernel.println(i);
+	a,b = g();
+	Kernel.println(a);
+	Kernel.println(b);
 	return 0;
+}
+
+func (int a, int b) g() {
+	return 1,2;
 }

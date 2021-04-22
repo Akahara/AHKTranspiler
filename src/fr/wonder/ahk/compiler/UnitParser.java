@@ -1,10 +1,12 @@
 package fr.wonder.ahk.compiler;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
@@ -17,6 +19,8 @@ import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
+import fr.wonder.commons.types.Quadruplet;
+import fr.wonder.commons.types.Tuple;
 
 public class UnitParser {
 	
@@ -168,7 +172,7 @@ public class UnitParser {
 				// parse struct
 				errors.add("Structures are not yet supported!" + line[0].getErr());
 				
-			} else if(Tokens.isVarType(line[0].base) && line[0].base != TokenBase.TYPE_VOID) {
+			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
 				VariableDeclaration var = StatementParser.parseVariableDeclaration(source, line, errors);
 				if(var != null)
@@ -198,54 +202,15 @@ public class UnitParser {
 	/** Assumes that the first line token is KW_FUNC and the last TK_BRACE_OPEN */
 	private static FunctionSection parseFunctionSection(UnitSource source, Token[][] tokens,
 			int start, int stop, ErrorWrapper errors) {
+		
 		Token[] declaration = tokens[start];
 		FunctionSection function = new FunctionSection(
 				source,
 				declaration[0].sourceStart, // source start
 				tokens[stop-1][tokens[stop-1].length-1].sourceStop, // source stop
 				declaration[declaration.length-1].sourceStop); // declaration stop
-		if(declaration.length < 6) {
-			errors.add("Incomplete function declaration:" + function.getErr());
-			return function;
-		}
-		ErrorWrapper declErrors = errors.subErrrors("Invalid function declaration");
-		if(declaration[2].base != TokenBase.VAR_VARIABLE)
-			declErrors.add("Expected function name:" + declaration[2].getErr());
-		if(declaration[3].base != TokenBase.TK_PARENTHESIS_OPEN)
-			declErrors.add("Expected '('" + declaration[3].getErr());
-		if(declaration[declaration.length-2].base != TokenBase.TK_PARENTHESIS_CLOSE)
-			declErrors.add("Expected ')'" + declaration[declaration.length-1].getErr());
-		if(!declErrors.noErrors())
-			return function;
-		function.returnType = Tokens.getType(declaration[1]);
-		function.name = declaration[2].text;
-		function.arguments = new FunctionArgument[(declaration.length-4)/3];
-		function.argumentTypes = new VarType[function.arguments.length];
-		if(function.returnType == null)
-			errors.add("Unknown return value type:" + declaration[1].getErr());
-		for(int i = 4; i < declaration.length-2; i++) {
-			if((i-4)%3 == 0) {
-				if(!Tokens.isVarType(declaration[i].base)) {
-					declErrors.add("Expected argument type:" + declaration[i].getErr());
-				} else if(declaration[i+1].base != TokenBase.VAR_VARIABLE) {
-					declErrors.add("Expected argument name:" + declaration[i+1].getErr());
-				} else {
-					VarType argType = Tokens.getType(declaration[i]);
-					int argIdx = (i-4)/3;
-					function.arguments[argIdx] = new FunctionArgument(source, declaration[i].sourceStart,
-							declaration[i+1].sourceStop, declaration[i+1].text, argType);
-					function.argumentTypes[argIdx] = argType;
-					
-					if(argType == null)
-						errors.add("Unknown argument type:" + declaration[i].getErr());
-				}
-			} else if((i-4)%3 == 2) {
-				if(declaration[i].base != TokenBase.TK_COMMA)
-					declErrors.add("Expected ','" + declaration[i].getErr());
-			}
-		}
-		if(function.arguments.length != 0 && declaration.length%3 != 2)
-			declErrors.add("Unexpected token" + declaration[declaration.length-3].getErr());
+		
+		readFunctionDeclaration(function, declaration, errors.subErrrors("Invalid function declaration"));
 		
 		function.body = new Statement[stop-start-1];
 		ErrorWrapper functionErrors = errors.subErrrors("Unable to parse function");
@@ -254,6 +219,108 @@ public class UnitParser {
 		if(functionErrors.noErrors())
 			StatementsFinalizer.finalizeStatements(source, function);
 		return function;
+	}
+	
+	private static void readFunctionDeclaration(FunctionSection func, Token[] declaration, ErrorWrapper errors) {
+		if(declaration.length < 6) {
+			errors.add("Incomplete function declaration" + func.getErr());
+			return;
+		}
+		
+		int k;
+		if(declaration[1].base == TokenBase.TK_PARENTHESIS_OPEN) {
+			Quadruplet<List<String>, List<VarType>, List<Tuple<Integer, Integer>>, Integer> composite 
+				= readTypedVarList(declaration, 1, errors);
+			k = composite.d;
+			func.returnType = new VarCompositeType(composite.a.toArray(String[]::new), composite.b.toArray(VarType[]::new));
+		} else if(declaration[1].base == TokenBase.TYPE_VOID) {
+			func.returnType = VarType.VOID;
+			k = 2;
+		} else {
+			if(!Tokens.isVarType(declaration[1].base))
+				errors.add("Expected return type" + declaration[1].getErr());
+			func.returnType = Tokens.getType(declaration[1]);
+			k = 2;
+		}
+		
+		if(declaration.length - k < 3) {
+			errors.add("Incomplete function declaration" + func.getErr());
+			func.name = Invalids.STRING;
+			func.arguments = new FunctionArgument[0];
+			return;
+		}
+		
+		if(declaration[k].base != TokenBase.VAR_VARIABLE)
+			errors.add("Expected function name" + declaration[k].base);
+		func.name = declaration[k].text;
+		
+		Quadruplet<List<String>, List<VarType>, List<Tuple<Integer, Integer>>, Integer> composite
+			= readTypedVarList(declaration, k+1, errors);
+		
+		List<String> argNames = composite.a;
+		List<VarType> argTypes = composite.b;
+		List<Tuple<Integer, Integer>> argRanges = composite.c;
+		func.arguments = new FunctionArgument[argNames.size()];
+		for(int i = 0; i < composite.a.size(); i++) {
+			func.arguments[i] = new FunctionArgument(
+					func.getSource(),
+					argRanges.get(i).a,
+					argRanges.get(i).b,
+					argNames.get(i),
+					argTypes.get(i));
+		}
+		
+		if(composite.d != declaration.length-1)
+			errors.add("Unexpected tokens" + func.getSource().getErr(declaration, composite.d, declaration.length));
+	}
+	
+	private static Quadruplet<List<String>, List<VarType>, List<Tuple<Integer, Integer>>, Integer> 
+		readTypedVarList(Token[] tokens, int begin, ErrorWrapper errors) {
+		
+		if(tokens[begin].base != TokenBase.TK_PARENTHESIS_OPEN) {
+			errors.add("Expected '('" + tokens[begin].getErr());
+			return new Quadruplet<>(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), begin);
+		}
+		if(begin+1 < tokens.length && tokens[begin+1].base == TokenBase.TK_PARENTHESIS_CLOSE) {
+			return new Quadruplet<>(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), begin+2);
+		}
+		
+		List<String> names = new ArrayList<>();
+		List<VarType> types = new ArrayList<>();
+		List<Tuple<Integer, Integer>> declarationRanges = new ArrayList<>();
+		int k;
+		for(k = begin+1; k < tokens.length; k++) {
+			int j = (k - begin) % 3;
+			Token t = tokens[k];
+			if(tokens[k].base == TokenBase.TK_PARENTHESIS_CLOSE) {
+				if(j != 0)
+					errors.add("Incomplete composite" + tokens[k].getErr());
+				break;
+			}
+			switch(j) {
+			case 1:
+				if(!Tokens.isVarType(t.base))
+					errors.add("Expected type" + t.getErr());
+				types.add(Tokens.getType(t));
+				declarationRanges.add(new Tuple<>(t.sourceStart, -1));
+				break;
+			case 2:
+				if(t.base != TokenBase.VAR_VARIABLE)
+					errors.add("Expected name" + t.getErr());
+				names.add(t.text);
+				declarationRanges.get(declarationRanges.size()-1).b = t.sourceStop;
+				break;
+			case 3:
+				if(t.base != TokenBase.TK_COMMA)
+					errors.add("Expected ','" + t.getErr());
+				break;
+			}
+		}
+		
+		if(k == tokens.length)
+			errors.add("Unclosed variable list" + tokens[begin].getErr() + tokens[k-1].getErr());
+		
+		return new Quadruplet<>(names, types, declarationRanges, k+1);
 	}
 	
 	/** Assumes that the first line token base is VAR_MODIFIER */

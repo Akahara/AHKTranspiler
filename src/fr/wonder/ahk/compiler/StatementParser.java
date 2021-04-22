@@ -15,6 +15,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
+import fr.wonder.ahk.compiled.statements.CompositeReturnSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -146,26 +147,28 @@ public class StatementParser {
 			varType = new VarArrayType(varType);
 		
 		Expression defaultValue;
-		
 		if(line.length == t+1) {
-			// get default value
-			int sourceLoc = line[t].sourceStop;
-			if(varType == VarType.INT)
-				defaultValue = new IntLiteral(source, sourceLoc, sourceLoc, 0);
-			else if(varType == VarType.FLOAT)
-				defaultValue = new FloatLiteral(source, sourceLoc, sourceLoc, 0);
-			else if(varType == VarType.BOOL)
-				defaultValue = new BoolLiteral(source, sourceLoc, sourceLoc, false);
-			else if(varType == VarType.STR || varType instanceof VarStructType)
-				defaultValue = new NullExp(source, sourceLoc, sourceLoc);
-			else if(varType == Invalids.TYPE)
-				defaultValue = Invalids.EXPRESSION;
-			else
-				throw new UnreachableException("Unimplemented type default value");
+			defaultValue = getDefaultValue(varType, source, line[t].sourceStop);
 		} else {
 			defaultValue = ExpressionParser.parseExpression(source, line, t+2, line.length, subErrors);
 		}
+		
 		return new VariableDeclaration(source, line[0].sourceStart, line[line.length-1].sourceStop, varName, varType, defaultValue);
+	}
+	
+	public static Expression getDefaultValue(VarType type, UnitSource source, int sourceLoc) {
+		if(type == VarType.INT)
+			return new IntLiteral(source, sourceLoc, sourceLoc, 0);
+		else if(type == VarType.FLOAT)
+			return new FloatLiteral(source, sourceLoc, sourceLoc, 0);
+		else if(type == VarType.BOOL)
+			return new BoolLiteral(source, sourceLoc, sourceLoc, false);
+		else if(type == VarType.STR || type instanceof VarStructType)
+			return new NullExp(source, sourceLoc, sourceLoc);
+		else if(type == Invalids.TYPE)
+			return Invalids.EXPRESSION;
+		else
+			throw new UnreachableException("Unimplemented type default value for " + type);
 	}
 	
 	/** Assumes that the first token is KW_IF */
@@ -324,11 +327,16 @@ public class StatementParser {
 	
 	/** Assumes that the first token is KW_RETURN */
 	private static Statement parseReturnStatement(UnitSource unit, Token[] line, ErrorWrapper errors) {
+		int sourceStart = line[0].sourceStart;
+		int sourceStop = line[line.length-1].sourceStop;
 		if(line.length == 1) {
-			return new ReturnSt(unit, line[0].sourceStart, line[line.length-1].sourceStop);
+			return new ReturnSt(unit, sourceStart, sourceStop);
 		} else {
-			Expression returnValue = ExpressionParser.parseExpression(unit, line, 1, line.length, errors);
-			return new ReturnSt(unit, line[0].sourceStart, line[line.length-1].sourceStop, returnValue);
+			Expression[] returnValues = ExpressionParser.parseArgumentList(unit, line, 1, line.length, errors);
+			if(returnValues.length == 1)
+				return new ReturnSt(unit, sourceStart, sourceStop, returnValues[0]);
+			else
+				return new CompositeReturnSt(unit, sourceStart, sourceStop, returnValues);
 		}
 	}
 	
@@ -352,7 +360,7 @@ public class StatementParser {
 	 */
 	private static boolean isMultipleAffectationStatement(Token[] line, int affectationTokenPos) {
 		Section sec = ExpressionParser.getVisibleSection(line, 0, affectationTokenPos);
-		for(int i = 0; i < affectationTokenPos; i = sec.getPointerPos(i+1)) {
+		for(int i = 0; i < affectationTokenPos; i = sec.advancePointer(i)) {
 			if(line[i].base == TokenBase.TK_COMMA)
 				return true;
 		}

@@ -6,9 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 import fr.wonder.ahk.UnitSource;
+import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.statements.CompositeReturnSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
+import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -28,6 +33,23 @@ public class StatementsFinalizer {
 			Statement st = statements.get(s);
 			if(st instanceof LabeledStatement) {
 				s = closeStatement(source, statements, s)-1;
+			}
+		}
+		
+		Statement lastStatement = statements.isEmpty() ? null : statements.get(statements.size()-1);
+		if(function.returnType != VarType.VOID &&
+				!(lastStatement instanceof ReturnSt || lastStatement instanceof CompositeReturnSt)) {
+			int sourceLoc = lastStatement == null ? function.sourceStop : lastStatement.sourceStop;
+			
+			if(function.returnType instanceof VarCompositeType) {
+				VarCompositeType composite = (VarCompositeType) function.returnType;
+				Expression[] returnValues = new Expression[composite.types.length];
+				for(int i = 0; i < returnValues.length; i++)
+					returnValues[i] = StatementParser.getDefaultValue(composite.types[i], source, sourceLoc);
+				statements.add(new CompositeReturnSt(source, sourceLoc, sourceLoc, returnValues));
+			} else {
+				Expression returned = StatementParser.getDefaultValue(function.returnType, source, sourceLoc);
+				statements.add(new ReturnSt(source, sourceLoc, sourceLoc, returned));
 			}
 		}
 		

@@ -1,5 +1,6 @@
 package fr.wonder.ahk.compiler.tokens;
 
+import static fr.wonder.ahk.compiler.tokens.SectionToken.*;
 import static fr.wonder.ahk.compiler.tokens.TokenBase.*;
 
 import java.util.HashMap;
@@ -8,8 +9,7 @@ import java.util.Map;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-
-import static fr.wonder.ahk.compiler.tokens.SectionToken.*;
+import fr.wonder.ahk.compiler.Invalids;
 
 public class Tokens {
 	
@@ -71,15 +71,14 @@ public class Tokens {
 	public static VarType getType(Token token) {
 		if(token.base == VAR_UNIT)
 			return new VarStructType(token.text);
-		return typesMap.get(token.base);
+		return typesMap.getOrDefault(token.base, Invalids.TYPE);
 	}
 	
 	private static final Map<TokenBase, VarType> typesMap = Map.of(
 			TYPE_INT,	VarType.INT,
 			TYPE_FLOAT,	VarType.FLOAT,
 			TYPE_STR,	VarType.STR,
-			TYPE_BOOL,	VarType.BOOL,
-			TYPE_VOID,	VarType.VOID
+			TYPE_BOOL,	VarType.BOOL
 	);
 	
 	/* ------------------------- Affectation Tokens ------------------------- */

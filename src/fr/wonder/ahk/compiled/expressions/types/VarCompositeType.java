@@ -2,19 +2,25 @@ package fr.wonder.ahk.compiled.expressions.types;
 
 import java.util.Arrays;
 
-import fr.wonder.ahk.utils.Utils;
-
 public class VarCompositeType extends VarType {
 	
+	public final String[] names;
 	public final VarType[] types;
 	
-	public VarCompositeType(VarType[] types) {
+	public VarCompositeType(String[] names, VarType[] types) {
+		this.names = names;
 		this.types = types;
 	}
 	
 	@Override
 	public String getName() {
-		return "(" + Utils.toString(types) + ")";
+		String name = "(";
+		for(int i = 0; i < names.length; i++) {
+			name += types[i] + " " + names[i];
+			if(i != names.length-1)
+				name += ", ";
+		}
+		return name + ")";
 	}
 
 	@Override

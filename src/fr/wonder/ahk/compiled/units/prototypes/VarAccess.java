@@ -12,6 +12,11 @@ public interface VarAccess {
 	public static final String INNER_UNIT = "local";
 
 	public Signature getSignature();
+	
+	/** Returns true if the variable is declared inside a function scope */
+	public default boolean isLocallyScoped() {
+		return getSignature().declaringUnit == INNER_UNIT;
+	}
 
 	public VarType getType();
 

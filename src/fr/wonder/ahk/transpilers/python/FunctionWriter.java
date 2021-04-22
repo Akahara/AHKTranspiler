@@ -9,9 +9,10 @@ import java.util.List;
 import java.util.Set;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
+import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
+import fr.wonder.ahk.compiled.statements.CompositeReturnSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForEachSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -24,7 +25,6 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
-import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -48,7 +48,7 @@ class FunctionWriter {
 		
 		for(Statement st : func.body) {
 			for(Expression e : st.getExpressions())
-				if(e instanceof VarExp && ((VarExp) e).declaration.getSignature().declaringUnit != VarAccess.INNER_UNIT)
+				if(e instanceof VarExp && !((VarExp) e).declaration.isLocallyScoped())
 					globalVariables.add(((VarExp) e).variable);		
 		}
 		
@@ -139,6 +139,9 @@ class FunctionWriter {
 		} else if(st instanceof ReturnSt) {
 			writeReturnStatement((ReturnSt) st, sb, errors);
 			
+		} else if(st instanceof CompositeReturnSt) {
+			writeCompositeReturnStatement((CompositeReturnSt) st, sb, errors);
+			
 		} else if(st instanceof FunctionSt) {
 			writeExpression(((FunctionSt) st).getFunction(), sb, errors);
 			
@@ -212,6 +215,16 @@ class FunctionWriter {
 			writeExpression(st.getExpression(), sb, errors);
 		}
 	}
+
+	private static void writeCompositeReturnStatement(CompositeReturnSt st, StringBuilder sb, ErrorWrapper errors) {
+		sb.append("return ");
+		Expression[] returnValues = st.getExpressions();
+		for(int i = 0; i < returnValues.length; i++) {
+			writeExpression(returnValues[i], sb, errors);
+			if(i != returnValues.length-1)
+				sb.append(", ");
+		}
+	}
 	
 	private static void writeAffectationStatement(AffectationSt st, StringBuilder sb, ErrorWrapper errors) {
 		writeExpression(st.getVariable(), sb, errors);
@@ -229,7 +242,7 @@ class FunctionWriter {
 		}
 		sb.append(" = ");
 		Expression[] values = st.getValues();
-		for(int i = 0; i < variables.length; i++) {
+		for(int i = 0; i < values.length; i++) {
 			writeExpression(values[i], sb, errors);
 			if(i != values.length-1)
 				sb.append(",");

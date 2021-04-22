@@ -8,6 +8,7 @@ import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class FunctionSection extends SourceObject implements ValueDeclaration {
 	
@@ -17,7 +18,6 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 	public String name;
 	public VarType returnType;
 	public FunctionArgument[] arguments;
-	public VarType[] argumentTypes;
 	public DeclarationModifiers modifiers;
 	
 	// set by the unit parser using the statement parser
@@ -66,6 +66,10 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 		return getFunctionType();
 	}
 	
+	public VarType[] getArgumentTypes() {
+		return ArrayOperator.map(arguments, VarType[]::new, arg -> arg.type);
+	}
+	
 	@Override
 	public DeclarationModifiers getModifiers() {
 		return modifiers;
@@ -76,7 +80,7 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 	 * cannot be called before the linker linked types.
 	 */
 	public VarFunctionType getFunctionType() {
-		return new VarFunctionType(returnType, argumentTypes);
+		return new VarFunctionType(returnType, getArgumentTypes());
 	}
 
 	@Override

@@ -43,7 +43,7 @@ class NativeFunctions {
 		if(functions == null)
 			return null;
 		for(Tuple<VarType[], String> nativeFunc : functions)
-			if(FuncArguments.argsMatch1c(nativeFunc.a, func.argumentTypes, conversions))
+			if(FuncArguments.argsMatch1c(nativeFunc.a, func.getArgumentTypes(), conversions))
 				return nativeFunc.b;
 		return null;
 	}

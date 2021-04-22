@@ -70,19 +70,19 @@ public class ExpressionParser {
 			return subSection;
 		}
 		
-		int getPointerPos(int pointer) {
+		int advancePointer(int pointer) {
 			boolean updated = true;
 			while(updated) {
 				updated = false;
 				for(Section s : subSections) {
-					if(s.start == pointer) {
-						pointer = s.stop;
+					if(s.start-1 == pointer) {
+						pointer = s.stop+1;
 						updated = true;
 						break;
 					}
 				}
 			}
-			return pointer;
+			return pointer+1;
 		}
 		
 	}
@@ -91,31 +91,30 @@ public class ExpressionParser {
 		List<Section> sections = new ArrayList<>();
 		Section current = new Section(start, stop);
 		
-//		Utils.dump(line);
-//		System.out.println(start + " " + stop);
-		
 		for(int i = start; i < stop; i++) {
 			TokenBase t = line[i].base;
+			if(Tokens.isOperator(t)) {
+				current.operators.add(new Tuple<>(Tokens.getOperator(t), i));
+				continue;
+			}
 			for(SectionToken sec : Tokens.CODE_SECTIONS) {
 				if(t == sec.start) {
 					Section subSection = new Section(sec, i+1);
 					current.subSections.add(subSection);
 					sections.add(current);
 					current = subSection;
+					break;
 				} else if(t == sec.stop) {
 					if(current.type != sec)
 						throw new IllegalStateException("Unexpected section closing: " + sec);
 					current.stop = i;
 					current = sections.remove(sections.size()-1);
+					break;
 				}
 			}
-			if(Tokens.isOperator(t))
-				current.operators.add(new Tuple<>(Tokens.getOperator(t), i));
 		}
-		if(!sections.isEmpty()) {
-//			Utils.dump(line);
+		if(!sections.isEmpty())
 			throw new IllegalArgumentException("Unexpected unclosed section: " + sections.get(sections.size()-1));
-		}
 		return current;
 	}
 	
@@ -258,7 +257,7 @@ public class ExpressionParser {
 		List<Expression> arguments = new ArrayList<>();
 		if(section.stop-section.start != 0) {
 			int last = section.start;
-			for(int i = section.start; i < section.stop; i = section.getPointerPos(i+1)) {
+			for(int i = section.start; i < section.stop; i = section.advancePointer(i)) {
 				if(line[i].base == TokenBase.TK_COMMA) {
 					arguments.add(parseExpression(source, line, section.getSubSection(last, i), errors));
 					last = i+1;

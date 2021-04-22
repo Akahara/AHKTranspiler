@@ -64,7 +64,7 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 		if(unit.fullBase.equals(getDeclaringUnit()))
 			throw new IllegalArgumentException("Function " + this + " is not declared in unit " + unit);
 		for(FunctionSection f : unit.functions) {
-			if(f.returnType.equals(functionType.returnType) && FuncArguments.argsMatch0c(functionType.arguments, f.argumentTypes))
+			if(f.returnType.equals(functionType.returnType) && FuncArguments.argsMatch0c(functionType.arguments, f.getArgumentTypes()))
 				return f;
 		}
 		return null;
