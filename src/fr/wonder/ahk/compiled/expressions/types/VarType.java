@@ -2,21 +2,15 @@ package fr.wonder.ahk.compiled.expressions.types;
 
 public abstract class VarType {
 	
-	public static final VarNativeType VOID = new VarNativeType("void");
+	public static final VarVoidType VOID = new VarVoidType();
 	public static final VarNativeType INT = new VarNativeType("int");
 	public static final VarNativeType FLOAT = new VarNativeType("float");
 	public static final VarNativeType BOOL = new VarNativeType("bool");
+	public static final VarStrType STR = new VarStrType();
 	
 	public static boolean isNumber(VarType type) {
 		return type == INT || type == FLOAT;
 	}
-	
-	public static final VarStructType STR = new VarStructType("str") { // FIX rework the string type
-		@Override
-		public String getSignature() {
-			return "s";
-		}
-	};
 	
 	/** Returns the user-friendly name of this type */
 	public abstract String getName();

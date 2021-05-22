@@ -18,11 +18,7 @@ public class NoneExp extends Expression {
 	
 	private static class NoneType extends VarType {
 		
-		private final int size;
-		
-		private NoneType(int size) {
-			this.size = size;
-		}
+		private static final NoneType INSTANCE = new NoneType();
 		
 		public String getName() {
 			throw new IllegalStateException();
@@ -32,20 +28,19 @@ public class NoneExp extends Expression {
 		}
 		
 		@Override
-		public int getSize() {
-			return size;
-		}
-		
-		@Override
 		public boolean equals(Object o) {
 			throw new IllegalAccessError("The None type cannot be compared to another");
 		}
 	}
 	
+	/** The size (in bytes) of the "none" value */
+	public final int size;
+	
 	/** @see NoneExp */
 	public NoneExp(int size) {
 		super(null, 0, 0);
-		this.type = new NoneType(size);
+		this.size = size;
+		this.type = NoneType.INSTANCE;
 	}
 
 	@Override

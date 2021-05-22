@@ -19,7 +19,7 @@ import fr.wonder.ahk.transpilers.asm_x64.writers.memory.DirectLoc;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.types.Tuple;
 
-public class AsmWriter {
+public class AsmOperationWriter {
 	
 	private static final Map<Operation, OperationWriter> nativeOperations = new HashMap<>();
 	private static final Map<Operation, JumpWriter> conditionalJumps = new HashMap<>();
@@ -29,41 +29,41 @@ public class AsmWriter {
 	
 	private static interface OperationWriter {
 		
-		void write(Expression leftOperand, Expression rightOperand, AsmWriter asmWriter, ErrorWrapper errors);
+		void write(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors);
 		
 	}
 	
 	private static interface JumpWriter {
 		
-		void write(OperationExp condition, String label, AsmWriter asmWriter, ErrorWrapper errors);
+		void write(OperationExp condition, String label, AsmOperationWriter asmWriter, ErrorWrapper errors);
 		
 	}
 	
 	private static interface ConversionWriter {
 		
-		void write(VarType from, VarType to, AsmWriter asmWriter, ErrorWrapper errors);
+		void write(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors);
 		
 	}
 	
 	static {
-		nativeOperations.put(get(INT, INT, ADD), AsmWriter::op_intADDint);
-		nativeOperations.put(get(INT, INT, MOD), AsmWriter::op_intMODint);
-		nativeOperations.put(get(INT, INT, DIVIDE), AsmWriter::op_intDIVint);
+		nativeOperations.put(get(INT, INT, ADD), AsmOperationWriter::op_intADDint);
+		nativeOperations.put(get(INT, INT, MOD), AsmOperationWriter::op_intMODint);
+		nativeOperations.put(get(INT, INT, DIVIDE), AsmOperationWriter::op_intDIVint);
 	}
 	
 	static {
-		conditionalJumps.put(get(INT, INT, EQUALS), AsmWriter::jump_intEQUint);
-		conditionalJumps.put(get(INT, INT, LOWER), AsmWriter::jump_intLTint);
+		conditionalJumps.put(get(INT, INT, EQUALS), AsmOperationWriter::jump_intEQUint);
+		conditionalJumps.put(get(INT, INT, LOWER), AsmOperationWriter::jump_intLTint);
 	}
 	
 	static {
-		conversions.put(new Tuple<>(VarType.INT, VarType.FLOAT), AsmWriter::conv_intTOfloat);
-		conversions.put(new Tuple<>(VarType.FLOAT, VarType.INT), AsmWriter::conv_floatTOint);
+		conversions.put(new Tuple<>(VarType.INT, VarType.FLOAT), AsmOperationWriter::conv_intTOfloat);
+		conversions.put(new Tuple<>(VarType.FLOAT, VarType.INT), AsmOperationWriter::conv_floatTOint);
 	}
 	
 	private final UnitWriter writer;
 	
-	public AsmWriter(UnitWriter writer) {
+	public AsmOperationWriter(UnitWriter writer) {
 		this.writer = writer;
 	}
 	
@@ -92,7 +92,7 @@ public class AsmWriter {
 		return acc;
 	}
 	
-	private static void op_intADDint(Expression leftOperand, Expression rightOperand, AsmWriter asmWriter, ErrorWrapper errors) {
+	private static void op_intADDint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		DataAccess ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, errors);
 		if(ro.exp != null && ro.exp instanceof IntLiteral && (Long)ro.exp.value == 1)
 			asmWriter.writer.buffer.writeLine("inc rax");
@@ -102,7 +102,7 @@ public class AsmWriter {
 			asmWriter.writer.buffer.writeLine("add rax," + ro);
 	}
 	
-	private static void op_intMODint(Expression leftOperand, Expression rightOperand, AsmWriter asmWriter, ErrorWrapper errors) {
+	private static void op_intMODint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		DataAccess ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, errors);
 		// TODO check for mod 2^x operations that can be heavily optimized
 		asmWriter.writer.mem.writeTo(DirectLoc.LOC_RBX, ro, errors); // FIX rax may be overridden by ro
@@ -111,7 +111,7 @@ public class AsmWriter {
 		asmWriter.writer.buffer.writeLine("mov rax,rdx");
 	}
 	
-	private static void op_intDIVint(Expression leftOperand, Expression rightOperand, AsmWriter asmWriter, ErrorWrapper errors) {
+	private static void op_intDIVint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		DataAccess ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, errors);
 		// TODO check for mod 2^x operations that can be heavily optimized
 		asmWriter.writer.mem.writeTo(DirectLoc.LOC_RBX, ro, errors);
@@ -130,7 +130,7 @@ public class AsmWriter {
 	public boolean writeJump(Expression condition, String label, ErrorWrapper errors) {
 		if(condition instanceof OperationExp) {
 			OperationExp oc = (OperationExp) condition;
-			JumpWriter jump = conditionalJumps.get(oc.operation);
+			JumpWriter jump = conditionalJumps.get(oc.getOperation());
 			if(jump != null) {
 				jump.write(oc, label, this, errors);
 				return true;
@@ -139,7 +139,7 @@ public class AsmWriter {
 		return false;
 	}
 	
-	private static void jump_intEQUint(OperationExp exp, String label, AsmWriter asmWriter, ErrorWrapper errors) {
+	private static void jump_intEQUint(OperationExp exp, String label, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		DataAccess rv = asmWriter.prepareRAXRBX(exp.getLeftOperand(), exp.getRightOperand(), errors);
 		if(rv.exp != null && rv.exp instanceof IntLiteral && (Long) rv.exp.value == 0)
 			asmWriter.writer.buffer.writeLine("test rax,rax");
@@ -148,7 +148,7 @@ public class AsmWriter {
 		asmWriter.writer.buffer.writeLine("jne "+label);
 	}
 	
-	private static void jump_intLTint(OperationExp exp, String label, AsmWriter asmWriter, ErrorWrapper errors) {
+	private static void jump_intLTint(OperationExp exp, String label, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		DataAccess rv = asmWriter.prepareRAXRBX(exp.getLeftOperand(), exp.getRightOperand(), errors);
 		asmWriter.writer.buffer.writeLine("cmp rax,"+rv);
 		asmWriter.writer.buffer.writeLine("jge "+label);
@@ -163,11 +163,11 @@ public class AsmWriter {
 		cw.write(from, to, this, errors);
 	}
 	
-	private static void conv_intTOfloat(VarType from, VarType to, AsmWriter asmWriter, ErrorWrapper errors) {
+	private static void conv_intTOfloat(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.writer.buffer.writeLine("; conv");
 	}
 	
-	private static void conv_floatTOint(VarType from, VarType to, AsmWriter asmWriter, ErrorWrapper errors) {
+	private static void conv_floatTOint(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.writer.buffer.writeLine("mov ["+floatst+"],rax");
 		asmWriter.writer.buffer.writeLine("fld qword["+floatst+"]");
 		asmWriter.writer.buffer.writeLine("fistp qword["+floatst+"]");

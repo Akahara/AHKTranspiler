@@ -63,11 +63,6 @@ public class Modifier {
 		return validateArgs(func, new BiFunction[] { syntax });
 	}
 	
-	@SuppressWarnings("unchecked")
-	public <T extends ValueDeclaration> boolean validateArgs(T func) {
-		return validateArgs(func, new BiFunction[0]);
-	}
-	
 	public <T extends ValueDeclaration> boolean validateArgs(T func, BiFunction<T, Modifier, ModifierSyntax>[] syntaxes) {
 		for(var syntax : syntaxes) {
 			ModifierSyntax s = syntax.apply(func, this);

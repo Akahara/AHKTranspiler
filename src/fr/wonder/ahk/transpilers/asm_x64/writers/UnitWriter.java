@@ -13,10 +13,12 @@ import fr.wonder.ahk.compiled.units.UnitImportation;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.handles.CompiledHandle;
-import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmWriter;
+import fr.wonder.ahk.transpilers.asm_x64.ConcreteTypesTable;
+import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -47,7 +49,7 @@ public class UnitWriter {
 	public final TextBuffer buffer;
 	public final MemoryManager mem;
 	public final ExpressionWriter expWriter;
-	public final AsmWriter asmWriter;
+	public final AsmOperationWriter asmWriter;
 	/** populated by {@link #writeDataSegment(ErrorWrapper)} and used by {@link #getLabel(StrLiteral)} */
 	private final List<StrLiteral> strConstants = new ArrayList<>();
 	
@@ -59,7 +61,7 @@ public class UnitWriter {
 		this.buffer = tb;
 		this.mem = new MemoryManager(this);
 		this.expWriter = new ExpressionWriter(this);
-		this.asmWriter = new AsmWriter(this);
+		this.asmWriter = new AsmOperationWriter(this);
 	}
 	
 	// ------------------------ registries & labels ------------------------
@@ -181,7 +183,7 @@ public class UnitWriter {
 		buffer.appendLine("section .text");
 		buffer.appendLine();
 		
-		FunctionSection initFunction = new FunctionSection(unit);
+		FunctionSection initFunction = new FunctionSection(Invalids.SOURCE, 0, 0, 0);
 		
 		// write the initialization function
 		buffer.appendLine(getUnitRegistry(unit) + "_init:");
@@ -192,7 +194,7 @@ public class UnitWriter {
 			for(VariableDeclaration var : initializableVariables) {
 				Expression defaultVal = var.getDefaultValue();
 				if(defaultVal == null)
-					defaultVal = new NoneExp(var.getType().getSize());
+					defaultVal = new NoneExp(ConcreteTypesTable.getPointerSize(var.getType()));
 				mem.writeTo(var, defaultVal, errors);
 			}
 			buffer.writeLine("mov rsp,rbp");

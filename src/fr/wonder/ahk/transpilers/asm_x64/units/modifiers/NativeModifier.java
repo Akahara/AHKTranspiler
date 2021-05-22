@@ -23,7 +23,7 @@ public class NativeModifier implements ModifierSyntax {
 	}
 	
 	private static String getDefaultRef(FunctionSection func) {
-		return func.getUnit().fullBase.replaceAll("\\.", "_") + "_" + func.getName() +
+		return func.getSignature().declaringUnit.replaceAll("\\.", "_") + "_" + func.getName() +
 				"_" + func.getFunctionType().getSignature();
 	}
 	

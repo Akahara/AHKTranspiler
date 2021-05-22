@@ -128,8 +128,6 @@ public class ExpressionParser {
 			return Invalids.EXPRESSION;
 		}
 		
-		// TODO optimize the expression parser a bit, refactor the most part
-		
 		Section firstSection = section.subSections.isEmpty() ? null : section.subSections.get(0);
 		
 		while(section.subSections.size() == 1 && firstSection.start == section.start+1 && 

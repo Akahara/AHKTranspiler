@@ -2,21 +2,24 @@ package fr.wonder.ahk.transpilers.asm_x64;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 import fr.wonder.ahk.AHKTranspiler;
+import fr.wonder.ahk.compiled.AHKManifest;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.handles.ExecutableHandle;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.ahk.transpilers.asm_x64.natives.ProcessFiles;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.TextBuffer;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
-import fr.wonder.commons.exceptions.AssertionException;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.files.FilesUtils;
+import fr.wonder.commons.utils.ArrayOperator;
+import fr.wonder.commons.utils.ProcessUtils;
 
 public class AsmX64Transpiler implements Transpiler {
 	
@@ -31,7 +34,7 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 
 	@Override
-	public void exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, AssertionException {
+	public ExecutableHandle exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
 		validateProject(handle, errors);
 		errors.assertNoErrors();
 		
@@ -50,15 +53,25 @@ public class AsmX64Transpiler implements Transpiler {
 		errors.assertNoErrors();
 		
 		String[] processFiles = ProcessFiles.writeFiles(handle, dir, errors);
-		files = Arrays.copyOf(files, files.length+processFiles.length);
-		for(int i = 0; i < processFiles.length; i++)
-			files[files.length-processFiles.length+i] = processFiles[i];
+		files = ArrayOperator.add(files, processFiles);
 		
 		errors.assertNoErrors();
 		
-		runCompiler(handle, dir, files, errors);
+		runExternalCompiler(handle, dir, files, errors);
+		
+		return new ExecutableHandleImpl(handle);
 	}
 
+	private static class ExecutableHandleImpl extends ExecutableHandle {
+		
+		private final AHKManifest manifest;
+		
+		private ExecutableHandleImpl(TranspilableHandle handle) {
+			this.manifest = handle.manifest;
+		}
+		
+	}
+	
 	@Override
 	public void exportAPI(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		// TODO export as api
@@ -68,9 +81,9 @@ public class AsmX64Transpiler implements Transpiler {
 		handle.manifest.validateAsm(errors.subErrrors("Invalid manifest"));
 		
 		for(Unit u : handle.units)
-			validateUnit(handle, u, errors.subErrrors("Unable to validate unit " + u.getFullBase()));
+			validateUnit(handle, u, errors.subErrrors("Unable to validate unit " + u.fullBase));
 		for(Unit u : handle.nativeRequirements)
-			validateUnit(handle, u, errors.subErrrors("Unable to validate native unit " + u.getFullBase()));
+			validateUnit(handle, u, errors.subErrrors("Unable to validate native unit " + u.fullBase));
 	}
 
 	private void validateUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
@@ -83,7 +96,7 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 
 	private static String writeUnit(TranspilableHandle handle, Unit unit, File dir, ErrorWrapper errors) throws IOException {
-		String file = unit.getFullBase().replaceAll("\\.", "/");
+		String file = unit.fullBase.replaceAll("\\.", "/");
 		TextBuffer tb = new TextBuffer();
 		UnitWriter.writeUnit(handle, unit, tb, errors);
 		File f = new File(dir, file+".asm");
@@ -92,7 +105,7 @@ public class AsmX64Transpiler implements Transpiler {
 		return file;
 	}
 	
-	private static void runCompiler(TranspilableHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException {
+	private static void runExternalCompiler(TranspilableHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException {
 		if(files.length == 0)
 			return;
 		
@@ -127,27 +140,20 @@ public class AsmX64Transpiler implements Transpiler {
 		AHKTranspiler.logger.info("Running command || " + cmd);
 		ProcessBuilder pb = new ProcessBuilder(cmd.split(" "));
 		Process p = pb.directory(dir).start();
+		ProcessUtils.redirectOutput(p, AHKTranspiler.logger);
 		int ec = -1;
 		try { ec = p.waitFor(); } catch (InterruptedException x) { }
-		String signal = (ec & 0x80) == 0 || ((ec-1) ^ 0x80) > 16 ? "" : " signal " + SIGNALS[(ec-1) ^ 0x80];
+		String signal = ProcessUtils.getErrorSignal(ec);
+		if(signal == null) signal = "";
 		AHKTranspiler.logger.info(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec + signal);
-		for(String l : new String(p.getInputStream().readAllBytes()).split("\n"))
-			AHKTranspiler.logger.info(l);
-		for(String l : new String(p.getErrorStream().readAllBytes()).split("\n"))
-			AHKTranspiler.logger.err(l);
 		return ec;
 	}
-	
-	private static final String[] SIGNALS = {
-			"SIGHUP hangup", "SIGINT interrupt", "SIGQUIT terminal quit", "SIGILL illegal instruction",
-			"SIGTRAP trap", "SIGABRT abort", null, "SIGFPE arithmetic error",
-			"SIGKILL kill", null, "SIGSEGV segmentation fault", null,
-			"SIGPIPE invalid pipe", "SIGALRM alarm clock", "SIGTERM termination", null
-	};
 
 	@Override
-	public int runProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
-		return runCommand("./" + handle.manifest.OUTPUT_NAME, dir);
+	public Process runProject(ExecutableHandle handle, File dir, ErrorWrapper errors)
+			throws IOException, WrappedException {
+		runCommand("./" + ((ExecutableHandleImpl) handle).manifest.OUTPUT_NAME, dir);
+		return null;
 	}
-	
+
 }
