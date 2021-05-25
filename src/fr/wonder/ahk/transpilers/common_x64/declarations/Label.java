@@ -10,7 +10,7 @@ public class Label implements Declaration {
 	
 	@Override
 	public String toString() {
-		return name;
+		return name + ":";
 	}
 
 }

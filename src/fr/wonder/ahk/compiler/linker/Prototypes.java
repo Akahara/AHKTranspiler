@@ -18,20 +18,14 @@ public class Prototypes {
 
 	/** Affects and returns the computed prototype of the unit */
 	static void buildPrototype(Unit unit) {
-		FunctionPrototype[] functions = new FunctionPrototype[unit.functions.length];
-		for(int i = 0; i < functions.length; i++) {
-			FunctionSection f = unit.functions[i];
-			functions[i] = new FunctionPrototype(
-					f.getSignature(),
-					f.getFunctionType());
-		}
-		VariablePrototype[] variables = new VariablePrototype[unit.variables.length];
-		for(int i = 0; i < variables.length; i++) {
-			VariableDeclaration v = unit.variables[i];
-			variables[i] = new VariablePrototype(
-					v.getSignature(),
-					v.getType());
-		}
+		FunctionPrototype[] functions = ArrayOperator.map(
+				unit.functions,
+				FunctionPrototype[]::new,
+				FunctionSection::getPrototype);
+		VariablePrototype[] variables = ArrayOperator.map(
+				unit.variables,
+				VariablePrototype[]::new,
+				VariableDeclaration::getPrototype);
 		unit.prototype = new UnitPrototype(
 				unit.fullBase,
 				unit.importations,

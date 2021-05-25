@@ -1,7 +1,6 @@
 package fr.wonder.ahk.transpilers.common_x64.addresses;
 
 import fr.wonder.ahk.transpilers.common_x64.Register;
-import fr.wonder.ahk.transpilers.common_x64.declarations.Label;
 import fr.wonder.commons.utils.Assertions;
 
 public class MemAddress implements Address {
@@ -14,7 +13,7 @@ public class MemAddress implements Address {
 	
 	public MemAddress(Address base, Register index, int scale, int offset) {
 		this.base = base;
-		Assertions.assertTrue(base instanceof Label || base instanceof Register, "Invalid base " + base);
+		Assertions.assertTrue(base instanceof LabelAddress || base instanceof Register, "Invalid base " + base);
 		Assertions.assertTrue(scale == 0 || index != null, "Size specified without displacement");
 		this.index = index;
 		this.scale = scale;
@@ -30,9 +29,44 @@ public class MemAddress implements Address {
 		this.stringResp = "["+repr+"]";
 	}
 	
+	public MemAddress(Address base, int offset) {
+		this(base, null, 0, offset);
+	}
+
+	public MemAddress(Address base) {
+		this(base, null, 0, 0);
+	}
+	
+	public MemAddress(Address base, Register index, int scale) {
+		this(base, index, scale, 0);
+	}
+
+	/** Returns [this] */
+	public MemAddress dereference() {
+		return new MemAddress(this);
+	}
+	/** Returns [[this]+...] */
+	public MemAddress then(Register index, int scale, int offset) {
+		return new MemAddress(this, index, scale, offset);
+	}
+	
+	/** Returns [[this]+...] */
+	public MemAddress then(int offset) {
+		return new MemAddress(this, offset);
+	}
+	/** Returns [[this]+...] */
+	public MemAddress then(Register index, int scale) {
+		return new MemAddress(this, index, scale);
+	}
+
+	/** Returns a <b>new instance</b> of MemAddress with same base, index and scale but cumulated offsets */
+	public MemAddress addOffset(int offset) {
+		return new MemAddress(base, index, scale, this.offset+offset);
+	}
+	
 	@Override
 	public String toString() {
 		return stringResp;
 	}
-		
+	
 }

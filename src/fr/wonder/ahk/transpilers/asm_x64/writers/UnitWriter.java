@@ -7,26 +7,40 @@ import fr.wonder.ahk.compiled.ExpressionHolder;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.UnitImportation;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.Prototype;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.handles.TranspilableHandle;
-import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.transpilers.asm_x64.ConcreteTypesTable;
 import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
+import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
+import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
+import fr.wonder.ahk.transpilers.common_x64.MemSize;
+import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
+import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
+import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
+import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
+import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
+import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
+import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
+import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
+import fr.wonder.ahk.transpilers.common_x64.macros.StringDefinition;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitWriter {
 	
-	public static void writeUnit(TranspilableHandle handle, Unit unit, TextBuffer tb, ErrorWrapper errors) {
-		UnitWriter uw = new UnitWriter(handle, unit, tb);
+	public static InstructionSet writeUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
+		UnitWriter uw = new UnitWriter(handle, unit);
 		// variables that must be initialized (because they are not literals or computable constants)
 		List<VariableDeclaration> initializableVariables = new ArrayList<>();
 		// all other variables (which values can be computed beforehand)
@@ -42,11 +56,15 @@ public class UnitWriter {
 		
 		uw.writeDataSegment(initializedVariables, errors);
 		uw.writeTextSegment(initializableVariables, errors);
+		
+		return uw.instructions;
 	}
 	
+	public final InstructionSet instructions = new InstructionSet();
+	
+	public final ConcreteTypesTable types = new ConcreteTypesTable();
 	public final TranspilableHandle projectHandle;
 	public final Unit unit;
-	public final TextBuffer buffer;
 	public final MemoryManager mem;
 	public final ExpressionWriter expWriter;
 	public final AsmOperationWriter asmWriter;
@@ -55,10 +73,9 @@ public class UnitWriter {
 	
 	private int specialCallCount = 0;
 	
-	private UnitWriter(TranspilableHandle handle, Unit unit, TextBuffer tb) {
+	private UnitWriter(TranspilableHandle handle, Unit unit) {
 		this.projectHandle = handle;
 		this.unit = unit;
-		this.buffer = tb;
 		this.mem = new MemoryManager(this);
 		this.expWriter = new ExpressionWriter(this);
 		this.asmWriter = new AsmOperationWriter(this);
@@ -66,33 +83,37 @@ public class UnitWriter {
 	
 	// ------------------------ registries & labels ------------------------
 	
-	String getRegistry(ValueDeclaration var) {
-		if(var.getUnit() == unit)
+	String getRegistry(Prototype<?> var) {
+		if(var.getDeclaringUnit().equals(unit.fullBase))
 			return getLocalRegistry(var);
 		else
 			return getGlobalRegistry(var);
 	}
 	
 	public static String getUnitRegistry(Unit unit) {
-		return unit.getFullBase().replaceAll("\\.", "_");
+		return getUnitRegistry(unit.fullBase);
 	}
 	
-	public static String getGlobalRegistry(ValueDeclaration var) {
+	public static String getUnitRegistry(String unitFullBase) {
+		return unitFullBase.replaceAll("\\.", "_");
+	}
+	
+	public static String getGlobalRegistry(Prototype<?> var) {
 		if(var.getModifiers().hasModifier(Modifier.NATIVE))
 			return var.getModifiers().getModifier(NativeModifier.class).nativeRef;
 		
-		return getUnitRegistry(var.getUnit()) + "_" + getLocalRegistry(var);
+		return getUnitRegistry(var.getDeclaringUnit()) + "_" + getLocalRegistry(var);
 	}
 	
-	public static String getLocalRegistry(ValueDeclaration var) {
+	public static String getLocalRegistry(Prototype<?> var) {
 		if(var.getModifiers().hasModifier(Modifier.NATIVE))
 			return getGlobalRegistry(var);
 		
-		if(var instanceof VariableDeclaration)
-			return var.getName();
-		if(var instanceof FunctionSection) {
-			FunctionSection f = (FunctionSection) var;
-			return var.getName() + "_" + f.getFunctionType().getSignature();
+		if(var instanceof VariablePrototype)
+			return ((VariablePrototype) var).getName();
+		if(var instanceof FunctionPrototype) {
+			FunctionPrototype f = (FunctionPrototype) var;
+			return f.getName() + "_" + f.getType().getSignature();
 		}
 		
 		throw new IllegalArgumentException("Unimplemented registry " + var.getClass());
@@ -113,42 +134,54 @@ public class UnitWriter {
 	// *** Data segment ***
 	
 	private void writeDataSegment(List<VariableDeclaration> initializedVariables, ErrorWrapper errors) {
-		buffer.appendLine("%include\"intrinsic.asm\"");
-		buffer.appendLine("section .data");
-		buffer.appendLine();
+		instructions.add(new SpecialInstruction("%include\"intrinsic.asm\""));
+		instructions.section(SectionDeclaration.DATA);
+		instructions.skip();
 		
-		buffer.appendLine("global " + getUnitRegistry(unit) + "_init");
-		writeGlobalStatements(unit.variables);
-		writeGlobalStatements(unit.functions);
-		buffer.appendLine("extern "+GLOBAL_FLOATST);
-		buffer.appendLine("extern "+SPECIAL_ALLOC);
-		buffer.appendLine("extern "+SPECIAL_THROW);
-		for(UnitImportation i : unit.importations)
-			writeExternStatements(i.unit);
+		instructions.add(new GlobalDeclaration(getUnitRegistry(unit) + "_init"));
+		for(VariableDeclaration v : unit.variables) {
+			if(v.getVisibility() == DeclarationVisibility.GLOBAL && !v.getModifiers().hasModifier(Modifier.NATIVE))
+				instructions.add(new GlobalDeclaration(getGlobalRegistry(v.getPrototype())));
+		}
+		if(unit.variables.length != 0)
+			instructions.skip();
+		for(VariableDeclaration f : unit.variables) {
+			if(f.getVisibility() == DeclarationVisibility.GLOBAL && !f.getModifiers().hasModifier(Modifier.NATIVE))
+				instructions.add(new GlobalDeclaration(getGlobalRegistry(f.getPrototype())));
+		}
+		if(unit.functions.length != 0)
+			instructions.skip();
+		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_FLOATST));
+		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_ALLOC));
+		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_THROW));
+		for(VarAccess i : unit.prototype.externalAccesses) {
+			// i can safely be casted to a prototype because it cannot be a function
+			// argument. It's either a Variable or a Function prototype.
+			instructions.add(new ExternDeclaration(getGlobalRegistry((Prototype<?>) i)));
+		}
 		if(unit.importations.length != 0)
-			buffer.appendLine();
+			instructions.skip();
 		
 		collectStrConstants(strConstants, unit.variables);
 		for(FunctionSection f : unit.functions)
 			collectStrConstants(strConstants, f.body);
 		for(StrLiteral cst : strConstants)
-			buffer.appendLine("def_string " + getLabel(cst) + ",`" + cst.value + "`");
+			instructions.add(new StringDefinition(getLabel(cst), cst.value));
 		if(!strConstants.isEmpty())
-			buffer.appendLine();
+			instructions.skip();
 		
 		for(VariableDeclaration var : unit.variables) {
 			if(var.getVisibility() == DeclarationVisibility.GLOBAL)
-				buffer.appendLine(getGlobalRegistry(var) + ":");
+				instructions.label(getGlobalRegistry(var.getPrototype()));
 			String value;
 			if(initializedVariables.contains(var))
 				value = mem.getValueString((LiteralExp<?>) var.getDefaultValue());
 			else
 				value = "0";
-			buffer.appendLine(getLocalRegistry(var) + " dq " + value);
+			instructions.add(new GlobalVarDeclaration(getLocalRegistry(var.getPrototype()), MemSize.QWORD, value));
 		}
 		if(unit.variables.length != 0)
-			buffer.appendLine();
-		
+			instructions.skip();
 	}
 	
 	private static void collectStrConstants(List<StrLiteral> csts, ExpressionHolder[] vars) {
@@ -162,46 +195,29 @@ public class UnitWriter {
 		}
 	}
 	
-	private <T extends ValueDeclaration> void writeGlobalStatements(T[] vars) {
-		for(ValueDeclaration v : vars) {
-			if(v.getVisibility() == DeclarationVisibility.GLOBAL && !v.getModifiers().hasModifier(Modifier.NATIVE))
-				buffer.appendLine("global " + getGlobalRegistry(v));
-		}
-		if(vars.length != 0)
-			buffer.appendLine();
-	}
-	
-	private void writeExternStatements(Unit imported) {
-		ValueDeclaration[] externFields = projectHandle.externFields.get(imported);
-		for(ValueDeclaration v : externFields)
-			buffer.appendLine("extern " + getGlobalRegistry(v));
-	}
-	
 	// *** Text segment ***
 	
 	private void writeTextSegment(List<VariableDeclaration> initializableVariables, ErrorWrapper errors) {
-		buffer.appendLine("section .text");
-		buffer.appendLine();
+		instructions.section(SectionDeclaration.TEXT);
+		instructions.skip();
 		
 		FunctionSection initFunction = new FunctionSection(Invalids.SOURCE, 0, 0, 0);
 		
 		// write the initialization function
-		buffer.appendLine(getUnitRegistry(unit) + "_init:");
+		instructions.label(getUnitRegistry(unit) + "_init");
 		if(!initializableVariables.isEmpty()) {
-			buffer.writeLine("push rbp");
-			buffer.writeLine("mov rbp,rsp");
+			instructions.createScope();
 			mem.enterFunction(initFunction);
 			for(VariableDeclaration var : initializableVariables) {
 				Expression defaultVal = var.getDefaultValue();
 				if(defaultVal == null)
-					defaultVal = new NoneExp(ConcreteTypesTable.getPointerSize(var.getType()));
-				mem.writeTo(var, defaultVal, errors);
+					defaultVal = new NoneExp(MemSize.getPointerSize(var.getType()).bytes);
+				mem.writeTo(mem.unitScope.getVarAddress(var.getPrototype()), defaultVal, errors);
 			}
-			buffer.writeLine("mov rsp,rbp");
-			buffer.writeLine("pop rbp");
+			instructions.endScope();
 		}
-		buffer.writeLine("ret");
-		buffer.appendLine();
+		instructions.ret();
+		instructions.skip();
 		
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE))
@@ -210,34 +226,30 @@ public class UnitWriter {
 			FunctionWriter funcWriter = new FunctionWriter(this, func);
 			
 			if(func.getVisibility() == DeclarationVisibility.GLOBAL)
-				buffer.appendLine(getGlobalRegistry(func) + ":");
-			buffer.appendLine(getLocalRegistry(func) + ":");
+				instructions.label(getGlobalRegistry(func.getPrototype()));
+			instructions.label(getLocalRegistry(func.getPrototype()));
 			funcWriter.writeFunction(func, errors);
-			buffer.appendLine();
+			instructions.skip();
 		}
 	}
 	
 	// --------------------------- special calls ---------------------------
 	
-	public static final String GLOBAL_FLOATST = "floatst";
-	public static final String SPECIAL_ALLOC = "mem_alloc_block";
-	public static final String SPECIAL_THROW = "e_throw";
-
 	public String getSpecialLabel() {
 		return ".special_" + (specialCallCount++);
 	}
 	
 	public void testThrowError() {
 		String label = getSpecialLabel();
-		buffer.writeLine("test rax,rax");
-		buffer.writeLine("jns " + label);
-		buffer.writeLine("call e_throw");
-		buffer.appendLine(label + ":");
+		instructions.test(Register.RAX, Register.RAX);
+		instructions.add(OpCode.JNS, new LabelAddress(label));
+		instructions.call(GlobalLabels.SPECIAL_THROW);
+		instructions.label(label);
 	}
 	
 	public void callAlloc(int size) {
-		buffer.writeLine("push qword " + size);
-		buffer.writeLine("call " + SPECIAL_ALLOC);
+		instructions.push(new ImmediateValue(size), MemSize.QWORD);
+		instructions.call(GlobalLabels.SPECIAL_ALLOC);
 		// TODO0 implement other calling conventions (__stdcall currently)
 		testThrowError();
 	}

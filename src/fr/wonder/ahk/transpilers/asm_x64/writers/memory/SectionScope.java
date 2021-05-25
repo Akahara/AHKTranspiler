@@ -5,6 +5,11 @@ import java.util.List;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.transpilers.common_x64.MemSize;
+import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
+import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 
 class SectionScope implements Scope {
 	
@@ -25,25 +30,25 @@ class SectionScope implements Scope {
 	}
 	
 	@Override
-	public VarLocation declareVariable(VariableDeclaration var) {
+	public Address declareVariable(VariableDeclaration var) {
 		vars.add(var);
-		size += var.getType().getSize();
-		return getVarLocation(var);
+		size += MemSize.getPointerSize(var.getType()).bytes;
+		return getVarAddress(var.getPrototype());
 	}
 	
 	@Override
-	public VarLocation getVarLocation(ValueDeclaration var) {
+	public Address getVarAddress(VarAccess var) {
 		int loc = funcCallOffset;
 		for(ValueDeclaration v : vars) {
 			if(v == var)
-				return new MemoryLoc(VarLocation.REG_RSP, loc);
+				return new MemAddress(Register.RSP, loc);
 			else
-				loc += v.getType().getSize();
+				loc += MemSize.getPointerSize(v.getType()).bytes;
 		}
-		VarLocation vl = parent.getVarLocation(var);
+		Address vl = parent.getVarAddress(var);
 		// FIX check if vl.index is REG_RSP
-		if(vl instanceof MemoryLoc && ((MemoryLoc) vl).base == VarLocation.REG_RSP)
-			((MemoryLoc) vl).offset += loc;
+		if(vl instanceof MemAddress && ((MemAddress) vl).base == Register.RSP)
+			return ((MemAddress) vl).addOffset(loc);
 		return vl;
 	}
 	

@@ -8,10 +8,11 @@ public enum OSInstrinsic {
 			45
 	),
 	
-//	MAC(
-//			0x02000001,	// exit
-//			0x02000004	// write
-//	)
+	MAC(
+			0x02000001,	// exit
+			0x02000004,	// write
+			0//unimplemented
+	)
 	;
 	
 	public final int

@@ -3,16 +3,19 @@ package fr.wonder.ahk.compiled.units.prototypes;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiler.Unit;
 
 public class VariablePrototype implements VarAccess, Prototype<VariableDeclaration> {
 	
 	public final Signature signature;
 	public final VarType type;
+	public final DeclarationModifiers modifiers;
 	
-	public VariablePrototype(Signature signature, VarType type) {
+	public VariablePrototype(Signature signature, VarType type, DeclarationModifiers modifiers) {
 		this.signature = signature;
 		this.type = type;
+		this.modifiers = modifiers;
 	}
 	
 	@Override
@@ -49,6 +52,11 @@ public class VariablePrototype implements VarAccess, Prototype<VariableDeclarati
 	@Override
 	public Signature getSignature() {
 		return signature;
+	}
+	
+	@Override
+	public DeclarationModifiers getModifiers() {
+		return modifiers;
 	}
 
 	@Override

@@ -14,14 +14,15 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.files.FilesUtils;
 import fr.wonder.commons.files.Manifest;
+import fr.wonder.commons.loggers.AnsiLogger;
 import fr.wonder.commons.loggers.Logger;
-import fr.wonder.commons.loggers.SimpleLogger;
 import fr.wonder.commons.utils.ManifestUtils;
 import fr.wonder.commons.utils.ProcessUtils;
 
 public class AHKTranspiler {
 	
-	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);
+//	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);
+	public static Logger logger = new AnsiLogger(null, Logger.LEVEL_DEBUG);
 	
 	public static ProjectHandle createProject(File dir) throws IOException {
 		List<File> files = FilesUtils.listFiles(dir, f->f.isFile() && f.getName().endsWith(".ahk"));

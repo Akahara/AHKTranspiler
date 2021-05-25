@@ -42,7 +42,7 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration, 
 	
 	@Override
 	public DeclarationModifiers getModifiers() {
-		throw new IllegalStateException("Function arguments do not have modifiers");
+		return DeclarationModifiers.NONE;
 	}
 
 	@Override

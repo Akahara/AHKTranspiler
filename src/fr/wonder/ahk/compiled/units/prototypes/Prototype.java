@@ -1,11 +1,19 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiler.Unit;
 
+/**
+ * Prototypes are symbolic descriptions of accessible variables, functions
+ * and units. They are used to describe data without actually knowing its
+ * value. Refer to the child class for a more complete description.
+ */
 public interface Prototype<T extends ValueDeclaration> {
 	
 	public String getDeclaringUnit();
+	public DeclarationModifiers getModifiers();
+	/** Returns the concrete variable this symbolic link refers to in the given unit */
 	public T getAccess(Unit unit);
 	
 }

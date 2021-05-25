@@ -7,6 +7,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -24,7 +25,7 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 	public Statement[] body;
 	
 	// set by the linker using #makeSignature
-	private Signature signature;
+	private FunctionPrototype prototype;
 	
 	public FunctionSection(UnitSource source, int sourceStart, int sourceStop, int declarationStop) {
 		super(source, sourceStart, sourceStop);
@@ -43,16 +44,23 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 
 	/** Called by the linker after the function argument types where computed */
 	public void setSignature(Signature signature) {
-		this.signature = signature;
+		this.prototype = new FunctionPrototype(signature, getFunctionType(), getModifiers());
 	}
 	
 	/**
-	 * global scope signature (declaring unit full base + unit scope signature),
-	 * must not be called before the linker prelinked the declaring unit of this
-	 * function
+	 * global scope signature, must not be called before the linker
+	 * prelinked the declaring unit of this function
 	 */
 	public Signature getSignature() {
-		return signature;
+		return prototype.getSignature();
+	}
+	
+	/**
+	 * global scope signature, must not be called before the linker
+	 * prelinked the declaring unit of this function
+	 */
+	public FunctionPrototype getPrototype() {
+		return prototype;
 	}
 	
 	@Override

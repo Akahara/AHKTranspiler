@@ -85,8 +85,7 @@ public class Linker {
 			func.setSignature(new Signature(
 					unit.fullBase,
 					func.name,
-					func.name + "_" +
-					func.getFunctionType().getSignature()));
+					func.name + "_" + func.getFunctionType().getSignature()));
 		}
 		for(VariableDeclaration var : unit.variables) {
 			var.setSignature(new Signature(

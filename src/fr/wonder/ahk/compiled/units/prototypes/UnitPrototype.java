@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.units.UnitDeclaration;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
+import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.commons.utils.ArrayOperator;
 
-/** Dynamically linked unit */
 public class UnitPrototype implements Prototype<UnitDeclaration> {
 	
 	public static final UnitPrototype NULL_PROTOTYPE = 
@@ -20,6 +21,10 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 	public final FunctionPrototype[] functions;
 	public final VariablePrototype[] variables;
 	
+	/**
+	 * The list of variables and functions used but not contained by this unit.
+	 * This list may not contain {@link FunctionArgument}s.
+	 */
 	public List<VarAccess> externalAccesses = new ArrayList<>();
 	
 	public UnitPrototype(String fullBase, String[] importations,
@@ -54,6 +59,11 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 	@Override
 	public String getDeclaringUnit() {
 		return fullBase;
+	}
+	
+	@Override
+	public DeclarationModifiers getModifiers() {
+		throw new IllegalStateException("Units don't have modifiers");
 	}
 	
 	@Override

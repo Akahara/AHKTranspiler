@@ -19,7 +19,11 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.transpilers.common_x64.MemSize;
+import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class FunctionWriter {
@@ -51,16 +55,15 @@ public class FunctionWriter {
 	}
 	
 	public void writeFunction(FunctionSection func, ErrorWrapper errors) {
-		writer.buffer.writeLine("push rbp");
-		writer.buffer.writeLine("mov rbp,rsp");
+		writer.instructions.createScope();
 		
 		writer.mem.enterFunction(func);
 		
 		int stackSpace = getMaxStackSize(func.body);
 		if(stackSpace != 0)
-			writer.buffer.writeLine("sub rsp," + stackSpace);
+			writer.instructions.add(OpCode.SUB, Register.RSP, stackSpace);
 		
-		int argsSpace = getArgumentsSize(func);
+		int argsSpace = getArgumentsSize(func.getPrototype());
 		
 		boolean needsRetLabel = false;
 		
@@ -68,8 +71,8 @@ public class FunctionWriter {
 			Statement st = func.body[i];
 			boolean scopeUpdated = false;
 			
-			// TODO0 remove or keep as a debug setting
-			writer.buffer.writeLine("; " + st.getUnit().source.getLine(st).strip());
+			// TODO0 remove or keep the code lines in assembly as a debug setting
+			writer.instructions.comment(st.getSource().getLine(st).strip());
 			
 			if(st instanceof SectionEndSt) {
 				writeSectionEndStatement((SectionEndSt) st, errors);
@@ -110,12 +113,11 @@ public class FunctionWriter {
 		}
 		
 		if(needsRetLabel)
-			writer.buffer.appendLine(".ret:");
-		writer.buffer.writeLine("mov rsp,rbp");
-		writer.buffer.writeLine("pop rbp");
+			writer.instructions.label(".ret");
+		writer.instructions.endScope();
 		switch(writer.projectHandle.manifest.callingConvention) {
 		case __stdcall:
-			writer.buffer.writeLine("ret " + argsSpace);
+			writer.instructions.ret(argsSpace);
 			break;
 		default:
 			throw new IllegalStateException("Unimplemented calling convention " + writer.projectHandle.manifest.callingConvention);
@@ -130,10 +132,10 @@ public class FunctionWriter {
 			if(s instanceof SectionEndSt) {
 				current = sections.remove(sections.size()-1);
 			} else if(s instanceof VariableDeclaration) {
-				current += ((VariableDeclaration) s).getType().getSize();
+				current += MemSize.getPointerSize(((VariableDeclaration) s).getType()).bytes;
 				max = Math.max(current, max);
 			} else if(s instanceof ForSt && ((ForSt) s).declaration != null) {
-				current += ((ForSt) s).declaration.getType().getSize();
+				current += MemSize.getPointerSize(((ForSt) s).declaration.getType()).bytes;
 				max = Math.max(current, max);
 				sections.add(current);
 			} else if(SECTION_STATEMENTS.contains(s.getClass())) {
@@ -143,10 +145,10 @@ public class FunctionWriter {
 		return max;
 	}
 	
-	public static int getArgumentsSize(FunctionSection func) {
+	public static int getArgumentsSize(FunctionPrototype func) {
 		int size = 0;
-		for(VarType arg : func.argumentTypes)
-			size += arg.getSize();
+		for(VarType arg : func.functionType.arguments)
+			size += MemSize.getPointerSize(arg).bytes;
 		return size;
 	}
 	
@@ -159,12 +161,12 @@ public class FunctionWriter {
 	
 	private void writeSectionEndStatement(SectionEndSt st, ErrorWrapper errors) {
 		if(st.closedStatement instanceof ForSt)
-			writer.buffer.writeLine("jmp " + getLabel(st.closedStatement));
+			writer.instructions.jmp(getLabel(st.closedStatement));
 		else if(st.closedStatement instanceof IfSt && ((IfSt)st.closedStatement).elseStatement != null)
-			writer.buffer.writeLine("jmp " + getLabel(((IfSt)st.closedStatement).elseStatement.sectionEnd));
+			writer.instructions.jmp(getLabel(((IfSt)st.closedStatement).elseStatement.sectionEnd));
 		else if(st.closedStatement instanceof WhileSt)
-			writer.buffer.writeLine("jmp " + getLabel(st.closedStatement));
-		writer.buffer.appendLine(getLabel(st)+':');
+			writer.instructions.jmp(getLabel(st.closedStatement));
+		writer.instructions.label(getLabel(st));
 	}
 	
 	private void writeVarDeclaration(VariableDeclaration st, ErrorWrapper errors) {
@@ -174,7 +176,7 @@ public class FunctionWriter {
 	private void writeIfStatement(IfSt st, ErrorWrapper errors) {
 		if(!writer.asmWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors)) {
 			writer.expWriter.writeExpression(st.getCondition(), errors);
-			writer.buffer.writeLine("jz " + getLabel(st.sectionEnd));
+			writer.instructions.add(OpCode.JZ, getLabel(st.sectionEnd));
 		}
 	}
 	
@@ -184,7 +186,7 @@ public class FunctionWriter {
 	
 	private void writeWhileStatement(WhileSt st, ErrorWrapper errors) {
 		String label = getLabel(st);
-		writer.buffer.appendLine(label+":");
+		writer.instructions.label(label);
 		writer.asmWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 	}
 	
@@ -193,26 +195,26 @@ public class FunctionWriter {
 		if(st.declaration != null)
 			writeVarDeclaration(st.declaration, errors);
 		if(st.affectation != null)
-			writer.buffer.writeLine("jmp " + label + "_firstpass");
-		writer.buffer.appendLine(label+":");
+			writer.instructions.jmp(label + "_firstpass");
+		writer.instructions.label(label);
 		if(st.affectation != null) {
 			writeAffectationStatement(st.affectation, errors);
-			writer.buffer.appendLine(label + "_firstpass:");
+			writer.instructions.label(label + "_firstpass");
 		}
 		if(st.condition != null) {
 			if(!writer.asmWriter.writeJump(st.condition, getLabel(st.sectionEnd), errors)) {
 				writer.expWriter.writeExpression(st.condition, errors);
-				writer.buffer.writeLine("jz " + getLabel(st.sectionEnd));
+				writer.instructions.add(OpCode.JZ, getLabel(st.sectionEnd));
 			}
 		} else {
-			writer.buffer.writeLine("jmp " + label);
+			writer.instructions.jmp(label);
 		}
 	}
 	
 	private void writeReturnStatement(ReturnSt st, boolean writeJmp, ErrorWrapper errors) {
 		writer.expWriter.writeExpression(st.getExpression(), errors);
 		if(writeJmp)
-			writer.buffer.writeLine("jmp .ret");
+			writer.instructions.jmp(".ret");
 	}
 	
 	private void writeFunctionStatement(FunctionSt st, ErrorWrapper errors) {

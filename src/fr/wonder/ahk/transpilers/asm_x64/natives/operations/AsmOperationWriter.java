@@ -14,9 +14,13 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
-import fr.wonder.ahk.transpilers.asm_x64.writers.memory.DataAccess;
-import fr.wonder.ahk.transpilers.asm_x64.writers.memory.DirectLoc;
+import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
+import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
+import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
+import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.types.Tuple;
 
 public class AsmOperationWriter {
@@ -24,8 +28,6 @@ public class AsmOperationWriter {
 	private static final Map<Operation, OperationWriter> nativeOperations = new HashMap<>();
 	private static final Map<Operation, JumpWriter> conditionalJumps = new HashMap<>();
 	private static final Map<Tuple<VarType, VarType>, ConversionWriter> conversions = new HashMap<>();
-	
-	private final static String floatst = UnitWriter.GLOBAL_FLOATST;
 	
 	private static interface OperationWriter {
 		
@@ -77,46 +79,58 @@ public class AsmOperationWriter {
 		return true;
 	}
 	
-	private DataAccess prepareRAXRBX(Expression e1, Expression e2, ErrorWrapper errors) {
+	/**
+	 * Writes {@code e1} and {@code e2} to {@code rax, rbx} if they're computable expressions,
+	 * if one of them is a literal expression only the other one is placed into {@code rax}
+	 * and the other one is returned as an {@link ImmediateValue}, otherwise {@code Register.RBX}
+	 * is returned.
+	 */
+	private OperationParameter prepareRAXRBX(Expression e1, Expression e2, ErrorWrapper errors) {
+		// FIX (3 % i) will be interpreted as (i % 3) currently!!
 		if(e1 instanceof LiteralExp && !(e2 instanceof LiteralExp)) {
 			Expression t = e2;
 			e2 = e1;
 			e1 = t;
 		}
-		writer.mem.writeTo(DirectLoc.LOC_RAX, e1, errors);
+		writer.mem.writeTo(Register.RAX, e1, errors);
 		writer.mem.addStackOffset(8);
-		writer.buffer.writeLine("push rax");
-		DataAccess acc = writer.mem.moveTo(DirectLoc.LOC_RBX, e2, errors);
+		writer.instructions.push(Register.RAX);
+		OperationParameter acc = writer.mem.moveTo(Register.RBX, e2, errors);
 		writer.mem.restoreStackOffset();
-		writer.buffer.writeLine("pop rax");
+		writer.instructions.pop(Register.RAX);
 		return acc;
 	}
 	
 	private static void op_intADDint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		DataAccess ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, errors);
-		if(ro.exp != null && ro.exp instanceof IntLiteral && (Long)ro.exp.value == 1)
-			asmWriter.writer.buffer.writeLine("inc rax");
-		else if(ro.exp != null && ro.exp instanceof IntLiteral && (Long)ro.exp.value == -1)
-			asmWriter.writer.buffer.writeLine("dec rax");
-		else
-			asmWriter.writer.buffer.writeLine("add rax," + ro);
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, errors);
+		if(ro instanceof IntLiteral) {
+			Long v = ((IntLiteral) ro).value;
+			if(v == 1)
+				asmWriter.writer.instructions.add(OpCode.INC, Register.RAX);
+			else if(v == -1)
+				asmWriter.writer.instructions.add(OpCode.DEC, Register.RAX);
+			else
+				asmWriter.writer.instructions.add(OpCode.ADD, Register.RAX, ro);
+			return;
+		}
+		asmWriter.writer.instructions.add(OpCode.ADD, Register.RAX, ro);
 	}
 	
 	private static void op_intMODint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		DataAccess ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, errors);
 		// TODO check for mod 2^x operations that can be heavily optimized
-		asmWriter.writer.mem.writeTo(DirectLoc.LOC_RBX, ro, errors); // FIX rax may be overridden by ro
-		asmWriter.writer.buffer.writeLine("xor rdx,rdx");
-		asmWriter.writer.buffer.writeLine("idiv rbx");
-		asmWriter.writer.buffer.writeLine("mov rax,rdx");
+		asmWriter.writer.mem.writeTo(Register.RAX, leftOperand, errors);
+		asmWriter.writer.mem.writeTo(Register.RBX, rightOperand, errors); // FIX rax may be overwritten by the calculation
+		asmWriter.writer.instructions.clearRegister(Register.RDX);
+		asmWriter.writer.instructions.add(OpCode.IDIV, Register.RBX);
+		asmWriter.writer.instructions.mov(Register.RDX, Register.RAX);
 	}
 	
 	private static void op_intDIVint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		DataAccess ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, errors);
 		// TODO check for mod 2^x operations that can be heavily optimized
-		asmWriter.writer.mem.writeTo(DirectLoc.LOC_RBX, ro, errors);
-		asmWriter.writer.buffer.writeLine("xor rdx,rdx");
-		asmWriter.writer.buffer.writeLine("idiv rbx");
+		asmWriter.writer.mem.writeTo(Register.RAX, leftOperand, errors);
+		asmWriter.writer.mem.writeTo(Register.RBX, rightOperand, errors); // FIX rax may be overwritten by the calculation
+		asmWriter.writer.instructions.clearRegister(Register.RDX);
+		asmWriter.writer.instructions.add(OpCode.IDIV, Register.RBX);
 	}
 	
 	/* =============================================== Jumps ============================================== */
@@ -140,18 +154,18 @@ public class AsmOperationWriter {
 	}
 	
 	private static void jump_intEQUint(OperationExp exp, String label, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		DataAccess rv = asmWriter.prepareRAXRBX(exp.getLeftOperand(), exp.getRightOperand(), errors);
-		if(rv.exp != null && rv.exp instanceof IntLiteral && (Long) rv.exp.value == 0)
-			asmWriter.writer.buffer.writeLine("test rax,rax");
+		OperationParameter rv = asmWriter.prepareRAXRBX(exp.getLeftOperand(), exp.getRightOperand(), errors);
+		if(rv instanceof IntLiteral && ((IntLiteral)rv).value == 0)
+			asmWriter.writer.instructions.test(Register.RAX);
 		else
-			asmWriter.writer.buffer.writeLine("cmp rax,"+rv);
-		asmWriter.writer.buffer.writeLine("jne "+label);
+			asmWriter.writer.instructions.cmp(Register.RAX, rv);
+		asmWriter.writer.instructions.add(OpCode.JNE, new LabelAddress(label));
 	}
 	
 	private static void jump_intLTint(OperationExp exp, String label, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		DataAccess rv = asmWriter.prepareRAXRBX(exp.getLeftOperand(), exp.getRightOperand(), errors);
-		asmWriter.writer.buffer.writeLine("cmp rax,"+rv);
-		asmWriter.writer.buffer.writeLine("jge "+label);
+		OperationParameter rv = asmWriter.prepareRAXRBX(exp.getLeftOperand(), exp.getRightOperand(), errors);
+		asmWriter.writer.instructions.cmp(Register.RAX, rv);
+		asmWriter.writer.instructions.add(OpCode.JGE, new LabelAddress(label));
 	}
 
 	/* ============================================ Conversions =========================================== */
@@ -164,14 +178,16 @@ public class AsmOperationWriter {
 	}
 	
 	private static void conv_intTOfloat(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.writer.buffer.writeLine("; conv");
+//		asmWriter.writer.buffer.writeLine("; conv");
+		throw new UnimplementedException();
 	}
 	
 	private static void conv_floatTOint(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.writer.buffer.writeLine("mov ["+floatst+"],rax");
-		asmWriter.writer.buffer.writeLine("fld qword["+floatst+"]");
-		asmWriter.writer.buffer.writeLine("fistp qword["+floatst+"]");
-		asmWriter.writer.buffer.writeLine("mov rax,["+floatst+"]");
+		throw new UnimplementedException();
+//		asmWriter.writer.buffer.writeLine("mov ["+floatst+"],rax"); // floatst -> GlobalLabels.floatst
+//		asmWriter.writer.buffer.writeLine("fld qword["+floatst+"]");
+//		asmWriter.writer.buffer.writeLine("fistp qword["+floatst+"]");
+//		asmWriter.writer.buffer.writeLine("mov rax,["+floatst+"]");
 	}
 	
 }

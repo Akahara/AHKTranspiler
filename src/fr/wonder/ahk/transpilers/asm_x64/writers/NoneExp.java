@@ -29,7 +29,7 @@ public class NoneExp extends Expression {
 		
 		@Override
 		public boolean equals(Object o) {
-			throw new IllegalAccessError("The None type cannot be compared to another");
+			throw new IllegalAccessError("The None type cannot be compared");
 		}
 	}
 	

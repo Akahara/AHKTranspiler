@@ -9,7 +9,7 @@ import fr.wonder.ahk.compiler.FuncArguments;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.commons.types.Tuple;
 
-class UnitScope implements Scope {
+public class UnitScope implements Scope {
 	
 	private final UnitPrototype unit;
 	private final UnitPrototype[] importedUnits;

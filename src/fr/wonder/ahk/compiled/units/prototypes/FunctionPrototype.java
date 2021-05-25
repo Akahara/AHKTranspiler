@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.units.prototypes;
 
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.FuncArguments;
 import fr.wonder.ahk.compiler.Unit;
@@ -12,9 +13,12 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 	/** The type of this function, contains its arguments and return type */
 	public final VarFunctionType functionType;
 	
-	public FunctionPrototype(Signature signature, VarFunctionType functionType) {
+	public final DeclarationModifiers modifiers;
+	
+	public FunctionPrototype(Signature signature, VarFunctionType functionType, DeclarationModifiers modifiers) {
 		this.signature = signature;
 		this.functionType = functionType;
+		this.modifiers = modifiers;
 	}
 	
 	@Override
@@ -52,6 +56,11 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 	@Override
 	public Signature getSignature() {
 		return signature;
+	}
+
+	@Override
+	public DeclarationModifiers getModifiers() {
+		return modifiers;
 	}
 
 	@Override

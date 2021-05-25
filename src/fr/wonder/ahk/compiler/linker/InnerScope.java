@@ -37,7 +37,7 @@ class InnerScope implements Scope {
 		for(ValueDeclaration var : variables) {
 			if(var.getName().equals(name)) {
 				Signature signature = new Signature(VarAccess.INNER_UNIT, var.getName(), var.getName());
-				return new VariablePrototype(signature, var.getType());
+				return new VariablePrototype(signature, var.getType(), var.getModifiers());
 			}
 		}
 		return parent.getVariable(name);

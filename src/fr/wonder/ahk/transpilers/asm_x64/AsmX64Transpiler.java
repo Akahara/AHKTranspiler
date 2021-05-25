@@ -13,8 +13,8 @@ import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.ahk.transpilers.asm_x64.natives.ProcessFiles;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
-import fr.wonder.ahk.transpilers.asm_x64.writers.TextBuffer;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
+import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.files.FilesUtils;
@@ -78,6 +78,7 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 	
 	private void validateProject(TranspilableHandle handle, ErrorWrapper errors) {
+		handle.manifest.validate(handle, errors.subErrrors("Invalid manifest"), false);
 		handle.manifest.validateAsm(errors.subErrrors("Invalid manifest"));
 		
 		for(Unit u : handle.units)
@@ -97,11 +98,10 @@ public class AsmX64Transpiler implements Transpiler {
 
 	private static String writeUnit(TranspilableHandle handle, Unit unit, File dir, ErrorWrapper errors) throws IOException {
 		String file = unit.fullBase.replaceAll("\\.", "/");
-		TextBuffer tb = new TextBuffer();
-		UnitWriter.writeUnit(handle, unit, tb, errors);
+		InstructionSet instructions = UnitWriter.writeUnit(handle, unit, errors);
 		File f = new File(dir, file+".asm");
 		if(!f.isFile()) { f.getParentFile().mkdirs(); f.createNewFile(); }
-		FilesUtils.write(f, tb.toString());
+		FilesUtils.write(f, instructions.toString());
 		return file;
 	}
 	
@@ -140,11 +140,14 @@ public class AsmX64Transpiler implements Transpiler {
 		AHKTranspiler.logger.info("Running command || " + cmd);
 		ProcessBuilder pb = new ProcessBuilder(cmd.split(" "));
 		Process p = pb.directory(dir).start();
-		ProcessUtils.redirectOutput(p, AHKTranspiler.logger);
+		Thread redirect = ProcessUtils.redirectOutput(p, AHKTranspiler.logger);
+		redirect.setName(cmd.substring(0, cmd.indexOf(' ')));
+		redirect.start();
 		int ec = -1;
 		try { ec = p.waitFor(); } catch (InterruptedException x) { }
 		String signal = ProcessUtils.getErrorSignal(ec);
 		if(signal == null) signal = "";
+		try { redirect.join(); } catch (InterruptedException e) { }
 		AHKTranspiler.logger.info(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec + signal);
 		return ec;
 	}

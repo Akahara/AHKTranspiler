@@ -1,7 +1,5 @@
 base ahk;
 
-import ahk.Test;
-
 unit Kernel;
 
 @native("ahk_Kernel_print_dec");
@@ -34,7 +32,3 @@ func void println(str s) {
 
 @native("ker_exit");
 func void exit(int exitCode) {}
-
-func void test() {
-	Test.test();
-}

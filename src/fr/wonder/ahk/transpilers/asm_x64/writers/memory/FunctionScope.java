@@ -1,8 +1,12 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers.memory;
 
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.transpilers.common_x64.MemSize;
+import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
+import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 
 class FunctionScope extends SectionScope {
 	
@@ -14,15 +18,15 @@ class FunctionScope extends SectionScope {
 	}
 	
 	@Override
-	public VarLocation getVarLocation(ValueDeclaration var) {
+	public Address getVarAddress(VarAccess var) {
 		int loc = 16;
 		for(FunctionArgument a : func.arguments) {
 			if(var == a)
-				return new MemoryLoc(VarLocation.REG_RBP, loc);
+				return new MemAddress(Register.RBP, loc);
 			else
-				loc += a.getType().getSize();
+				loc += MemSize.getPointerSize(a.getType()).bytes;
 		}
-		return super.getVarLocation(var);
+		return super.getVarAddress(var);
 	}
 	
 	@Override
