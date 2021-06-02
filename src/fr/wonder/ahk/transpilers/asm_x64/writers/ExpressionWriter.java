@@ -60,7 +60,7 @@ public class ExpressionWriter {
 	}
 	
 	private void writeFunctionExp(FunctionPrototype function, Expression[] arguments,  ErrorWrapper errors) {
-		switch(writer.projectHandle.manifest.callingConvention) {
+		switch(writer.project.manifest.callingConvention) {
 		case __stdcall: {
 			int argsSpace = FunctionWriter.getArgumentsSize(function);
 			if(argsSpace != 0)
@@ -72,12 +72,12 @@ public class ExpressionWriter {
 				writer.mem.writeTo(new MemAddress(Register.RSP, offset), arg, errors);
 				offset += MemSize.getPointerSize(arg.getType()).bytes;
 			}
-			writer.instructions.call(writer.getRegistry(function));
-			writer.mem.restoreStackOffset();
+			writer.instructions.call(UnitWriter.getRegistry(function));
+			writer.mem.addStackOffset(-argsSpace);
 			break;
 		}
 		default:
-			throw new IllegalStateException("Unimplemented calling convention " + writer.projectHandle.manifest.callingConvention);
+			throw new IllegalStateException("Unimplemented calling convention " + writer.project.manifest.callingConvention);
 		}
 	}
 	
@@ -89,7 +89,7 @@ public class ExpressionWriter {
 //			Expression leftOperand = exp.getLeftOperand() == null ? new NoneExp(func.argumentTypes[0].getSize()) : exp.getLeftOperand();
 //			writeFunctionExp(func, new Expression[] { leftOperand, exp.getRightOperand() }, errors);
 		} else {
-			boolean nativeExists = writer.asmWriter.writeOperation(
+			boolean nativeExists = writer.opWriter.writeOperation(
 					exp.getOperation(),
 					exp.getLeftOperand(),
 					exp.getRightOperand(), errors);
@@ -101,21 +101,21 @@ public class ExpressionWriter {
 	private void writeConversionExp(ConversionExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getValue(), errors);
 		if(exp.isEffective())
-			writer.asmWriter.writeConversion(exp.getValue().getType(), exp.castType, errors);
+			writer.opWriter.writeConversion(exp.getValue().getType(), exp.castType, errors);
 	}
 	
 	private void writeArrayExp(ArrayExp exp, ErrorWrapper errors) {
 		int elemSize = MemSize.getPointerSize(exp.getType().componentType).bytes;
 		writer.callAlloc(exp.getLength()*elemSize);
 		if(exp.getLength() != 0) {
-			writer.mem.addStackOffset(8);
+			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 			writer.instructions.push(Register.RAX);
 			for(int i = 0; i < exp.getValues().length; i++) {
 				MemAddress address = new MemAddress(Register.RSP).then(i*elemSize); // [[rsp]+i*elemSize]
 				writer.mem.writeTo(address, exp.getValues()[i], errors);
 			}
 			writer.instructions.pop(Register.RAX);
-			writer.mem.restoreStackOffset();
+			writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
 		}
 	}
 	
@@ -128,10 +128,10 @@ public class ExpressionWriter {
 				
 			} else {
 				writer.instructions.push(Register.RAX);
-				writer.mem.addStackOffset(8);
+				writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 				writer.mem.writeTo(Register.RAX, index, errors);
 				writer.instructions.pop(Register.RBX); // rbx is the array pointer
-				writer.mem.restoreStackOffset();
+				writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
 				// TODO0 check if imul/shl exceeds the 64 bits bounds (check the ALU flags)
 				int csize = MemSize.getPointerSize(arrayType.componentType).bytes;
 				if(csize == 8)

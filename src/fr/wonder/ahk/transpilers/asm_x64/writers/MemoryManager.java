@@ -2,10 +2,6 @@ package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
-import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
-import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
-import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
-import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -43,11 +39,7 @@ public class MemoryManager {
 	
 	/** Used to offset all uses of $rsp */
 	public void addStackOffset(int argsSpace) {
-		currentScope.setStackOffset(argsSpace);
-	}
-	/** Used to remove the offset of $rsp. */
-	public void restoreStackOffset() {
-		currentScope.setStackOffset(0);
+		currentScope.addStackOffset(argsSpace);
 	}
 	
 	/**
@@ -58,7 +50,7 @@ public class MemoryManager {
 		if(exp instanceof NoneExp) {
 			writeMov(loc, "NONE", writer.types.getSize(exp.getType()));
 		} else if(exp instanceof LiteralExp) {
-			writeMov(loc, getValueString((LiteralExp<?>) exp), MemSize.getPointerSize(exp.getType()).bytes);
+			writeMov(loc, writer.getValueString((LiteralExp<?>) exp), MemSize.getPointerSize(exp.getType()).bytes);
 		} else if(exp instanceof VarExp) {
 			moveData(currentScope.getVarAddress(((VarExp) exp).declaration), loc);
 		} else {
@@ -135,28 +127,6 @@ public class MemoryManager {
 		}
 		writer.instructions.mov(to, from);
 		// FIX TEST moving data from complex mem to complex mem
-	}
-	
-	/**
-	 * Returns the assembly text corresponding to a literal expression
-	 * <ul>
-	 *   <li><b>Ints</b> are not converted</li>
-	 *   <li><b>Floats</b> are converted using the {@code __float64__} directive</li>
-	 *   <li><b>Bools</b> are converted to 0 or 1</li>
-	 *   <li><b>Strings</b> are converted to their labels in the data segment</li>
-	 * </ul>
-	 */
-	public String getValueString(LiteralExp<?> exp) {
-		if(exp instanceof IntLiteral)
-			return String.valueOf(((IntLiteral) exp).value);
-		else if(exp instanceof FloatLiteral)
-			return "__float64__("+((FloatLiteral)exp).value+")";
-		else if(exp instanceof BoolLiteral)
-			return ((BoolLiteral) exp).value ? "1" : "0";
-		else if(exp instanceof StrLiteral)
-			return writer.getLabel((StrLiteral) exp);
-		else
-			throw new IllegalStateException("Unhandled literal type " + exp.getClass());
 	}
 
 }

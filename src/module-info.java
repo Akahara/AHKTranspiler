@@ -13,7 +13,6 @@ module AHKTranspiler {
 	exports fr.wonder.ahk.compiled.statements;
 	exports fr.wonder.ahk.compiler.linker;
 	exports fr.wonder.ahk.transpilers;
-	exports fr.wonder.ahk.transpilers.asm_x64.writers.memory;
 	exports fr.wonder.ahk.transpilers.python;
 	exports fr.wonder.ahk.compiler;
 	exports fr.wonder.ahk.compiled.expressions.types;

@@ -32,10 +32,11 @@ class ExpressionLinker {
 				// search for the variable/function declaration
 				VarExp vexp = (VarExp) exp;
 				VarAccess var = scope.getVariable(vexp.variable);
+				String varUnit = var == null ? null : var.getSignature().declaringUnit;
 				if(var == null) {
 					errors.add("Usage of undeclared variable " + vexp.variable + vexp.getErr());
 					var = Invalids.ACCESS;
-				} else if(!var.getSignature().declaringUnit.equals(unit.fullBase)) {
+				} else if(!varUnit.equals(unit.fullBase) && varUnit != VarAccess.INNER_UNIT) {
 					unit.prototype.externalAccesses.add(var);
 				}
 				vexp.declaration = var;

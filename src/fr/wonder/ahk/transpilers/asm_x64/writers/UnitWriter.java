@@ -6,6 +6,9 @@ import java.util.List;
 import fr.wonder.ahk.compiled.ExpressionHolder;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
@@ -62,31 +65,29 @@ public class UnitWriter {
 	public final InstructionSet instructions = new InstructionSet();
 	
 	public final ConcreteTypesTable types = new ConcreteTypesTable();
-	public final TranspilableHandle projectHandle;
+	public final TranspilableHandle project;
 	public final Unit unit;
 	public final MemoryManager mem;
 	public final ExpressionWriter expWriter;
-	public final AsmOperationWriter asmWriter;
+	public final AsmOperationWriter opWriter;
 	/** populated by {@link #writeDataSegment(ErrorWrapper)} and used by {@link #getLabel(StrLiteral)} */
 	private final List<StrLiteral> strConstants = new ArrayList<>();
 	
 	private int specialCallCount = 0;
 	
 	private UnitWriter(TranspilableHandle handle, Unit unit) {
-		this.projectHandle = handle;
+		this.project = handle;
 		this.unit = unit;
 		this.mem = new MemoryManager(this);
 		this.expWriter = new ExpressionWriter(this);
-		this.asmWriter = new AsmOperationWriter(this);
+		this.opWriter = new AsmOperationWriter(this);
 	}
 	
 	// ------------------------ registries & labels ------------------------
 	
-	String getRegistry(Prototype<?> var) {
-		if(var.getSignature().declaringUnit.equals(unit.fullBase))
-			return getLocalRegistry(var);
-		else
-			return getGlobalRegistry(var);
+	/** Returns the registry (the label) of the variable or function denoted by #var */
+	public static String getRegistry(Prototype<?> var) {
+		return getGlobalRegistry(var);
 	}
 	
 	public static String getUnitRegistry(Unit unit) {
@@ -97,14 +98,14 @@ public class UnitWriter {
 		return unitFullBase.replaceAll("\\.", "_");
 	}
 	
-	public static String getGlobalRegistry(Prototype<?> var) {
+	private static String getGlobalRegistry(Prototype<?> var) {
 		if(var.getModifiers().hasModifier(Modifier.NATIVE))
 			return var.getModifiers().getModifier(NativeModifier.class).nativeRef;
 		
 		return getUnitRegistry(var.getSignature().declaringUnit) + "_" + getLocalRegistry(var);
 	}
 	
-	public static String getLocalRegistry(Prototype<?> var) {
+	private static String getLocalRegistry(Prototype<?> var) {
 		if(var.getModifiers().hasModifier(Modifier.NATIVE))
 			return getGlobalRegistry(var);
 		
@@ -126,6 +127,28 @@ public class UnitWriter {
 				return "str_cst_" + i;
 		}
 		throw new IllegalStateException("Unregistered string constant");
+	}
+	
+	/**
+	 * Returns the assembly text corresponding to a literal expression
+	 * <ul>
+	 *   <li><b>Ints</b> are not converted</li>
+	 *   <li><b>Floats</b> are converted using the {@code __float64__} directive</li>
+	 *   <li><b>Bools</b> are converted to 0 or 1</li>
+	 *   <li><b>Strings</b> are converted to their labels in the data segment</li>
+	 * </ul>
+	 */
+	public String getValueString(LiteralExp<?> exp) {
+		if(exp instanceof IntLiteral)
+			return String.valueOf(((IntLiteral) exp).value);
+		else if(exp instanceof FloatLiteral)
+			return "__float64__("+((FloatLiteral)exp).value+")";
+		else if(exp instanceof BoolLiteral)
+			return ((BoolLiteral) exp).value ? "1" : "0";
+		else if(exp instanceof StrLiteral)
+			return getLabel((StrLiteral) exp);
+		else
+			throw new IllegalStateException("Unhandled literal type " + exp.getClass());
 	}
 
 	// ------------------------------ segments -----------------------------
@@ -183,7 +206,7 @@ public class UnitWriter {
 				instructions.label(getGlobalRegistry(var.getPrototype()));
 			String value;
 			if(initializedVariables.contains(var))
-				value = mem.getValueString((LiteralExp<?>) var.getDefaultValue());
+				value = getValueString((LiteralExp<?>) var.getDefaultValue());
 			else
 				value = "0";
 			instructions.add(new GlobalVarDeclaration(getLocalRegistry(var.getPrototype()), MemSize.QWORD, value));
@@ -214,7 +237,7 @@ public class UnitWriter {
 		// write the initialization function
 		instructions.label(getUnitRegistry(unit) + "_init");
 		if(!initializableVariables.isEmpty()) {
-			instructions.createScope();
+			instructions.createStackFrame();
 			mem.enterFunction(initFunction, 0);
 			for(VariableDeclaration var : initializableVariables) {
 				Expression defaultVal = var.getDefaultValue();
@@ -222,7 +245,7 @@ public class UnitWriter {
 					defaultVal = new NoneExp(MemSize.getPointerSize(var.getType()).bytes);
 				mem.writeTo(new LabelAddress(getRegistry(var.getPrototype())), defaultVal, errors);
 			}
-			instructions.endScope();
+			instructions.endStackFrame();
 		}
 		instructions.ret();
 		instructions.skip();
@@ -233,9 +256,9 @@ public class UnitWriter {
 			
 			FunctionWriter funcWriter = new FunctionWriter(this, func);
 			
-			if(func.getVisibility() == DeclarationVisibility.GLOBAL)
+//			instructions.label(getLocalRegistry(func.getPrototype()));
+//			if(func.getVisibility() == DeclarationVisibility.GLOBAL)
 				instructions.label(getGlobalRegistry(func.getPrototype()));
-			instructions.label(getLocalRegistry(func.getPrototype()));
 			funcWriter.writeFunction(func, errors);
 			instructions.skip();
 		}

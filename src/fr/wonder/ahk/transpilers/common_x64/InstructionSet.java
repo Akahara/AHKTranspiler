@@ -70,12 +70,12 @@ public class InstructionSet {
 	
 	public void section(String section) { add(new SectionDeclaration(section)); }
 	
-	public void createScope() {
+	public void createStackFrame() {
 		push(Register.RBP);
 		mov(Register.RBP, Register.RSP);
 	}
 
-	public void endScope() {
+	public void endStackFrame() {
 		mov(Register.RSP, Register.RBP);
 		pop(Register.RBP);		
 	}

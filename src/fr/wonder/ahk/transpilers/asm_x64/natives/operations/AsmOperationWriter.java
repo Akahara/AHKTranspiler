@@ -96,7 +96,7 @@ public class AsmOperationWriter {
 		writer.mem.addStackOffset(8);
 		writer.instructions.push(Register.RAX);
 		OperationParameter acc = writer.mem.moveTo(Register.RBX, e2, errors);
-		writer.mem.restoreStackOffset();
+		writer.mem.addStackOffset(-8);
 		writer.instructions.pop(Register.RAX);
 		return acc;
 	}
@@ -122,7 +122,7 @@ public class AsmOperationWriter {
 		asmWriter.writer.mem.writeTo(Register.RBX, rightOperand, errors); // FIX rax may be overwritten by the calculation
 		asmWriter.writer.instructions.clearRegister(Register.RDX);
 		asmWriter.writer.instructions.add(OpCode.IDIV, Register.RBX);
-		asmWriter.writer.instructions.mov(Register.RDX, Register.RAX);
+		asmWriter.writer.instructions.mov(Register.RAX, Register.RDX);
 	}
 	
 	private static void op_intDIVint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -155,7 +155,7 @@ public class AsmOperationWriter {
 	
 	private static void jump_intEQUint(OperationExp exp, String label, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		OperationParameter rv = asmWriter.prepareRAXRBX(exp.getLeftOperand(), exp.getRightOperand(), errors);
-		if(rv instanceof IntLiteral && ((IntLiteral)rv).value == 0)
+		if(rv instanceof ImmediateValue && ((ImmediateValue)rv).text.equals("0"))
 			asmWriter.writer.instructions.test(Register.RAX);
 		else
 			asmWriter.writer.instructions.cmp(Register.RAX, rv);

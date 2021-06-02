@@ -17,6 +17,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 
 class Scope {
 	
+	@SuppressWarnings("unused")
 	private final Unit unit;
 	private final FunctionSection func;
 	private final int stackSpace;
@@ -56,10 +57,7 @@ class Scope {
 		}
 		// TODO check if #var is accessible
 		// search through global variables
-		return new MemAddress(new LabelAddress(
-				var.getSignature().declaringUnit.equals(unit.fullBase) ?
-					UnitWriter.getLocalRegistry((Prototype<?>) var) :
-					UnitWriter.getGlobalRegistry((Prototype<?>) var)));
+		return new MemAddress(new LabelAddress(UnitWriter.getRegistry((Prototype<?>) var)));
 	}
 	
 	void beginScope() {
@@ -73,11 +71,10 @@ class Scope {
 		currentScopeSize = scopeSizes.remove(scopeSizes.size()-1);
 	}
 	
-	/** Used when calling a function, to create space for the parameters */
-	void setStackOffset(int offset) {
-		if(stackOffset != 0 && offset != 0)
-			throw new IllegalStateException("This scope already has a stack offset");
-		stackOffset = offset;
+	void addStackOffset(int offset) {
+		stackOffset += offset;
+		if(offset < 0 && stackOffset < 0)
+			throw new IllegalStateException("Popped to many bytes off the stack");
 	}
 	
 }

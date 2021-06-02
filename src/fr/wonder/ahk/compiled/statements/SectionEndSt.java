@@ -17,7 +17,7 @@ public class SectionEndSt extends Statement {
 	 * text.
 	 */
 	public SectionEndSt(UnitSource source, int sourcePos) {
-		this(source, sourcePos, sourcePos);
+		this(source, sourcePos, -1);
 	}
 
 	@Override

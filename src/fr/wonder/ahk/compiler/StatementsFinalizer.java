@@ -46,10 +46,10 @@ public class StatementsFinalizer {
 				Expression[] returnValues = new Expression[composite.types.length];
 				for(int i = 0; i < returnValues.length; i++)
 					returnValues[i] = StatementParser.getDefaultValue(composite.types[i], source, sourceLoc);
-				statements.add(new CompositeReturnSt(source, sourceLoc, sourceLoc, returnValues));
+				statements.add(new CompositeReturnSt(source, sourceLoc, -1, returnValues));
 			} else {
 				Expression returned = StatementParser.getDefaultValue(function.returnType, source, sourceLoc);
-				statements.add(new ReturnSt(source, sourceLoc, sourceLoc, returned));
+				statements.add(new ReturnSt(source, sourceLoc, -1, returned));
 			}
 		}
 		

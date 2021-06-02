@@ -54,7 +54,7 @@ public class FunctionWriter {
 	}
 	
 	public void writeFunction(FunctionSection func, ErrorWrapper errors) {
-		writer.instructions.createScope();
+		writer.instructions.createStackFrame();
 		
 		int stackSpace = getMaxStackSize(func.body);
 		if(stackSpace != 0)
@@ -70,8 +70,12 @@ public class FunctionWriter {
 			Statement st = func.body[i];
 			boolean scopeUpdated = false;
 			
-			// TODO0 remove or keep the code lines in assembly as a debug setting
-			writer.instructions.comment(st.getSource().getLine(st).strip());
+			if(writer.project.manifest.DEBUG_SYMBOLS) {
+				if(st.sourceStop != -1)
+					writer.instructions.comment(st.getSource().getLine(st).strip());
+				else
+					writer.instructions.comment("~ " + st.toString());
+			}
 			
 			if(st instanceof SectionEndSt) {
 				writeSectionEndStatement((SectionEndSt) st, errors);
@@ -113,13 +117,13 @@ public class FunctionWriter {
 		
 		if(needsRetLabel)
 			writer.instructions.label(".ret");
-		writer.instructions.endScope();
-		switch(writer.projectHandle.manifest.callingConvention) {
+		writer.instructions.endStackFrame();
+		switch(writer.project.manifest.callingConvention) {
 		case __stdcall:
 			writer.instructions.ret(argsSpace);
 			break;
 		default:
-			throw new IllegalStateException("Unimplemented calling convention " + writer.projectHandle.manifest.callingConvention);
+			throw new IllegalStateException("Unimplemented calling convention " + writer.project.manifest.callingConvention);
 		}
 	}
 	
@@ -173,7 +177,7 @@ public class FunctionWriter {
 	}
 	
 	private void writeIfStatement(IfSt st, ErrorWrapper errors) {
-		if(!writer.asmWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors)) {
+		if(!writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors)) {
 			writer.expWriter.writeExpression(st.getCondition(), errors);
 			writer.instructions.add(OpCode.JZ, getLabel(st.sectionEnd));
 		}
@@ -186,7 +190,7 @@ public class FunctionWriter {
 	private void writeWhileStatement(WhileSt st, ErrorWrapper errors) {
 		String label = getLabel(st);
 		writer.instructions.label(label);
-		writer.asmWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
+		writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 	}
 	
 	private void writeForStatement(ForSt st, ErrorWrapper errors) {
@@ -201,7 +205,7 @@ public class FunctionWriter {
 			writer.instructions.label(label + "_firstpass");
 		}
 		if(st.condition != null) {
-			if(!writer.asmWriter.writeJump(st.condition, getLabel(st.sectionEnd), errors)) {
+			if(!writer.opWriter.writeJump(st.condition, getLabel(st.sectionEnd), errors)) {
 				writer.expWriter.writeExpression(st.condition, errors);
 				writer.instructions.add(OpCode.JZ, getLabel(st.sectionEnd));
 			}
