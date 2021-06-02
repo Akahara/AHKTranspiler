@@ -1,5 +1,6 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
+import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
@@ -72,6 +73,11 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 				return f;
 		}
 		return null;
+	}
+
+	@Override
+	public boolean matchesDeclaration(ValueDeclaration decl) {
+		return decl.getSignature().equals(getSignature());
 	}
 
 }

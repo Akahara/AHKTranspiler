@@ -1,5 +1,6 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
+import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
@@ -67,6 +68,11 @@ public class VariablePrototype implements VarAccess, Prototype<VariableDeclarati
 				return v;
 		}
 		return null;
+	}
+
+	@Override
+	public boolean matchesDeclaration(ValueDeclaration decl) {
+		return decl.getSignature().equals(getSignature());
 	}
 	
 }

@@ -1,7 +1,4 @@
-package fr.wonder.ahk.transpilers.asm_x64.writers.memory;
-
-import java.util.ArrayList;
-import java.util.List;
+package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
@@ -15,9 +12,6 @@ import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.transpilers.asm_x64.writers.FunctionWriter;
-import fr.wonder.ahk.transpilers.asm_x64.writers.NoneExp;
-import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
@@ -30,40 +24,30 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 public class MemoryManager {
 	
 	private final UnitWriter writer;
-	public final Scope unitScope;
-	
-	private FunctionScope functionScope;
 	private Scope currentScope;
-	
-	private List<Integer> stackOffsets = new ArrayList<>();
 	
 	public MemoryManager(UnitWriter writer) {
 		this.writer = writer;
-		this.unitScope = new UnitScope(writer.unit);
-		// until a function begins, the current scope is the global scope
-		this.currentScope = unitScope;
 	}
 	
 	public void enterFunction(FunctionSection func, int stackSpace) {
-		functionScope = new FunctionScope(func, unitScope, stackSpace);
-		currentScope = functionScope;
+		currentScope = new Scope(writer.unit, func, stackSpace);
 	}
 	
 	public void updateScope(Statement st) {
 		if(st instanceof SectionEndSt)
-			currentScope = currentScope.getParent();
+			currentScope.endScope();
 		else if(FunctionWriter.SECTION_STATEMENTS.contains(st.getClass()))
-			currentScope = new SectionScope(currentScope);
+			currentScope.beginScope();
 	}
 	
 	/** Used to offset all uses of $rsp */
 	public void addStackOffset(int argsSpace) {
-		stackOffsets.add(argsSpace);
-		currentScope.addStackOffset(argsSpace);
+		currentScope.setStackOffset(argsSpace);
 	}
 	/** Used to remove the offset of $rsp. */
 	public void restoreStackOffset() {
-		currentScope.addStackOffset(-stackOffsets.remove(stackOffsets.size()-1));
+		currentScope.setStackOffset(0);
 	}
 	
 	/**

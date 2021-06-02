@@ -16,8 +16,6 @@ public interface Prototype<T extends ValueDeclaration> {
 	public Signature getSignature();
 	/** Returns the concrete variable this symbolic link refers to in the given unit */
 	public T getAccess(Unit unit);
-	public default boolean matchesDeclaration(ValueDeclaration decl) {
-		return decl.getSignature().equals(getSignature());
-	}
+	public boolean matchesDeclaration(ValueDeclaration decl);
 	
 }

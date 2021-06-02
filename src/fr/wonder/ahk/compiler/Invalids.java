@@ -52,6 +52,9 @@ public class Invalids {
 	public static final VarAccess ACCESS = new VarAccess() {
 		public VarType getType() { return Invalids.TYPE; }
 		public Signature getSignature() { return Invalids.ACCESS_SIGNATURE; }
+		public boolean matchesDeclaration(ValueDeclaration decl) {
+			throw new IllegalStateException("An invalid access was used");
+		}
 	};
 
 	public static final Expression EXPRESSION = new Expression(Invalids.SOURCE, 0, 0) {

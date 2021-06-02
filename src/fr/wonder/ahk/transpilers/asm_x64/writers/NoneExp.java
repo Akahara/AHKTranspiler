@@ -3,7 +3,6 @@ package fr.wonder.ahk.transpilers.asm_x64.writers;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 /**

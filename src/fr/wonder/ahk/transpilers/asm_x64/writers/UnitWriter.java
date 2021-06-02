@@ -21,7 +21,6 @@ import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.ConcreteTypesTable;
 import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
-import fr.wonder.ahk.transpilers.asm_x64.writers.memory.MemoryManager;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -221,7 +220,7 @@ public class UnitWriter {
 				Expression defaultVal = var.getDefaultValue();
 				if(defaultVal == null)
 					defaultVal = new NoneExp(MemSize.getPointerSize(var.getType()).bytes);
-				mem.writeTo(mem.unitScope.getVarAddress(var.getPrototype()), defaultVal, errors);
+				mem.writeTo(new LabelAddress(getRegistry(var.getPrototype())), defaultVal, errors);
 			}
 			instructions.endScope();
 		}
