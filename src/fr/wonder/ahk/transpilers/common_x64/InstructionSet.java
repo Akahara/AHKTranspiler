@@ -72,11 +72,11 @@ public class InstructionSet {
 	
 	public void createScope() {
 		push(Register.RBP);
-		mov(Register.RSP, Register.RBP);
+		mov(Register.RBP, Register.RSP);
 	}
 
 	public void endScope() {
-		mov(Register.RBP, Register.RSP);
+		mov(Register.RSP, Register.RBP);
 		pop(Register.RBP);		
 	}
 	

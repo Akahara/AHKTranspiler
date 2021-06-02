@@ -28,7 +28,6 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class FunctionWriter {
 	
-	// TODO0 maybe remove this list and replace the condition by (st instanceof LabeledStatement)
 	public static final List<Class<? extends Statement>> SECTION_STATEMENTS = Arrays.asList(
 			IfSt.class, ElseSt.class, ForSt.class, WhileSt.class
 	);
@@ -57,11 +56,11 @@ public class FunctionWriter {
 	public void writeFunction(FunctionSection func, ErrorWrapper errors) {
 		writer.instructions.createScope();
 		
-		writer.mem.enterFunction(func);
-		
 		int stackSpace = getMaxStackSize(func.body);
 		if(stackSpace != 0)
 			writer.instructions.add(OpCode.SUB, Register.RSP, stackSpace);
+		
+		writer.mem.enterFunction(func, stackSpace);
 		
 		int argsSpace = getArgumentsSize(func.getPrototype());
 		

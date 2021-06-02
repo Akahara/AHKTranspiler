@@ -32,7 +32,7 @@ public class FunctionExp extends FunctionExpression {
 	
 	@Override
 	public String toString() {
-		return function.getDeclaringUnit() + "." + function.getName() +
+		return function.signature.declaringUnit + "." + function.getName() +
 				"(" + Utils.toString(getArguments()) + ")";
 	}
 

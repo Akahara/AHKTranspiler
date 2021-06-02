@@ -3,6 +3,8 @@ package fr.wonder.ahk.compiled.units.prototypes;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.UnitDeclaration;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
@@ -57,11 +59,6 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 	}
 
 	@Override
-	public String getDeclaringUnit() {
-		return fullBase;
-	}
-	
-	@Override
 	public DeclarationModifiers getModifiers() {
 		throw new IllegalStateException("Units don't have modifiers");
 	}
@@ -92,6 +89,17 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 		if(!unit.fullBase.equals(fullBase))
 			throw new IllegalArgumentException("Unit " + unit + " does not match prototype " + this);
 		return unit.declaration;
+	}
+
+	/** A unit prototype equals a unit declaration iff they have the same full base. */
+	@Override
+	public boolean matchesDeclaration(ValueDeclaration decl) {
+		return decl instanceof UnitDeclaration && ((UnitDeclaration) decl).fullBase.equals(fullBase);
+	}
+	
+	@Override
+	public Signature getSignature() {
+		throw new IllegalAccessError("Unit prototypes have no signatures");
 	}
 	
 }

@@ -38,16 +38,11 @@ public class AsmX64Transpiler implements Transpiler {
 		validateProject(handle, errors);
 		errors.assertNoErrors();
 		
-		String[] files = new String[handle.units.length + handle.nativeRequirements.length];
+		String[] files = new String[handle.units.length];
 		
 		for(int i = 0; i < handle.units.length; i++) {
 			Unit unit = handle.units[i];
 			files[i] = writeUnit(handle, unit, dir, errors);
-		}
-		
-		for(int i = 0; i < handle.nativeRequirements.length; i++) {
-			Unit unit = handle.nativeRequirements[i];
-			files[i+handle.units.length] = writeUnit(handle, unit, dir, errors);
 		}
 		
 		errors.assertNoErrors();
@@ -105,7 +100,7 @@ public class AsmX64Transpiler implements Transpiler {
 		return file;
 	}
 	
-	private static void runExternalCompiler(TranspilableHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException {
+	private static void runExternalCompiler(TranspilableHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException, WrappedException {
 		if(files.length == 0)
 			return;
 		
@@ -124,7 +119,7 @@ public class AsmX64Transpiler implements Transpiler {
 		
 		if(!compiled) {
 			errors.add("Unable to compile all source files");
-			return;
+			errors.assertNoErrors();
 		}
 		
 		String ld = "ld -o " + handle.manifest.OUTPUT_NAME + " ";
@@ -134,6 +129,8 @@ public class AsmX64Transpiler implements Transpiler {
 			ld += "obj_files/" + f + ".o ";
 		if(runCommand(ld, dir) != 0)
 			errors.add("Unable to link all source files");
+		
+		errors.assertNoErrors();
 	}
 	
 	private static int runCommand(String cmd, File dir) throws IOException {
@@ -141,7 +138,10 @@ public class AsmX64Transpiler implements Transpiler {
 		ProcessBuilder pb = new ProcessBuilder(cmd.split(" "));
 		Process p = pb.directory(dir).start();
 		Thread redirect = ProcessUtils.redirectOutput(p, AHKTranspiler.logger);
-		redirect.setName(cmd.substring(0, cmd.indexOf(' ')));
+		int split = cmd.indexOf(' ');
+		cmd = split == -1 ? cmd : cmd.substring(0, split);
+		cmd = cmd.startsWith("/") ? cmd.substring(cmd.lastIndexOf('/', split)+1) : cmd;
+		redirect.setName("> " + cmd);
 		redirect.start();
 		int ec = -1;
 		try { ec = p.waitFor(); } catch (InterruptedException x) { }

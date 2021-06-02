@@ -10,7 +10,6 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.VarExp;
-import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
@@ -45,22 +44,16 @@ public class MemoryManager {
 		this.currentScope = unitScope;
 	}
 	
-	public void enterFunction(FunctionSection func) {
-		functionScope = new FunctionScope(func, unitScope);
+	public void enterFunction(FunctionSection func, int stackSpace) {
+		functionScope = new FunctionScope(func, unitScope, stackSpace);
 		currentScope = functionScope;
 	}
 	
 	public void updateScope(Statement st) {
-		// update actual scope
 		if(st instanceof SectionEndSt)
 			currentScope = currentScope.getParent();
 		else if(FunctionWriter.SECTION_STATEMENTS.contains(st.getClass()))
 			currentScope = new SectionScope(currentScope);
-		// update scope variables
-		if(st instanceof VariableDeclaration)
-			currentScope.declareVariable((VariableDeclaration) st);
-		else if(st instanceof ForSt)
-			currentScope.declareVariable(((ForSt) st).declaration);
 	}
 	
 	/** Used to offset all uses of $rsp */

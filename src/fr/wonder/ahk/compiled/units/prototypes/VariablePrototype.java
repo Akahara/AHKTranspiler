@@ -5,6 +5,7 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.commons.utils.Assertions;
 
 public class VariablePrototype implements VarAccess, Prototype<VariableDeclaration> {
 	
@@ -16,6 +17,9 @@ public class VariablePrototype implements VarAccess, Prototype<VariableDeclarati
 		this.signature = signature;
 		this.type = type;
 		this.modifiers = modifiers;
+		Assertions.assertNonNull(signature, "Null signature");
+		Assertions.assertNonNull(type, "Null type");
+		Assertions.assertNonNull(modifiers, "Null modifiers");
 	}
 	
 	@Override
@@ -40,11 +44,6 @@ public class VariablePrototype implements VarAccess, Prototype<VariableDeclarati
 		return type;
 	}
 
-	@Override
-	public String getDeclaringUnit() {
-		return signature.declaringUnit;
-	}
-
 	public String getName() {
 		return signature.name;
 	}
@@ -61,7 +60,7 @@ public class VariablePrototype implements VarAccess, Prototype<VariableDeclarati
 
 	@Override
 	public VariableDeclaration getAccess(Unit unit) {
-		if(unit.fullBase.equals(getDeclaringUnit()))
+		if(unit.fullBase.equals(signature.declaringUnit))
 			throw new IllegalArgumentException("Variable " + this + " is not declared in unit " + unit);
 		for(VariableDeclaration v : unit.variables) {
 			if(v.name.equals(signature.name) && v.getType().equals(type))

@@ -65,7 +65,7 @@ class ExpressionLinker {
 					// replace the FunctionCallExp by a FunctionExp
 					FunctionPrototype function = searchMatchingFunction(scope.getUnitScope(), fexp, typesTable, errors);
 					if(function != null) {
-						if(!function.getDeclaringUnit().equals(unit.fullBase))
+						if(!function.getSignature().declaringUnit.equals(unit.fullBase))
 							unit.prototype.externalAccesses.add(function);
 						FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
 						exp = expressions[i] = functionExpression;

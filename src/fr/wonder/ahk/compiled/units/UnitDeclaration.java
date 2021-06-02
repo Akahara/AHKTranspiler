@@ -46,12 +46,17 @@ public class UnitDeclaration implements ValueDeclaration {
 
 	@Override
 	public DeclarationVisibility getVisibility() {
-		throw new IllegalStateException("Unit declarations have no visibility");
+		throw new IllegalAccessError("Unit declarations have no visibility");
 	}
 
 	@Override
 	public VarType getType() {
-		throw new IllegalStateException("Unit declarations have no type");
+		throw new IllegalAccessError("Unit declarations have no type");
+	}
+	
+	@Override
+	public Signature getSignature() {
+		throw new IllegalAccessError("Unit declarations have no signature");
 	}
 
 }

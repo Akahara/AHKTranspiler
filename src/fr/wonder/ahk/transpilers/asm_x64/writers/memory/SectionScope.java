@@ -5,6 +5,7 @@ import java.util.List;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
@@ -37,16 +38,17 @@ class SectionScope implements Scope {
 	}
 	
 	@Override
-	public Address getVarAddress(VarAccess var) {
+	public Address getVarAddress(VarAccess var) { // FIX the rsp-relative addressing mode is completely broken
 		int loc = funcCallOffset;
+		System.out.println("searching " + var);
 		for(ValueDeclaration v : vars) {
-			if(v == var)
+			System.out.println(var + " " + v);
+			if(((Prototype<?>) var).matchesDeclaration(v))
 				return new MemAddress(Register.RSP, loc);
 			else
 				loc += MemSize.getPointerSize(v.getType()).bytes;
 		}
 		Address vl = parent.getVarAddress(var);
-		// FIX check if vl.index is REG_RSP
 		if(vl instanceof MemAddress && ((MemAddress) vl).base == Register.RSP)
 			return ((MemAddress) vl).addOffset(loc);
 		return vl;

@@ -31,6 +31,7 @@ public class Invalids {
 		public boolean equals(Object o) { return this == o; }
 	};
 	
+	public static final Signature DECLARATION_SIGNATURE = new Signature(Invalids.STRING, "INVALID DECLARATION", "INVALID DECLARATION");
 	public static final ValueDeclaration VALUE = new ValueDeclaration() {
 		public int getSourceStop() { return 0; }
 		public int getSourceStart() { return 0; }
@@ -38,6 +39,7 @@ public class Invalids {
 		public DeclarationVisibility getVisibility() { return DeclarationVisibility.SECTION; }
 		public VarType getType() { return Invalids.TYPE; }
 		public String getName() { return Invalids.STRING; }
+		public Signature getSignature() { return Invalids.DECLARATION_SIGNATURE; }
 		public DeclarationModifiers getModifiers() { return Invalids.MODIFIERS; }
 	};
 

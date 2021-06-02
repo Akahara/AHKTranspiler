@@ -84,7 +84,7 @@ public class UnitWriter {
 	// ------------------------ registries & labels ------------------------
 	
 	String getRegistry(Prototype<?> var) {
-		if(var.getDeclaringUnit().equals(unit.fullBase))
+		if(var.getSignature().declaringUnit.equals(unit.fullBase))
 			return getLocalRegistry(var);
 		else
 			return getGlobalRegistry(var);
@@ -102,7 +102,7 @@ public class UnitWriter {
 		if(var.getModifiers().hasModifier(Modifier.NATIVE))
 			return var.getModifiers().getModifier(NativeModifier.class).nativeRef;
 		
-		return getUnitRegistry(var.getDeclaringUnit()) + "_" + getLocalRegistry(var);
+		return getUnitRegistry(var.getSignature().declaringUnit) + "_" + getLocalRegistry(var);
 	}
 	
 	public static String getLocalRegistry(Prototype<?> var) {
@@ -145,7 +145,7 @@ public class UnitWriter {
 		}
 		if(unit.variables.length != 0)
 			instructions.skip();
-		for(VariableDeclaration f : unit.variables) {
+		for(FunctionSection f : unit.functions) {
 			if(f.getVisibility() == DeclarationVisibility.GLOBAL && !f.getModifiers().hasModifier(Modifier.NATIVE))
 				instructions.add(new GlobalDeclaration(getGlobalRegistry(f.getPrototype())));
 		}
@@ -160,6 +160,15 @@ public class UnitWriter {
 			instructions.add(new ExternDeclaration(getGlobalRegistry((Prototype<?>) i)));
 		}
 		if(unit.importations.length != 0)
+			instructions.skip();
+		boolean hasNativeRefs = false;
+		for(FunctionSection f : unit.functions) {
+			if(f.modifiers.hasModifier(Modifier.NATIVE)) {
+				instructions.add(new ExternDeclaration(f.modifiers.getModifier(NativeModifier.class).nativeRef));
+				hasNativeRefs = true;
+			}
+		}
+		if(hasNativeRefs)
 			instructions.skip();
 		
 		collectStrConstants(strConstants, unit.variables);
@@ -207,7 +216,7 @@ public class UnitWriter {
 		instructions.label(getUnitRegistry(unit) + "_init");
 		if(!initializableVariables.isEmpty()) {
 			instructions.createScope();
-			mem.enterFunction(initFunction);
+			mem.enterFunction(initFunction, 0);
 			for(VariableDeclaration var : initializableVariables) {
 				Expression defaultVal = var.getDefaultValue();
 				if(defaultVal == null)

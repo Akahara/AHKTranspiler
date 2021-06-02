@@ -7,7 +7,7 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 
-public class FunctionArgument extends SourceObject implements ValueDeclaration, VarAccess {
+public class FunctionArgument extends SourceObject implements ValueDeclaration {
 	
 	public final String name;
 	public final VarType type;
@@ -17,7 +17,7 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration, 
 		super(source, sourceStart, sourceStop);
 		this.name = name;
 		this.type = type;
-		this.signature = new Signature(INNER_UNIT, getName(), "arg_" + getName());
+		this.signature = new Signature(VarAccess.INNER_UNIT, getName(), "arg_" + getName());
 	}
 	
 	@Override
@@ -45,7 +45,6 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration, 
 		return DeclarationModifiers.NONE;
 	}
 
-	@Override
 	public Signature getSignature() {
 		return signature;
 	}

@@ -13,7 +13,7 @@ public class VariableDeclaration extends Statement implements ValueDeclaration {
 	
 	public final String name;
 	private final VarType type;
-	public DeclarationModifiers modifiers;
+	public DeclarationModifiers modifiers = DeclarationModifiers.NONE;
 	public DeclarationVisibility visibility = DeclarationVisibility.GLOBAL; // TODO read variable declaration visibility
 	
 	private VariablePrototype prototype;
@@ -64,7 +64,7 @@ public class VariableDeclaration extends Statement implements ValueDeclaration {
 	
 	@Override
 	public DeclarationModifiers getModifiers() {
-		return modifiers == null ? DeclarationModifiers.NONE : modifiers;
+		return modifiers;
 	}
 	
 }

@@ -44,11 +44,6 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 		return signature.declaringUnit + "." + signature.name + ":" + functionType.toString();
 	}
 	
-	@Override
-	public String getDeclaringUnit() {
-		return signature.declaringUnit;
-	}
-
 	public String getName() {
 		return signature.name;
 	}
@@ -70,7 +65,7 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 
 	@Override
 	public FunctionSection getAccess(Unit unit) {
-		if(unit.fullBase.equals(getDeclaringUnit()))
+		if(unit.fullBase.equals(signature.declaringUnit))
 			throw new IllegalArgumentException("Function " + this + " is not declared in unit " + unit);
 		for(FunctionSection f : unit.functions) {
 			if(f.returnType.equals(functionType.returnType) && FuncArguments.argsMatch0c(functionType.arguments, f.getArgumentTypes()))

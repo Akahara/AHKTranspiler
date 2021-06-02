@@ -5,6 +5,12 @@ import ahk.Kernel;
 unit Unit;
 
 func int main() {
-	Kernel.print(5);
+	int c = 2;
+	int i = 4;
+	int j = 3;
+	if(true) {
+		int k = 5;
+		Kernel.print(i);
+	}
 	Kernel.println();
 }

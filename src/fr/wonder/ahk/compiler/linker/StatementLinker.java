@@ -19,6 +19,7 @@ import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
@@ -82,6 +83,8 @@ class StatementLinker {
 
 	private static void declareVariable(VariableDeclaration decl, Scope scope, ErrorWrapper errors) {
 		VarAccess declaration = scope.getVariable(decl.name);
+		decl.setSignature(new Signature(VarAccess.INNER_UNIT, decl.name, decl.name)); // TODO set variable signatures elsewhere
+		// also change Linker#prelinkUnit, most signatures can be computed earlier
 		if(declaration instanceof VariablePrototype) {
 			errors.add("Redeclaration of existing variable " + decl.name + ":" + decl.getErr());
 		} else {
