@@ -6,6 +6,7 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.types.NativeOperation;
 
 /**
  * Ranged for statements can be written as
@@ -17,16 +18,16 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
  */
 public class RangedForSt extends LabeledStatement {
 
-	public final String variable;
+	private final VariableDeclaration variable;
 	
 	public RangedForSt(UnitSource source, int sourceStart, int sourceStop, boolean singleLine,
 			String varName, Expression min, Expression max, Expression step) {
 		super(source, sourceStart, sourceStop, singleLine, min, max, step);
-		this.variable = varName;
+		this.variable = new VariableDeclaration(getSource(), sourceStart, sourceStop, varName, VarType.INT, getMin());
 	}
-	
+
 	public VariableDeclaration getVariableDeclaration() {
-		return new VariableDeclaration(getSource(), sourceStart, sourceStop, variable, VarType.INT, getMin());
+		return variable;
 	}
 	
 	public Expression getMin() {
@@ -42,18 +43,19 @@ public class RangedForSt extends LabeledStatement {
 	}
 	
 	public ForSt toComplexFor() {
-		return new ForSt(getSource(), sourceStart, sourceStop, singleLine,
-				getVariableDeclaration(),
-				new OperationExp(getSource(), sourceStart, sourceStop, Operator.LOWER,
-						new VarExp(getSource(), sourceStart, sourceStop, variable),
-						getMax()),
-				new AffectationSt(getSource(), sourceStart, sourceStop,
-						new VarExp(getSource(), sourceStart, sourceStop, variable), 
-						new OperationExp(getSource(), sourceStart, sourceStop, Operator.ADD,
-								new VarExp(getSource(), sourceStart, sourceStop, variable),
-								getStep())));
+		VarExp var = new VarExp(getSource(), sourceStart, sourceStop, variable.name);
+		var.declaration = variable.getPrototype();
+		var.computeValueType(null, null);
+		OperationExp condition = new OperationExp(getSource(), sourceStart, sourceStop, Operator.LOWER, var, getMax());
+		condition.setOperation(NativeOperation.get(VarType.INT, VarType.INT, Operator.LOWER));
+		OperationExp affectationValue = new OperationExp(getSource(), sourceStart, sourceStop, Operator.ADD, var, getStep());
+		affectationValue.setOperation(NativeOperation.get(VarType.INT, VarType.INT, Operator.ADD));
+		AffectationSt affectation = new AffectationSt(getSource(), sourceStart, sourceStop, var, affectationValue);
+		ForSt st = new ForSt(getSource(), sourceStart, sourceStop, singleLine, variable, condition, affectation);
+		st.sectionEnd = this.sectionEnd;
+		return st;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "for(int " + variable + " : " + getMin() + " .. " + getMax() + " .. " + getStep() + ")";

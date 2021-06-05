@@ -28,4 +28,10 @@ public enum OpCode {
 	JE, JNE, // equal
 	JS, JNS, // signed
 	
+	/**
+	 * convert quadword to octoword, used in divisions
+	 * to extend signed values in rax to rdx:rax
+	 */
+	CQO, 
+	
 }

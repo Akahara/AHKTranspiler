@@ -1,23 +1,21 @@
 package fr.wonder.ahk.compiled.units.sections;
 
+import java.util.Objects;
+
 public class DeclarationModifiers {
 	
 	public static final DeclarationModifiers NONE = new DeclarationModifiers(new Modifier[0]);
 	
 	private final Modifier[] modifiers;
-	private final boolean[] usedModifiers;
 	
 	public DeclarationModifiers(Modifier[] modifiers) {
 		this.modifiers = modifiers;
-		this.usedModifiers = new boolean[modifiers.length];
 	}
 	
 	public Modifier getModifier(String name) {
 		for(int i = 0; i < modifiers.length; i++) {
-			if(modifiers[i].name.equals(name)) {
-				usedModifiers[i] = true;
+			if(modifiers[i].name.equals(name))
 				return modifiers[i];
-			}
 		}
 		return null;
 	}
@@ -32,6 +30,11 @@ public class DeclarationModifiers {
 	
 	public boolean hasModifier(String name) {
 		return getModifier(name) != null;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash((Object[]) modifiers);
 	}
 	
 }

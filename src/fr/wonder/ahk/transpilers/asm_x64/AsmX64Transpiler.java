@@ -148,7 +148,7 @@ public class AsmX64Transpiler implements Transpiler {
 		String signal = ProcessUtils.getErrorSignal(ec);
 		if(signal == null) signal = "";
 		try { redirect.join(); } catch (InterruptedException e) { }
-		AHKTranspiler.logger.info(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec + signal);
+		AHKTranspiler.logger.info(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec + " " + signal);
 		return ec;
 	}
 

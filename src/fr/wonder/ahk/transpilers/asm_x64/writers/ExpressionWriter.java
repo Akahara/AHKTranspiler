@@ -17,7 +17,6 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
-import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -63,9 +62,10 @@ public class ExpressionWriter {
 		switch(writer.project.manifest.callingConvention) {
 		case __stdcall: {
 			int argsSpace = FunctionWriter.getArgumentsSize(function);
-			if(argsSpace != 0)
-				writer.instructions.add(OpCode.SUB, Register.RSP, new ImmediateValue(argsSpace));
-			writer.mem.addStackOffset(argsSpace);
+			if(argsSpace != 0) {
+				writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
+				writer.mem.addStackOffset(argsSpace);
+			}
 			int offset = 0;
 			for(int i = 0; i < arguments.length; i++) {
 				Expression arg = arguments[i];
@@ -123,29 +123,41 @@ public class ExpressionWriter {
 		writer.mem.writeTo(Register.RAX, exp.getArray(), errors);
 		VarArrayType arrayType = (VarArrayType) exp.getArray().getType();
 		for(Expression index : exp.getIndices()) {
-			String specialLabel = writer.getSpecialLabel();
+			String specialLabel1 = writer.getSpecialLabel();
 			if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
-				
+				writer.instructions.cmp(new MemAddress(Register.RAX, -4), 0);
+				writer.instructions.jmp(specialLabel1);
+				writer.instructions.mov(Register.RAX, -6); // FIX add specific error code
+				writer.instructions.call(GlobalLabels.SPECIAL_THROW);
+				writer.instructions.label(specialLabel1);
+				writer.instructions.add(OpCode.ADD, Register.RAX, new MemAddress(Register.RAX, -8));
+				writer.instructions.add(OpCode.SUB, Register.RAX, MemSize.getPointerSize(arrayType.componentType));
+				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX)); // mov rax,[rax]
+				throw new UnimplementedException("array[-1] indexing won't work untill the memory system is not changed, see the FIX below");
 			} else {
+				String specialLabel2 = writer.getSpecialLabel();
 				writer.instructions.push(Register.RAX);
 				writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 				writer.mem.writeTo(Register.RAX, index, errors);
 				writer.instructions.pop(Register.RBX); // rbx is the array pointer
 				writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
-				// TODO0 check if imul/shl exceeds the 64 bits bounds (check the ALU flags)
 				int csize = MemSize.getPointerSize(arrayType.componentType).bytes;
 				if(csize == 8)
 					writer.instructions.add(OpCode.SHL, Register.RAX, 3);
 				else
 					writer.instructions.add(OpCode.IMUL, Register.RAX, csize);
+				// TODO0 check if the scaled index overflows the 64 bits limit
 				writer.instructions.test(Register.RAX);
-				writer.instructions.add(OpCode.JNS, specialLabel); // the index 
-				writer.instructions.cmp(new MemAddress(Register.RAX, -4), Register.EAX);
-				writer.instructions.add(OpCode.JL, specialLabel);
+				writer.instructions.add(OpCode.JS, specialLabel2); // the index 
+				writer.instructions.cmp(new MemAddress(Register.RBX, -4), Register.EAX); // FIX CHANGE THE MEM SYSTEM
+																						// so that the size of a memory block is stored in 8 bits rather than 4
+				writer.instructions.add(OpCode.JLE, specialLabel2);
+				writer.instructions.jmp(specialLabel1);
+				writer.instructions.label(specialLabel2);
 				writer.instructions.mov(Register.RAX, -5); // FIX add specific error code
 				writer.instructions.call(GlobalLabels.SPECIAL_THROW);
-				writer.instructions.label(specialLabel);
-				writer.mem.moveData(new MemAddress(Register.RAX, Register.RBX, 0), Register.RAX); // mov rbx,[rax+rbx]
+				writer.instructions.label(specialLabel1);
+				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, Register.RBX, 1)); // mov rax,[rax+rbx]
 			}
 		}
 	}

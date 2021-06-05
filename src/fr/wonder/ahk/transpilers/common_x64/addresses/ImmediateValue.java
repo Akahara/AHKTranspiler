@@ -27,6 +27,6 @@ public class ImmediateValue implements OperationParameter {
 	
 	@Override
 	public String toString() {
-		return text;
+		return cast == null ? text : cast.name + " " + text;
 	}
 }

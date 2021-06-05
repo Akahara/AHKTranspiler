@@ -35,6 +35,8 @@ public class VariableDeclaration extends Statement implements ValueDeclaration {
 	}
 	
 	public VariablePrototype getPrototype() {
+		if(prototype == null)
+			throw new IllegalStateException("This variable prototype was not built yet");
 		return prototype;
 	}
 	

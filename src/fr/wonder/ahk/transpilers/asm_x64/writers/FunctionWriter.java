@@ -14,6 +14,7 @@ import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
+import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -29,12 +30,14 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 public class FunctionWriter {
 	
 	public static final List<Class<? extends Statement>> SECTION_STATEMENTS = Arrays.asList(
-			IfSt.class, ElseSt.class, ForSt.class, WhileSt.class
+			IfSt.class, ElseSt.class, ForSt.class, RangedForSt.class, WhileSt.class
 	);
 	
 	private final UnitWriter writer;
 	/** list of labels local to the function (all are starting with a dot) */
 	private final Map<Statement, String> labelsMap = new HashMap<>();
+	
+	private int debugLabelIndex = 0;
 	
 	public FunctionWriter(UnitWriter writer, FunctionSection func) {
 		this.writer = writer;
@@ -44,7 +47,7 @@ public class FunctionWriter {
 			if(s instanceof LabeledStatement) {
 				String name = s.getClass().getSimpleName();
 				name = name.substring(0, name.length()-2).toLowerCase();
-				String label = "." + name + "@" + (l++);
+				String label = "." + name + "_" + (l++);
 				labelsMap.put(s, label);
 			} else if(s instanceof SectionEndSt) {
 				// the label of the closed statement has already been set
@@ -76,6 +79,7 @@ public class FunctionWriter {
 				else
 					writer.instructions.comment("~ " + st.toString());
 			}
+			writer.instructions.label(".dbg_"+(debugLabelIndex++));
 			
 			if(st instanceof SectionEndSt) {
 				writeSectionEndStatement((SectionEndSt) st, errors);
@@ -96,6 +100,11 @@ public class FunctionWriter {
 				writer.mem.updateScope(st);
 				scopeUpdated = true;
 				writeForStatement((ForSt) st, errors);
+				
+			} else if(st instanceof RangedForSt) {
+				writer.mem.updateScope(st);
+				scopeUpdated = true;
+				writeRangedForStatement((RangedForSt) st, errors);
 				
 			} else if(st instanceof ReturnSt) {
 				writeReturnStatement((ReturnSt) st, i != func.body.length-1, errors);
@@ -141,6 +150,10 @@ public class FunctionWriter {
 				current += MemSize.getPointerSize(((ForSt) s).declaration.getType()).bytes;
 				max = Math.max(current, max);
 				sections.add(current);
+			} else if(s instanceof RangedForSt) {
+				current += MemSize.getPointerSize(((RangedForSt) s).getVariableDeclaration().getType()).bytes;
+				max = Math.max(current, max);
+				sections.add(current);
 			} else if(SECTION_STATEMENTS.contains(s.getClass())) {
 				sections.add(current);
 			}
@@ -163,7 +176,7 @@ public class FunctionWriter {
 	}
 	
 	private void writeSectionEndStatement(SectionEndSt st, ErrorWrapper errors) {
-		if(st.closedStatement instanceof ForSt)
+		if(st.closedStatement instanceof ForSt || st.closedStatement instanceof RangedForSt)
 			writer.instructions.jmp(getLabel(st.closedStatement));
 		else if(st.closedStatement instanceof IfSt && ((IfSt)st.closedStatement).elseStatement != null)
 			writer.instructions.jmp(getLabel(((IfSt)st.closedStatement).elseStatement.sectionEnd));
@@ -177,10 +190,7 @@ public class FunctionWriter {
 	}
 	
 	private void writeIfStatement(IfSt st, ErrorWrapper errors) {
-		if(!writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors)) {
-			writer.expWriter.writeExpression(st.getCondition(), errors);
-			writer.instructions.add(OpCode.JZ, getLabel(st.sectionEnd));
-		}
+		writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 	}
 	
 	private void writeElseStatement(ElseSt st, ErrorWrapper errors) {
@@ -188,13 +198,24 @@ public class FunctionWriter {
 	}
 	
 	private void writeWhileStatement(WhileSt st, ErrorWrapper errors) {
-		String label = getLabel(st);
-		writer.instructions.label(label);
+		writer.instructions.label(getLabel(st));
 		writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 	}
 	
 	private void writeForStatement(ForSt st, ErrorWrapper errors) {
-		String label = getLabel(st);
+		writeForStatement(st, getLabel(st), errors);
+	}
+	
+	private void writeRangedForStatement(RangedForSt st, ErrorWrapper errors) {
+		writeForStatement(st.toComplexFor(), getLabel(st), errors);
+	}
+	
+	/**
+	 * @param label the label associated with the ForSt or RangedForSt statement
+	 *              (note that when using {@link RangedForSt#toComplexFor()} the
+	 *              returned ForSt does NOT have a label)
+	 */
+	private void writeForStatement(ForSt st, String label, ErrorWrapper errors) {
 		if(st.declaration != null)
 			writeVarDeclaration(st.declaration, errors);
 		if(st.affectation != null)
@@ -205,10 +226,7 @@ public class FunctionWriter {
 			writer.instructions.label(label + "_firstpass");
 		}
 		if(st.condition != null) {
-			if(!writer.opWriter.writeJump(st.condition, getLabel(st.sectionEnd), errors)) {
-				writer.expWriter.writeExpression(st.condition, errors);
-				writer.instructions.add(OpCode.JZ, getLabel(st.sectionEnd));
-			}
+			writer.opWriter.writeJump(st.condition, getLabel(st.sectionEnd), errors);
 		} else {
 			writer.instructions.jmp(label);
 		}

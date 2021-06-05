@@ -48,9 +48,9 @@ public class MemoryManager {
 	 */
 	public void writeTo(Address loc, Expression exp, ErrorWrapper errors) {
 		if(exp instanceof NoneExp) {
-			writeMov(loc, "NONE", writer.types.getSize(exp.getType()));
+			writeMov(loc, "NONE", MemSize.getSize(writer.types.getSize(exp.getType())));
 		} else if(exp instanceof LiteralExp) {
-			writeMov(loc, writer.getValueString((LiteralExp<?>) exp), MemSize.getPointerSize(exp.getType()).bytes);
+			writeMov(loc, writer.getValueString((LiteralExp<?>) exp), MemSize.getPointerSize(exp.getType()));
 		} else if(exp instanceof VarExp) {
 			moveData(currentScope.getVarAddress(((VarExp) exp).declaration), loc);
 		} else {
@@ -61,13 +61,14 @@ public class MemoryManager {
 	}
 	
 	/** Moves a literal to #loc, literals being ints, floats, string labels... */
-	private void writeMov(Address loc, String literal, int literalSize) {
+	private void writeMov(Address loc, String literal, MemSize literalSize) {
 		if(loc instanceof Register && literal.equals("0") || literal.equals("0x0")) {
 			writer.instructions.clearRegister((Register) loc);
 		} else if(loc instanceof Register || loc instanceof LabelAddress) {
-			writer.instructions.mov(loc, new ImmediateValue(literal));
+			writer.instructions.mov(loc, literal);
 		} else if(loc instanceof MemAddress) {
-			writer.instructions.mov(loc, new ImmediateValue(literal), MemSize.getSize(literalSize));
+			moveData(new ImmediateValue(literal), loc, literalSize);
+//			writer.instructions.mov(loc, literal, MemSize.getSize(literalSize));
 		} else {
 			throw new IllegalStateException("Unhandled location type " + loc.getClass());
 		}
@@ -90,27 +91,20 @@ public class MemoryManager {
 		writeTo(loc, st.getDefaultValue(), errors);
 	}
 	
-	/**
-	 * moves the given expression value to #loc if it is not a literal nor a variable expression,
-	 * returns the location where #exp was stored (either #loc, the location of the variable or the raw literal)
-	 */
-	public OperationParameter moveTo(Address loc, Expression exp, ErrorWrapper errors) {
-		if(exp instanceof LiteralExp) {
-			return new ImmediateValue(((LiteralExp<?>) exp).toString());
-		} else if(exp instanceof VarExp) {
-			return currentScope.getVarAddress(((VarExp) exp).declaration);
-		} else {
-			writeTo(loc, exp, errors);
-			return loc;
-		}
+	public Address getVarAddress(VarAccess declaration) {
+		return currentScope.getVarAddress(declaration);
 	}
 	
+	public void moveData(OperationParameter from, Address to) {
+		moveData(from, to, null);
+	}
+
 	/**
 	 * Writes the consecutive {@code mov} instructions to move any data stored at #from to #to.
 	 * If both addresses are memory addresses, {@code rax} is used as a temporary storage,
 	 * otherwise a single {@code mov} is enough.
 	 */
-	public void moveData(Address from, Address to) {
+	public void moveData(OperationParameter from, Address to, MemSize cast) {
 		if(from instanceof MemAddress && ((MemAddress) from).base instanceof MemAddress) {
 			MemAddress f = (MemAddress) from;
 			moveData(f.base, Register.RAX);
@@ -119,14 +113,14 @@ public class MemoryManager {
 		if(to instanceof MemAddress && ((MemAddress) to).base instanceof MemAddress) { // FIX changing RBX may be a big problem
 			MemAddress t = (MemAddress) to;
 			moveData(t.base, Register.RBX);
-			from = new MemAddress(Register.RBX, t.index, t.scale, t.offset);
+			to = new MemAddress(Register.RBX, t.index, t.scale, t.offset);
 		}
 		if(from instanceof MemAddress && to instanceof MemAddress) {
 			moveData(from, Register.RAX);
 			from = Register.RAX;
 		}
-		writer.instructions.mov(to, from);
+		writer.instructions.mov(to, from, cast);
 		// FIX TEST moving data from complex mem to complex mem
 	}
-
+	
 }

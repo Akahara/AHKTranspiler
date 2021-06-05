@@ -44,9 +44,9 @@ class Scope {
 		// search through the stack frame
 		int loc = 0;
 		for(VariableDeclaration v : variables) {
+			loc += MemSize.getPointerSize(v.getType()).bytes;
 			if(var.matchesDeclaration(v))
 				return new MemAddress(Register.RSP, stackSpace-loc+stackOffset);
-			loc += MemSize.getPointerSize(v.getType()).bytes;
 		}
 		// search through the function arguments
 		loc = 16;

@@ -34,7 +34,7 @@ section .text
 ; ...   |n| <data>     ||n| <data> | ...  
 ;       | |            || |        |      
 ; ------\==============/\==========/------
-;         ^ptr          ^ptr           
+;         ^ptr            ^ptr           
 ;
 ;
 ; An allocation table is stored as a memory block (see

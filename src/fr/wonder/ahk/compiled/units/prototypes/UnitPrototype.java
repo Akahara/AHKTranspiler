@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
@@ -27,7 +27,7 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 	 * The list of variables and functions used but not contained by this unit.
 	 * This list may not contain {@link FunctionArgument}s.
 	 */
-	public List<VarAccess> externalAccesses = new ArrayList<>();
+	public Set<VarAccess> externalAccesses = new HashSet<>();
 	
 	public UnitPrototype(String fullBase, String[] importations,
 			FunctionPrototype[] functions, VariablePrototype[] variables) {

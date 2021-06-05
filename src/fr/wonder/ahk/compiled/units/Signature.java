@@ -1,5 +1,7 @@
 package fr.wonder.ahk.compiled.units;
 
+import java.util.Objects;
+
 public class Signature {
 	
 	/** Full base of the declaring unit */
@@ -33,6 +35,11 @@ public class Signature {
 	@Override
 	public String toString() {
 		return declaringUnit + ":" + computedSignature;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(declaringUnit, name, computedSignature);
 	}
 	
 }

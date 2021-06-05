@@ -81,11 +81,14 @@ public class NativeOperation implements Operation {
 		add(STR, STR, ADD, STR);
 	}
 	
+	// FIX confusing function names
+	
+	/** This function may return null */
 	public static NativeOperation get(VarType l, VarType r, Operator o) {
 		return nativeOperations.get(new Triplet<>(l, r, o));
 	}
 
-	public static Operation getOperation(VarType leftOp, Operator operator, VarType rightOp) {
+	public static NativeOperation getOperation(VarType leftOp, Operator operator, VarType rightOp) {
 		int lo = getOrder(leftOp);
 		int ro = getOrder(rightOp);
 		if(lo == -1 || ro == -1)

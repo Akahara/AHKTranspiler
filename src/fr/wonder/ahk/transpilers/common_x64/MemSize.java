@@ -7,15 +7,13 @@ import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarStrType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 
-public class MemSize implements OperationParameter {
+public enum MemSize {
 	
-	public static final MemSize
-			BYTE  = new MemSize("byte",  'c', "db", 1),
-			WORD  = new MemSize("word",  'w', "dw", 2),
-			DWORD = new MemSize("dword", 'l', "dd", 4),	// (double/long word)
-			QWORD = new MemSize("qword", 'q', "dq", 8);
+	BYTE("byte",  'c', "db", 1),
+	WORD("word",  'w', "dw", 2),
+	DWORD("dword", 'l', "dd", 4),	// (double/long word)
+	QWORD("qword", 'q', "dq", 8);
 //			SFLOAT = new MemSize("sfloat", 's', "dd", 4),
 //			DFLOAT = new MemSize("dfloat", 'd', "dq", 8);
 
@@ -41,9 +39,7 @@ public class MemSize implements OperationParameter {
 		this.bytes = bytes;
 	}
 	
-	private static MemSize[] values = {
-			BYTE, WORD, DWORD, QWORD
-	};
+	private static MemSize[] values = values();
 	
 	public static MemSize getSize(int bytes) {
 		for(MemSize s : values)
@@ -52,6 +48,11 @@ public class MemSize implements OperationParameter {
 		throw new IllegalArgumentException("Invalid memory size " + bytes);
 	}
 
+	/**
+	 * Returns the size (in bytes) of a pointer to the given data type,
+	 * if #type is a native type (bool, int...) its size is returned instead
+	 * (BYTE for bool, QWORD for int....)
+	 */
 	public static MemSize getPointerSize(VarType type) {
 		if(type instanceof VarNativeType) {
 			return MemSize.NATIVE_SIZES.get(type);

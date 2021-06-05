@@ -123,6 +123,9 @@ public class ExpressionParser {
 	}
 	
 	private static Expression parseExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
+//		Utils.dump(line, section.start, section.stop);
+		// FIX negative numbers must be handled !
+		// currently "3-1" is interpreted as (3)(int) (-1)(int) with no operation in between!
 		if(section.stop == section.start) {
 			errors.add("Empty expression:" + line[section.start].getErr());
 			return Invalids.EXPRESSION;

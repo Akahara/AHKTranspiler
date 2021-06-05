@@ -57,14 +57,13 @@ public class InstructionSet {
 	public void jmp(String label) { add(JMP, label); }
 	public void mov(Address to, Object from) { add(new MovOperation(to, asOperationParameter(from))); }
 	public void mov(Address to, Object from, MemSize cast) { add(new MovOperation(to, asOperationParameter(from), cast)); }
-	public void push(Address target) { add(PUSH, target); }
-	public void push(OperationParameter target, MemSize cast) { add(PUSH, target, cast); }
+	public void push(OperationParameter target) { add(PUSH, target); }
 	public void pop(Address target) { add(POP, target); }
 	public void clearRegister(Register target) { add(XOR, target, target); }
 	
 	public void xor(Address target, Address with) { add(XOR, target, with); }
 
-	public void cmp(Address a, OperationParameter b) { add(CMP, a, b); }
+	public void cmp(Address a, Object b) { add(CMP, a, b); }
 	public void test(Address a, Address b) { add(TEST, a, b); }
 	public void test(Register reg) { test(reg, reg); }
 	

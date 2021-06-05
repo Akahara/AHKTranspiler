@@ -13,15 +13,14 @@ public class MemAddress implements Address {
 	
 	public MemAddress(Address base, Register index, int scale, int offset) {
 		this.base = base;
-		Assertions.assertTrue(base instanceof LabelAddress || base instanceof Register, "Invalid base " + base);
-		Assertions.assertTrue(scale == 0 || index != null, "Size specified without displacement");
+//		Assertions.assertTrue(base instanceof LabelAddress || base instanceof Register, "Invalid base " + base);
+		Assertions.assertFalse(index != null && scale == 0, "Scale specified without displacement");
 		this.index = index;
 		this.scale = scale;
 		this.offset = offset;
 		String repr = base.toString();
 		if(index != null) {
-			if(scale != 0)
-				repr += scale < 0 ? scale+"*" : "+"+scale+"*";
+			repr += scale < 0 ? scale+"*" : "+"+scale+"*";
 			repr += index.toString();
 		}
 		if(offset != 0)

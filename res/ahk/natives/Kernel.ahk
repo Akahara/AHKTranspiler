@@ -15,7 +15,7 @@ func void print(bool b) {}
 @native("ahk_Kernel_print_ln");
 func void println() {}
 
-func void prinln(int i) {
+func void println(int i) {
 	print(i);
 	println();
 }

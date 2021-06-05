@@ -187,7 +187,7 @@ class FunctionWriter {
 	}
 	
 	private static void writeRangedForStatement(RangedForSt st, StringBuilder sb, ErrorWrapper errors) {
-		sb.append("for " + st.variable + " in range(");
+		sb.append("for " + st.getVariableDeclaration().name + " in range(");
 		writeExpression(st.getMin(), sb, errors);
 		sb.append(", " + ((IntLiteral) st.getMax()).value);
 		if(((IntLiteral) st.getStep()).value != 1)

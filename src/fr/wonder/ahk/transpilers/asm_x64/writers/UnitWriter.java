@@ -28,8 +28,10 @@ import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
+import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
@@ -243,7 +245,8 @@ public class UnitWriter {
 				Expression defaultVal = var.getDefaultValue();
 				if(defaultVal == null)
 					defaultVal = new NoneExp(MemSize.getPointerSize(var.getType()).bytes);
-				mem.writeTo(new LabelAddress(getRegistry(var.getPrototype())), defaultVal, errors);
+				Address address = new MemAddress(new LabelAddress(getRegistry(var.getPrototype())));
+				mem.writeTo(address, defaultVal, errors);
 			}
 			instructions.endStackFrame();
 		}
@@ -256,9 +259,7 @@ public class UnitWriter {
 			
 			FunctionWriter funcWriter = new FunctionWriter(this, func);
 			
-//			instructions.label(getLocalRegistry(func.getPrototype()));
-//			if(func.getVisibility() == DeclarationVisibility.GLOBAL)
-				instructions.label(getGlobalRegistry(func.getPrototype()));
+			instructions.label(getGlobalRegistry(func.getPrototype()));
 			funcWriter.writeFunction(func, errors);
 			instructions.skip();
 		}
@@ -273,13 +274,13 @@ public class UnitWriter {
 	public void testThrowError() {
 		String label = getSpecialLabel();
 		instructions.test(Register.RAX, Register.RAX);
-		instructions.add(OpCode.JNS, new LabelAddress(label));
+		instructions.add(OpCode.JNZ, new LabelAddress(label));
 		instructions.call(GlobalLabels.SPECIAL_THROW);
 		instructions.label(label);
 	}
 	
 	public void callAlloc(int size) {
-		instructions.push(new ImmediateValue(size), MemSize.QWORD);
+		instructions.push(new ImmediateValue(size, MemSize.QWORD));
 		instructions.call(GlobalLabels.SPECIAL_ALLOC);
 		// TODO0 implement other calling conventions (__stdcall currently)
 		testThrowError();
