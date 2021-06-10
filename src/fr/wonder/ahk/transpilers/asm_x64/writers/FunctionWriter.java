@@ -207,7 +207,7 @@ public class FunctionWriter {
 	}
 	
 	private void writeRangedForStatement(RangedForSt st, ErrorWrapper errors) {
-		writeForStatement(st.toComplexFor(), getLabel(st), errors);
+		writeForStatement(st.toComplexFor(), getLabel(st), errors); // FIX compute step and max beforehand
 	}
 	
 	/**

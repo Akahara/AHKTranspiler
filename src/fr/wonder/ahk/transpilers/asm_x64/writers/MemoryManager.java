@@ -110,7 +110,7 @@ public class MemoryManager {
 			moveData(f.base, Register.RAX);
 			from = new MemAddress(Register.RAX, f.index, f.scale, f.offset);
 		}
-		if(to instanceof MemAddress && ((MemAddress) to).base instanceof MemAddress) { // FIX changing RBX may be a big problem
+		if(to instanceof MemAddress && ((MemAddress) to).base instanceof MemAddress) {
 			MemAddress t = (MemAddress) to;
 			moveData(t.base, Register.RBX);
 			to = new MemAddress(Register.RBX, t.index, t.scale, t.offset);
@@ -120,7 +120,6 @@ public class MemoryManager {
 			from = Register.RAX;
 		}
 		writer.instructions.mov(to, from, cast);
-		// FIX TEST moving data from complex mem to complex mem
 	}
 	
 }

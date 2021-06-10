@@ -12,10 +12,10 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
-import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class ExpressionWriter {
@@ -37,7 +37,7 @@ class ExpressionWriter {
 			OperationExp o = (OperationExp) exp;
 			if(o.getLeftOperand() != null)
 				writeExpression(o.getLeftOperand(), sb, errors);
-			sb.append(getOperatorString(o.operator));
+			sb.append(getOperatorString(o));
 			writeExpression(o.getRightOperand(), sb, errors);
 			
 		} else if(exp instanceof FunctionExp) {
@@ -104,12 +104,11 @@ class ExpressionWriter {
 		}
 	}
 	
-	private static String getOperatorString(Operator o) {
-		switch(o) {
+	private static String getOperatorString(OperationExp o) {
+		switch(o.operator) {
 		case ADD:		return "+";
 		case SUBSTRACT:	return "-";
 		case MULTIPLY:	return "*";
-		case DIVIDE:	return "/";
 		case MOD:		return "%";
 		case NOT:		return "!";
 		case EQUALS:	return "==";
@@ -119,6 +118,7 @@ class ExpressionWriter {
 		case GREATER:	return ">";
 		case LEQUALS:	return "<=";
 		case LOWER:		return "<";
+		case DIVIDE:	return o.getType() == VarType.INT ? "//" : "/";
 		}
 		throw new IllegalStateException("Unknown operator " + o);
 	}

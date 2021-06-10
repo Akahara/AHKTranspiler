@@ -13,23 +13,29 @@ import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
 public class NativeOperation implements Operation {
 	
 	private final VarType resultType;
-	private final VarType[] operandsTypes;
+	private final VarType leftOperand, rightOperand;
 	private final String registry;
-	
+
 	private NativeOperation(VarType l, VarType r, Operator o, VarType resultType) {
 		this.resultType = resultType;
-		this.operandsTypes = new VarType[] { l, r };
-		this.registry = l.getName()+'_'+r.getName()+'_'+o.name();
+		this.leftOperand = l;
+		this.rightOperand = r;
+		this.registry = (l == null ? "" : l.getName())+'_'+r.getName()+'_'+o.name();
 	}
-
+	
 	@Override
 	public VarType getResultType() {
 		return resultType;
 	}
+
+	@Override
+	public VarType getLOType() {
+		return leftOperand;
+	}
 	
 	@Override
-	public VarType[] getOperandsTypes() {
-		return operandsTypes;
+	public VarType getROType() {
+		return rightOperand;
 	}
 	
 	@Override
@@ -46,55 +52,57 @@ public class NativeOperation implements Operation {
 	}
 	
 	private static final Map<Triplet<VarType, VarType, Operator>, NativeOperation> nativeOperations = new HashMap<>();
-	
-	private static void add(VarType l, VarType r, Operator o, VarType result) {
+
+	private static void createOperation(VarType l, VarType r, Operator o, VarType result) {
 		nativeOperations.put(new Triplet<>(l, r, o), new NativeOperation(l, r, o, result));
 	}
 	
 	static {
-		add(INT, INT, ADD, INT);
-		add(INT, INT, SUBSTRACT, INT);
-		add(INT, INT, MULTIPLY, INT);
-		add(INT, INT, DIVIDE, INT);
-		add(INT, INT, MOD, INT);
-		add(INT, INT, EQUALS, BOOL);
-		add(INT, INT, GREATER, BOOL);
-		add(INT, INT, GEQUALS, BOOL);
-		add(INT, INT, LOWER, BOOL);
-		add(INT, INT, LEQUALS, BOOL);
-		add(INT, INT, NEQUALS, BOOL);
+		createOperation(INT,  INT, ADD,       INT);
+		createOperation(INT,  INT, SUBSTRACT, INT);
+		createOperation(null, INT, SUBSTRACT, INT);
+		createOperation(INT,  INT, MULTIPLY,  INT);
+		createOperation(INT,  INT, DIVIDE,    INT);
+		createOperation(INT,  INT, MOD,       INT);
+		createOperation(INT,  INT, EQUALS,    BOOL);
+		createOperation(INT,  INT, GREATER,   BOOL);
+		createOperation(INT,  INT, GEQUALS,   BOOL);
+		createOperation(INT,  INT, LOWER,     BOOL);
+		createOperation(INT,  INT, LEQUALS,   BOOL);
+		createOperation(INT,  INT, NEQUALS,   BOOL);
 		
-		add(FLOAT, FLOAT, ADD, FLOAT);
-		add(FLOAT, FLOAT, SUBSTRACT, FLOAT);
-		add(FLOAT, FLOAT, MULTIPLY, FLOAT);
-		add(FLOAT, FLOAT, DIVIDE, FLOAT);
-		add(FLOAT, FLOAT, MOD, FLOAT);
-		add(FLOAT, FLOAT, EQUALS, BOOL);
-		add(FLOAT, FLOAT, GREATER, BOOL);
-		add(FLOAT, FLOAT, GEQUALS, BOOL);
-		add(FLOAT, FLOAT, LOWER, BOOL);
-		add(FLOAT, FLOAT, LEQUALS, BOOL);
+		createOperation(FLOAT, FLOAT, ADD,       FLOAT);
+		createOperation(FLOAT, FLOAT, SUBSTRACT, FLOAT);
+		createOperation(null,  FLOAT, SUBSTRACT, FLOAT);
+		createOperation(FLOAT, FLOAT, MULTIPLY,  FLOAT);
+		createOperation(FLOAT, FLOAT, DIVIDE,    FLOAT);
+		createOperation(FLOAT, FLOAT, MOD,       FLOAT);
+		createOperation(FLOAT, FLOAT, EQUALS,    BOOL);
+		createOperation(FLOAT, FLOAT, GREATER,   BOOL);
+		createOperation(FLOAT, FLOAT, GEQUALS,   BOOL);
+		createOperation(FLOAT, FLOAT, LOWER,     BOOL);
+		createOperation(FLOAT, FLOAT, LEQUALS,   BOOL);
 
-		add(BOOL, BOOL, EQUALS, BOOL);
-		add(BOOL, BOOL, NEQUALS, BOOL);
+		createOperation(BOOL, BOOL, EQUALS,  BOOL);
+		createOperation(BOOL, BOOL, NEQUALS, BOOL);
 		
-		add(STR, STR, ADD, STR);
+		createOperation(STR, STR, ADD, STR);
 	}
 	
-	// FIX confusing function names
-	
 	/** This function may return null */
-	public static NativeOperation get(VarType l, VarType r, Operator o) {
+	private static NativeOperation getStrict(VarType l, VarType r, Operator o) {
 		return nativeOperations.get(new Triplet<>(l, r, o));
 	}
 
-	public static NativeOperation getOperation(VarType leftOp, Operator operator, VarType rightOp) {
+	public static NativeOperation getOperation(VarType leftOp, VarType rightOp, Operator operator, boolean allowCast) {
+		if(!allowCast)
+			return getStrict(leftOp, rightOp, operator);
 		int lo = getOrder(leftOp);
 		int ro = getOrder(rightOp);
 		if(lo == -1 || ro == -1)
-			return get(leftOp, rightOp, operator);
+			return getStrict(leftOp, rightOp, operator);
 		int maxOrder = lo > ro ? lo : ro;
-		return get(nativeOrder[maxOrder], nativeOrder[maxOrder], operator);
+		return getStrict(nativeOrder[maxOrder], nativeOrder[maxOrder], operator);
 	}
 	
 }

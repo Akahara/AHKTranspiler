@@ -45,7 +45,8 @@ public class Invalids {
 
 	public static final Operation OPERATION = new Operation() {
 		public VarType getResultType() { return Invalids.TYPE; }
-		public VarType[] getOperandsTypes() { return new VarType[0]; }
+		public VarType getLOType() { return Invalids.TYPE; }
+		public VarType getROType() { return Invalids.TYPE; }
 	};
 
 	public static final Signature ACCESS_SIGNATURE = new Signature(Invalids.STRING, "INVALID ACCESS", "INVALID ACCESS");

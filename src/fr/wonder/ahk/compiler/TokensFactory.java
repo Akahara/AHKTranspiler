@@ -102,17 +102,18 @@ public class TokensFactory {
 					line.remove(j+1);
 					modified = true;
 					
-				} else if(j < line.size()-1 &&
-					line.get(j).base == TokenBase.OP_MINUS && (
-					line.get(j+1).base == TokenBase.LIT_INT ||
-					line.get(j+1).base == TokenBase.LIT_FLOAT)) {
-					
-					// replace '- intL' by 'intL' or '- floatL' by 'floatL'
-					line.set(j, new Token(line.get(j).getSource(), line.get(j+1).base,
-							line.get(j).text+line.get(j+1).text, line.get(j).sourceStart));
-					line.remove(j+1);
-					modified = true;
 				}
+//				else if(j < line.size()-1 &&
+//					line.get(j).base == TokenBase.OP_MINUS && (
+//					line.get(j+1).base == TokenBase.LIT_INT ||
+//					line.get(j+1).base == TokenBase.LIT_FLOAT)) {
+//					
+//					// replace '- intL' by 'intL' or '- floatL' by 'floatL'
+//					line.set(j, new Token(line.get(j).getSource(), line.get(j+1).base,
+//							line.get(j).text+line.get(j+1).text, line.get(j).sourceStart));
+//					line.remove(j+1);
+//					modified = true;
+//				}
 			}
 			if(modified)
 				lines.set(i, line.toArray(Token[]::new));

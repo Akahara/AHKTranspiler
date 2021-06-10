@@ -244,6 +244,14 @@ public class ExpressionParser {
 		int sourceStop = line[section.stop-1].sourceStop;
 		
 		if(leftOperand == null) {
+			if(operator.a == Operator.SUBSTRACT) {
+				if(rightOperand instanceof IntLiteral)
+					return new IntLiteral(source, opt.sourceStart, rightOperand.sourceStop, -((IntLiteral) rightOperand).value);
+				else if(rightOperand instanceof FloatLiteral)
+					return new FloatLiteral(source, opt.sourceStart, rightOperand.sourceStop, -((FloatLiteral) rightOperand).value);
+			}
+			
+			
 			return new OperationExp(source, sourceStart, sourceStop, operator.a, rightOperand);
 		} else {
 			return new OperationExp(source, sourceStart, sourceStop, operator.a, leftOperand, rightOperand);

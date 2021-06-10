@@ -42,12 +42,12 @@ public class OperationExp extends Expression {
 		this.operation = op;
 		if(op == Invalids.OPERATION)
 			return;
-		if(op.getOperandsTypes().length != (getRightOperand() == null ? 1 : 2))
+		if((op.getLOType() == null) != (getLOType() == null))
 			throw new IllegalStateException("Invalid operand count");
-		if(getLOType() != null && getLOType() != op.getOperandsTypes()[0])
-			expressions[1] = new ConversionExp(getSource(), getLeftOperand(), op.getOperandsTypes()[0], true);
-		if(getROType() != op.getOperandsTypes()[1])
-			expressions[0] = new ConversionExp(getSource(), getRightOperand(), op.getOperandsTypes()[1], true);
+		if(getLOType() != op.getLOType())
+			expressions[1] = new ConversionExp(getSource(), getLeftOperand(), op.getLOType(), true);
+		if(getROType() != op.getROType())
+			expressions[0] = new ConversionExp(getSource(), getRightOperand(), op.getROType(), true);
 	}
 	
 	public Operation getOperation() {

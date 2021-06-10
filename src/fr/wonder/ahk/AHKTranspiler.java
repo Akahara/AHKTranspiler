@@ -9,7 +9,7 @@ import fr.wonder.ahk.handles.ExecutableHandle;
 import fr.wonder.ahk.handles.ProjectHandle;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
-import fr.wonder.ahk.transpilers.asm_x64.AsmX64Transpiler;
+import fr.wonder.ahk.transpilers.python.PythonTranspiler;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.files.FilesUtils;
@@ -37,10 +37,10 @@ public class AHKTranspiler {
 	public static void main(String[] args) throws IOException {
 		File codeDir = new File("code");
 		ProjectHandle project = createProject(codeDir);
-//		Transpiler transpiler = new PythonTranspiler();
-//		File dir = new File("exported_py");
-		Transpiler transpiler = new AsmX64Transpiler();
-		File dir = new File("exported_x64");
+		Transpiler transpiler = new PythonTranspiler();
+		File dir = new File("exported_py");
+//		Transpiler transpiler = new AsmX64Transpiler();
+//		File dir = new File("exported_x64");
 		Manifest man = ManifestUtils.parseManifest(new File(codeDir, "manifest.txt"));
 		AHKManifest manifest = ManifestUtils.buildManifestFromValues(man, AHKManifest.class,
 				ManifestUtils.CONVENTION_SCREAMING_SNAKE_CASE);
@@ -52,7 +52,7 @@ public class AHKTranspiler {
 			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export"));
 			Process process = transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run"));
 			if(process != null)
-				ProcessUtils.redirectOutputToStd(process);
+				ProcessUtils.redirectOutputToStd(process).start();
 		} catch (WrappedException e) {
 			e.errors.dump();
 		}

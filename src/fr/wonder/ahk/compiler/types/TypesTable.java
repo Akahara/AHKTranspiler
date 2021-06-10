@@ -30,10 +30,10 @@ public class TypesTable {
 		if(leftOp instanceof VarArrayType || rightOp instanceof VarArrayType)
 			return null;
 		
-		if(leftOp instanceof VarNativeType && leftOp instanceof VarNativeType)
-			return NativeOperation.getOperation(leftOp, operator, rightOp);
+		if((leftOp instanceof VarNativeType || leftOp == null) && rightOp instanceof VarNativeType)
+			return NativeOperation.getOperation(leftOp, rightOp, operator, true);
 		
-		if(leftOp instanceof VarStructType) {
+		if(leftOp instanceof VarStructType || rightOp instanceof VarStructType) {
 			// check if this operation was already mapped
 			Operation operation = operations.getOperation(leftOp, operator, OperationTable.TYPE_ANY);
 			if(operation != null)
@@ -55,31 +55,6 @@ public class TypesTable {
 				}
 				return operation;
 			}
-		}
-		
-		if(leftOp == null && rightOp instanceof VarStructType) {
-			// TODO check if - <struct> is interpreted as the negative operation or throws an expression error
-//			// check if this operation was already mapped
-//			Operation operation = operations.getOperation(null, operator, rightOp);
-//			if(operation != null)
-//				return operation;
-//			// else retrieve the operation
-//			VarType original = rightOp;
-//			do {
-//				// if no operation matches, check for super type
-//				rightOp = ((VarStructType) rightOp).superType;
-//				operation = operations.getOperation(null, operator, rightOp);
-//			} while (operation == null && rightOp != null);
-//			if(operation != null) {
-//				// map the found operation for future queries
-//				while(true) {
-//					operations.addOperation(null, operator, original, operation);
-//					original = ((VarStructType) original).superType;
-//					if(original == leftOp)
-//						break;
-//				}
-//				return operation;
-//			}
 		}
 		
 		return null;

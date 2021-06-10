@@ -2,7 +2,6 @@ package fr.wonder.ahk.transpilers.asm_x64.natives.operations;
 
 import static fr.wonder.ahk.compiled.expressions.Operator.*;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
-import static fr.wonder.ahk.compiler.types.NativeOperation.get;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +12,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.common_x64.Register;
@@ -49,16 +49,16 @@ public class AsmOperationWriter {
 	}
 	
 	static {
-		nativeOperations.put(get(INT, INT, ADD), AsmOperationWriter::op_intADDint);
-		nativeOperations.put(get(INT, INT, MULTIPLY), AsmOperationWriter::op_intMULint);
-		nativeOperations.put(get(INT, INT, DIVIDE), AsmOperationWriter::op_intDIVint);
-		nativeOperations.put(get(INT, INT, MOD), AsmOperationWriter::op_intMODint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, ADD, false), AsmOperationWriter::op_intADDint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, MULTIPLY, false), AsmOperationWriter::op_intMULint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, DIVIDE, false), AsmOperationWriter::op_intDIVint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, MOD, false), AsmOperationWriter::op_intMODint);
 	}
 	
 	static {
-		conditionalJumps.put(get(INT, INT, EQUALS), AsmOperationWriter::jump_intEQUint);
-		conditionalJumps.put(get(INT, INT, NEQUALS), AsmOperationWriter::jump_intNEQUint);
-		conditionalJumps.put(get(INT, INT, LOWER), AsmOperationWriter::jump_intLTint);
+		conditionalJumps.put(NativeOperation.getOperation(INT, INT, EQUALS, false), AsmOperationWriter::jump_intEQUint);
+		conditionalJumps.put(NativeOperation.getOperation(INT, INT, NEQUALS, false), AsmOperationWriter::jump_intNEQUint);
+		conditionalJumps.put(NativeOperation.getOperation(INT, INT, LOWER, false), AsmOperationWriter::jump_intLTint);
 	}
 	
 	static {

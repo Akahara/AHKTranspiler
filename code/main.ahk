@@ -4,6 +4,8 @@ import ahk.Kernel;
 
 unit Unit;
 
+int ii = -3;
+	
 int gi = 8;
 str x = "str";
 int[] array = [56, 42, 37];

@@ -47,9 +47,9 @@ public class RangedForSt extends LabeledStatement {
 		var.declaration = variable.getPrototype();
 		var.computeValueType(null, null);
 		OperationExp condition = new OperationExp(getSource(), sourceStart, sourceStop, Operator.LOWER, var, getMax());
-		condition.setOperation(NativeOperation.get(VarType.INT, VarType.INT, Operator.LOWER));
+		condition.setOperation(NativeOperation.getOperation(VarType.INT, VarType.INT, Operator.LOWER, false));
 		OperationExp affectationValue = new OperationExp(getSource(), sourceStart, sourceStop, Operator.ADD, var, getStep());
-		affectationValue.setOperation(NativeOperation.get(VarType.INT, VarType.INT, Operator.ADD));
+		affectationValue.setOperation(NativeOperation.getOperation(VarType.INT, VarType.INT, Operator.ADD, false));
 		AffectationSt affectation = new AffectationSt(getSource(), sourceStart, sourceStop, var, affectationValue);
 		ForSt st = new ForSt(getSource(), sourceStart, sourceStop, singleLine, variable, condition, affectation);
 		st.sectionEnd = this.sectionEnd;
