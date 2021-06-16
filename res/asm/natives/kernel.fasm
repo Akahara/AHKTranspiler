@@ -79,7 +79,7 @@ ker_init:
   pop rcx ; length of the string
   mov rdi,rax ; address of the copy
   cld
-  movsb
+  rep movsb
   
   mov rbx,[rsp] ; ptr
   mov [rbx],rax

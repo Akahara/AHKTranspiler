@@ -139,8 +139,7 @@ public class ExpressionWriter {
 				// TODO0 check if the scaled index overflows the 64 bits limit
 				writer.instructions.test(Register.RAX);
 				writer.instructions.add(OpCode.JS, specialLabel2); // the index 
-				writer.instructions.cmp(new MemAddress(Register.RBX, -4), Register.EAX); // FIX CHANGE THE MEM SYSTEM
-																						// so that the size of a memory block is stored in 8 bits rather than 4
+				writer.instructions.cmp(new MemAddress(Register.RBX, -8), Register.RAX);
 				writer.instructions.add(OpCode.JLE, specialLabel2);
 				writer.instructions.jmp(specialLabel1);
 				writer.instructions.label(specialLabel2);
@@ -157,7 +156,7 @@ public class ExpressionWriter {
 		if(type instanceof VarArrayType) {
 			writer.mem.writeTo(Register.RBX, exp.getExpression(), errors);
 			writer.instructions.clearRegister(Register.RAX); // clear the 32 higher bits
-			writer.instructions.mov(Register.EAX, new MemAddress(Register.RBX, -4)); // mov eax,[rbx-4]
+			writer.instructions.mov(Register.RAX, new MemAddress(Register.RBX, -8)); // mov rax,[rbx-8]
 			int csize = MemSize.getPointerSize(((VarArrayType) type).componentType).bytes;
 			if(csize == 8)
 				writer.instructions.add(OpCode.SHR, Register.RAX, 3);

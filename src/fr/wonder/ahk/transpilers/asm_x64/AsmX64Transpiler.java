@@ -162,7 +162,7 @@ public class AsmX64Transpiler implements Transpiler {
 	@Override
 	public Process runProject(ExecutableHandle handle, File dir, ErrorWrapper errors)
 			throws IOException, WrappedException {
-		runCommand("./" + ((ExecutableHandleImpl) handle).manifest.OUTPUT_NAME + " f", dir);
+		runCommand("./" + ((ExecutableHandleImpl) handle).manifest.OUTPUT_NAME + " arg1 arg2", dir);
 		return null;
 	}
 

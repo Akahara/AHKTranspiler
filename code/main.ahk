@@ -26,7 +26,9 @@ func int gcd2(int x, int y) {
 }
 
 func int main() {
-	Kernel.println(Kernel.argv[0]);
+	Kernel.println("Expected: argc argv[1]");
+	Kernel.println(sizeof(Kernel.argv));
+	Kernel.println(Kernel.argv[1]);
 	Kernel.println("Expected: 4 6 6 2 1 10");
 	int c = 2;
 	int l = 4;

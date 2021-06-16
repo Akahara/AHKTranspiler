@@ -1,9 +1,13 @@
 %include"intrinsic.asm"
 
+global mem_init
+global mem_alloc_block
+extern e_throw
+
 section .data
 
 TABLE_SIZE equ 32    ; number of entry per table
-ALLOC_SIZE equ 16384 ; number of bytes allocated every time 
+ALLOC_SIZE equ 16384 ; number of bytes allocated every time
 
 E_BRK_ERROR equ -1      ; error code, used when the system call to brk
                         ; do not succeed
@@ -15,17 +19,14 @@ current_break dq 0
 table_start dq 0
 mem_start dq 0
 
-global mem_init
-global mem_alloc_block
-
 section .text
 
 ; ==============================================================
 ; 
 ; A data block of size n is stored in the heap as
-; a memory block of size n+4, with the value n being
-; stored in the first 4 bytes. A pointer to the data
-; points to the first byte of data, so [ptr-4] can be
+; a memory block of size n+8, with the value n being
+; stored in the first 8 bytes. A pointer to the data
+; points to the first byte of data, so [ptr-8] can be
 ; used at any time to retrieve the data size. This value
 ; must NEVER be modified by other than a mem_ function.
 ;
@@ -38,7 +39,7 @@ section .text
 ;
 ;
 ; An allocation table is stored as a memory block (see
-; the description of memory blocks) of size 4+ 32*8+8.
+; the description of memory blocks) of size 8+ 32*8+8.
 ; the first 8 bytes are the address of the next allocation
 ; table if there is one, 0 otherwise and the next 32 qwords
 ; are the entries of the table (pointers to memory blocks).
@@ -56,8 +57,8 @@ section .text
 ;       | | |   |   |   |       |  |
 ; ------\==========================/------
 ;          ^ptr
-; T is the next allocation table
-; En is the n-th entry
+; T is the next allocation table address
+; E_n is the n-th entry address
 ;
 ; ==============================================================
 
@@ -80,42 +81,25 @@ mem_init:
   
   ; get the current break
   mov rax,SYSCALL_BRK
-  mov rbx,0
+  xor rbx,rbx
   int 0x80
   mov [current_break],rax
   mov [table_start],rax
+  add rax,8*(TABLE_SIZE+1)
+  mov [mem_start],rax
   
   ; allocate the first memory table
-  mov rbx,TABLE_SIZE
-  inc rbx
-  imul rbx,8
-  ; rbx= 8*n+8  n the number of entry per table
-  add rbx,rax
-  mov rax,SYSCALL_BRK
-  int 0x80
-  cmp rax,[current_break]
-  jne .successful_alloc
-  ; if alloc failed, return with E_BRK_ERROR
-  mov rax,E_BRK_ERROR
-  jmp .ret
+  call grow_heap
   
-.successful_alloc:
   ; fill the alloc table with 0s
-  ; store current break in edx 
-  mov rdx,rax
-.loop:
-  sub rbx,8
-  mov qword [rbx],0
-  cmp rbx,[current_break]
-  jne .loop
-  
-  inc rdx
-  mov [current_break],rdx
-  mov [mem_start],rdx
+  mov rcx,8*(TABLE_SIZE+1)
+  mov rdi,[table_start]
+  xor rax,rax
+  rep stosq
   
   ; allocate the first true memory block
   call grow_heap
-.ret:
+  
   mov rsp,rbp
   pop rbp
   ret
@@ -144,25 +128,27 @@ mem_dispose:
   
 ; ==============================================================
 ; grows the heap by ALLOC_SIZE bytes with a call to brk
-;  return value: 0 in case of a success, E_BRK_ERROR otherwise
-;  regs: rax & rbx
 ; ==============================================================
 grow_heap:
   push rbp
   mov rbp,rsp
-  
   mov rbx,[current_break]
   add rbx,ALLOC_SIZE
   mov rax,SYSCALL_BRK
   int 0x80
-  cmp rax,[current_break]
-  mov [current_break],rax
-  mov rax,0
-  jne .success
-  
+  cmp rax,rbx
+  je .success
   mov rax,E_BRK_ERROR
+  call e_throw
 .success:
-  
+  ; fill the allocated space with 0xcc
+  mov rdi,[current_break]
+  mov rcx,rax
+  sub rcx,rdi
+  mov [current_break],rax ; set the new break
+  mov al,0xcc
+  cld
+  rep stosb
   mov rsp,rbp
   pop rbp
   ret
@@ -180,10 +166,7 @@ grow_heap:
 ; If the address + the size of the block is greater than the
 ; current heap break (memory overflow) the heap is grown until
 ; the data fits.
-;   return value: E_BRK_ERROR if an error occurs while growing
-;        the heap. E_ALLOC_OVERFLOW if the given size exceed
-;        the 32 bits limit. The allocated block address
-;        otherwise
+;   return value: The allocated block address
 ; ==============================================================
 mem_alloc_block:
   push rbp
@@ -194,12 +177,10 @@ mem_alloc_block:
   ; rax = A an empty block address
   ; rbx = B an empty table entry address
   ; rcx = T the table in which the entry B resides
-  test rax,rax
-  js .ret_fail ; get_empty_block failed
-  mov rsi,[rsp+16] ; rsi = S (fits into 4 bytes)
+  mov rsi,[rsp+16] ; rsi = S
   
-  mov dword[rax-4],esi
-  mov dword[rbx],eax
+  mov [rax-8],rsi
+  mov [rbx],rax
   
   mov rdx,rcx
   add rdx,8
@@ -212,23 +193,17 @@ mem_alloc_block:
   ; allocate new allocation table
   push qword TABLE_SIZE*8+8
   call get_empty_block
-  test rax,rax
-  js .ret_fail ; get_empty_block failed
-  mov dword[rax-4],TABLE_SIZE*8+8
+  mov dword[rax-8],TABLE_SIZE*8+8
   mov [rcx],rax
-  mov rdx,rcx
-  mov rcx,TABLE_SIZE
-.fill_loop: ; fill the table with 0s
-  mov qword[rdx+rcx*8],0
-  loop .fill_loop
-  mov qword[rdx],0
-  pop rax
-  jmp .ret
+  mov rdi,rcx
+  ; fill the table with 0s
+  mov rcx,TABLE_SIZE+1
+  xor rax,rax
+  rep stosq
   
-.ret_fail:
-  mov rax,-1 ; TODO add specific error codes
+  pop rax
+  
 .tables_not_full:
-.ret:
   mov rsp,rbp
   pop rbp
   ret 8
@@ -248,11 +223,11 @@ get_empty_block:
   push rbp
   mov rbp,rsp
   
-  mov rsi,[rsp+16]
+  mov rsi,[rbp+16]
   cmp rsi,0xffff
   jle .alloc
   mov rax,E_ALLOC_OVERFLOW ; too large size
-  jmp .ret_fail
+  call e_throw
 .alloc:
   
   ; rsi = S the size of the block to allocate
@@ -271,15 +246,15 @@ get_empty_block:
 .check_table:
   lea r11,[rdx+rcx*8] ; r11 = |E| = T+t*8
   mov r9,[r11]        ; r9 = E = [T+t*8] = [r11]
-  lea r12,[rax+rsi+4] ; r12 = A+S+4 the speculative end of the researched block
+  lea r12,[rax+rsi+8] ; r12 = A+S+8 the speculative end of the researched block
   test r9,r9          ; E=0 -> no overlap
   jz .nooverlapsave
-  lea r10,[r9-4]      ; r10 = E-4 the size of the entry block
+  lea r10,[r9-8]      ; r10 = E-8 the size of the entry block
   cmp r10,r12
   jge .nooverlap      ; E-4>=A+S+4 -> no overlap
-  add r9,[r10]        ; r9 = E+[E-4] = r9+[r10]
+  add r9,[r10]        ; r9 = E+[E-8] = r9+[r10]
   cmp r9,rax
-  jle .nooverlap      ; E+[E-4]<=A -> no overlap
+  jle .nooverlap      ; E+[E-8]<=A -> no overlap
 .overlap:             ; -> overlap
   mov rax,r9          ; A = E+[E-4] the end of the overlapping block
   jmp .check_tables
@@ -290,7 +265,7 @@ get_empty_block:
   mov rbx,r11
 .nooverlap:
   loop .check_table
-  cmp dword[rdx],0
+  cmp qword[rdx],0
   jz .check_heap        ; a location was found
   mov rdx,[rdx]         ; T = [T] the next table
   jmp .check_next_table ; a table remains
@@ -309,9 +284,9 @@ get_empty_block:
 .ret:
   pop rcx ; T
   pop rbx ; B
-  pop rax ; A+4
-  add rax,4
-.ret_fail:
+  pop rax ; A+8
+  add rax,8
+  
   mov rsp,rbp
   pop rbp
   ret 8
