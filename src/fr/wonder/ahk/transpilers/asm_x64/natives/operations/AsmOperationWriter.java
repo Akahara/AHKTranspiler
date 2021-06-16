@@ -23,6 +23,7 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.types.Tuple;
+import fr.wonder.commons.utils.Assertions;
 
 public class AsmOperationWriter {
 	
@@ -53,12 +54,18 @@ public class AsmOperationWriter {
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MULTIPLY, false), AsmOperationWriter::op_intMULint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, DIVIDE, false), AsmOperationWriter::op_intDIVint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MOD, false), AsmOperationWriter::op_intMODint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, SUBSTRACT, false), AsmOperationWriter::op_intSUBint);
+		nativeOperations.put(NativeOperation.getOperation(null, INT, SUBSTRACT, false), AsmOperationWriter::op_nullSUBint);
+	
+		Assertions.assertNull(nativeOperations.get(null), "An unimplemented native operation was given an asm implementation");
 	}
 	
 	static {
 		conditionalJumps.put(NativeOperation.getOperation(INT, INT, EQUALS, false), AsmOperationWriter::jump_intEQUint);
 		conditionalJumps.put(NativeOperation.getOperation(INT, INT, NEQUALS, false), AsmOperationWriter::jump_intNEQUint);
 		conditionalJumps.put(NativeOperation.getOperation(INT, INT, LOWER, false), AsmOperationWriter::jump_intLTint);
+		
+		Assertions.assertNull(conditionalJumps.get(null), "An unimplemented native operation was given an asm jump implementation");
 	}
 	
 	static {
@@ -74,12 +81,12 @@ public class AsmOperationWriter {
 	
 	/* ============================================ Operations ============================================ */
 	
-	public boolean writeOperation(Operation op, Expression leftOperand, Expression rightOperand, ErrorWrapper errors) {
-		OperationWriter opw = nativeOperations.get(op);
+	public void writeOperation(OperationExp exp, ErrorWrapper errors) {
+		OperationWriter opw = nativeOperations.get(exp.getOperation());
 		if(opw == null)
-			return false;
-		opw.write(leftOperand, rightOperand, this, errors);
-		return true;
+			errors.add("Unimplemented assembly operation! " + exp.operationString() + exp.getErr());
+		else
+			opw.write(exp.getLeftOperand(), exp.getRightOperand(), this, errors);
 	}
 	
 	/**
@@ -131,6 +138,16 @@ public class AsmOperationWriter {
 			return;
 		}
 		asmWriter.writer.instructions.add(OpCode.ADD, Register.RAX, ro);
+	}
+	
+	private static void op_intSUBint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
+		asmWriter.writer.instructions.add(OpCode.SUB, Register.RAX, ro);
+	}
+	
+	private static void op_nullSUBint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
+		asmWriter.writer.instructions.add(OpCode.NEG, Register.RAX);
 	}
 	
 	private static void op_intMODint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {

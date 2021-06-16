@@ -32,9 +32,7 @@ public class ExpressionWriter {
 	
 	/** writes the given expression to $rax */
 	public void writeExpression(Expression exp, ErrorWrapper errors) {
-		if(exp instanceof NoneExp)
-			writer.instructions.clearRegister(Register.RAX);
-		else if(exp instanceof LiteralExp)
+		if(exp instanceof LiteralExp)
 			writer.mem.writeTo(Register.RAX, exp, errors);
 		else if(exp instanceof FunctionExp)
 			writeFunctionExp((FunctionExp) exp, errors);
@@ -85,16 +83,8 @@ public class ExpressionWriter {
 		if(exp.getOperation() instanceof FunctionSection) { // FIX when operator overloading is implemented...
 			// functionSections do not implement operation, use the appropriate class instead
 			throw new UnimplementedException();
-//			FunctionSection func = (FunctionSection) exp.operation;
-//			Expression leftOperand = exp.getLeftOperand() == null ? new NoneExp(func.argumentTypes[0].getSize()) : exp.getLeftOperand();
-//			writeFunctionExp(func, new Expression[] { leftOperand, exp.getRightOperand() }, errors);
 		} else {
-			boolean nativeExists = writer.opWriter.writeOperation(
-					exp.getOperation(),
-					exp.getLeftOperand(),
-					exp.getRightOperand(), errors);
-			if(!nativeExists)
-				errors.add("Unimplemented assembly operation! " + exp.operationString() + exp.getErr());
+			writer.opWriter.writeOperation(exp, errors);
 		}
 	}
 	
@@ -127,7 +117,7 @@ public class ExpressionWriter {
 			if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
 				writer.instructions.cmp(new MemAddress(Register.RAX, -4), 0);
 				writer.instructions.jmp(specialLabel1);
-				writer.instructions.mov(Register.RAX, -6); // FIX add specific error code
+				writer.instructions.mov(Register.RAX, -6); // TODO add specific error code
 				writer.instructions.call(GlobalLabels.SPECIAL_THROW);
 				writer.instructions.label(specialLabel1);
 				writer.instructions.add(OpCode.ADD, Register.RAX, new MemAddress(Register.RAX, -8));
@@ -154,7 +144,7 @@ public class ExpressionWriter {
 				writer.instructions.add(OpCode.JLE, specialLabel2);
 				writer.instructions.jmp(specialLabel1);
 				writer.instructions.label(specialLabel2);
-				writer.instructions.mov(Register.RAX, -5); // FIX add specific error code
+				writer.instructions.mov(Register.RAX, -5); // TODO add specific error code
 				writer.instructions.call(GlobalLabels.SPECIAL_THROW);
 				writer.instructions.label(specialLabel1);
 				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, Register.RBX, 1)); // mov rax,[rax+rbx]

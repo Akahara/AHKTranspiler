@@ -167,6 +167,8 @@ public class StatementParser {
 			return new NullExp(source, sourceLoc, sourceLoc);
 		else if(type == Invalids.TYPE)
 			return Invalids.EXPRESSION;
+		else if(type instanceof VarArrayType)
+			return new NullExp(source, sourceLoc, sourceLoc);
 		else
 			throw new UnreachableException("Unimplemented type default value for " + type);
 	}

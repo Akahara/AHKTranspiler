@@ -2,7 +2,11 @@
 
 section .data
 
+global ker_init
 global ker_exit
+global ahk_Kernel_argv
+global ahk_Kernel_argc_get
+global ahk_Kernel_argc_count
 global ahk_Kernel_print_hex
 global ahk_Kernel_print_dec
 global ahk_Kernel_print_str
@@ -10,12 +14,15 @@ global ahk_Kernel_print_strlen
 global ahk_Kernel_print_ln
 global floatst
 
+extern mem_alloc_block
+
 ln_chars db `\n`,0xa
 hex_chars db '0x................',0xa  ; hexadecimal characters
 dec_chars db '-00000000000000000000',0xa  ; decimal characters, a 64 bits integer will always fit in 20 digites and the - sign
 
 section .bss
 
+ahk_Kernel_argv resq 1
 floatst resq 1
 
 section .text
@@ -32,6 +39,62 @@ ker_exit:
   int 0x80
   
 
+ker_init:
+  push rbp
+  mov rbp,rsp
+  
+  sub rsp,8
+  
+  mov rax,[rbp+24] ; argc
+  imul rax,8
+  push rax
+  call mem_alloc_block
+  mov [ahk_Kernel_argv],rax
+  mov [rsp],rax ; ptr
+  
+.alloc_str:
+  mov rax,[rbp+24] ; argc
+  test rax,rax
+  jz .alloc_end
+  dec rax
+  mov [rbp+24],rax ; new argc
+  
+  mov rbx,[rbp+16] ; argv
+  mov rax,-1
+.search_str_end:
+  inc rax
+  mov cl,[rbx+rax]
+  test cl,cl
+  jnz .search_str_end
+  
+  lea rcx,[rax+rbx+1]
+  mov [rbp+16],rcx ; new argv
+  
+  push rax ; store temporarily
+  push rbx ; store temporarily
+  push rax ; pass the size of the string to alloc()
+  call mem_alloc_block
+  
+  pop rsi ; begining of the string
+  pop rcx ; length of the string
+  mov rdi,rax ; address of the copy
+  cld
+  movsb
+  
+  mov rbx,[rsp] ; ptr
+  mov [rbx],rax
+  add rbx,8
+  mov [rsp],rbx ; new ptr
+  
+  jmp .alloc_str
+  
+.alloc_end:
+  
+  mov rsp,rbp
+  pop rbp
+  ret
+  
+  
 ahk_Kernel_print_hex:
   push rbp
   mov rbp,rsp

@@ -155,10 +155,10 @@ public class UnitParser {
 					if(functionEnd == -1) {
 						errors.add("Unfinished function:" + source.getErr(lines[i]));
 					} else {
-						FunctionSection func = parseFunctionSection(source, lines, i, functionEnd, errors);
+						DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
+						FunctionSection func = parseFunctionSection(
+								source, lines, i, functionEnd, mods, errors);
 						i = functionEnd;
-						if(func != null)
-							func.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
 						functions.add(func);
 					}
 				}
@@ -201,14 +201,15 @@ public class UnitParser {
 	
 	/** Assumes that the first line token is KW_FUNC and the last TK_BRACE_OPEN */
 	private static FunctionSection parseFunctionSection(UnitSource source, Token[][] tokens,
-			int start, int stop, ErrorWrapper errors) {
+			int start, int stop, DeclarationModifiers modifiers, ErrorWrapper errors) {
 		
 		Token[] declaration = tokens[start];
 		FunctionSection function = new FunctionSection(
 				source,
 				declaration[0].sourceStart, // source start
 				tokens[stop-1][tokens[stop-1].length-1].sourceStop, // source stop
-				declaration[declaration.length-1].sourceStop); // declaration stop
+				declaration[declaration.length-1].sourceStop, // declaration stop
+				modifiers);
 		
 		readFunctionDeclaration(function, declaration, errors.subErrrors("Invalid function declaration"));
 		
@@ -216,7 +217,7 @@ public class UnitParser {
 		ErrorWrapper functionErrors = errors.subErrrors("Unable to parse function");
 		for(int i = start+1; i < stop; i++)
 			function.body[i-start-1] = StatementParser.parseStatement(source, tokens[i], functionErrors);
-		if(functionErrors.noErrors())
+		if(functionErrors.noErrors() && !modifiers.hasModifier(Modifier.NATIVE))
 			StatementsFinalizer.finalizeStatements(source, function);
 		return function;
 	}

@@ -26,6 +26,7 @@ func int gcd2(int x, int y) {
 }
 
 func int main() {
+	Kernel.println(Kernel.argv[0]);
 	Kernel.println("Expected: 4 6 6 2 1 10");
 	int c = 2;
 	int l = 4;
@@ -40,12 +41,14 @@ func int main() {
 	Kernel.println(7/3);
 	Kernel.println(7%3);
 	Kernel.println(gi+c);
-	Kernel.println("Expected str 56 42 37 3");
+	Kernel.println("Expected str 56 42 37 3 32");
 	Kernel.println(x);
 	Kernel.println(array[0]);
 	Kernel.println(array[1]);
 	Kernel.println(array[2]);
 	Kernel.println(sizeof(array));
+	array[1] = 32;
+	Kernel.println(array[1]);
 	for(int i : -10..10) {
 		Kernel.print(i);
 		Kernel.print(" / 5 = ");

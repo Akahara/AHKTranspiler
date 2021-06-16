@@ -6,12 +6,7 @@ import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 /**
- * Used (currently) only by the {@link ExpressionWriter} while writing function operations,
- * if the left operand is null it still must be written and its size must be known.
- * FIX this does not make much sense, an expression that does not take 2 operands should not have to know the first operand size
- * 
- * <br>
- * This is used by the {@link MemoryManager} to write <i>null</i> as a default value for variable declarations without default value
+ * Used by the {@link MemoryManager} to write <i>null</i> as a default value for variable declarations without default value
  */
 public class NoneExp extends Expression {
 	

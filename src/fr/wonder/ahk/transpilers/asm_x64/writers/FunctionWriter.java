@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
@@ -243,9 +242,7 @@ public class FunctionWriter {
 	}
 	
 	private void writeAffectationStatement(AffectationSt st, ErrorWrapper errors) {
-		// FIX compute the path st is pointing to and write to it
-		// currently this method only works for variables (not for arrays, structs ...)
-		writer.mem.writeTo(((VarExp)st.getVariable()).declaration, st.getValue(), errors);
+		writer.mem.writeAffectationTo(st.getVariable(), st.getValue(), errors);
 	}
 	
 }

@@ -33,11 +33,15 @@ global _main
 
 extern &entry_point
 extern floatst
+extern ker_init
 extern mem_init
 
 &units_initialization_externs
 
 _main:
+  push rbp
+  mov rbp,rsp
+  
   ; initialize the floating point unit (FPU)
   ; set rounding control to round to 0 with 0xc00
   finit
@@ -49,6 +53,11 @@ _main:
   
   ; call the dynamic memory allocation initialization
   call mem_init
+  
+  ; init argc and argv
+  push qword[rsp+8] ; argc
+  push qword[rsp+24]; argv
+  call ker_init
   
   ; call every unit initialization function
   &units_initialization_calls
@@ -62,3 +71,6 @@ _main:
   mov rbx,rax
   mov rax,SYSCALL_EXIT
   int 0x80
+  
+  ; mov rsp,rbp
+  ; pop rbp

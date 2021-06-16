@@ -2,6 +2,9 @@ base ahk;
 
 unit Kernel;
 
+@native("ahk_Kernel_argv");
+str[] argv;
+
 @native("ahk_Kernel_print_dec");
 func void print(int i) {}
 @native("ahk_Kernel_print_hex");

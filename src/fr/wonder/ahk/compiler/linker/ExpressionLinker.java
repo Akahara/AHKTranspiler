@@ -5,6 +5,7 @@ import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.FunctionExp;
+import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
@@ -58,6 +59,24 @@ class ExpressionLinker {
 						componentsType = Invalids.TYPE;
 					}
 					array.type = new VarArrayType(componentsType);
+				}
+				
+			} else if(exp instanceof IndexingExp) {
+				// validate types, there is no linking to do
+				IndexingExp iexp = (IndexingExp) exp;
+				VarType arrayType = iexp.getArray().getType();
+				Expression[] indices = iexp.getIndices();
+				for(int j = 0; j < indices.length; j++) {
+					if(arrayType instanceof VarArrayType) {
+						arrayType = ((VarArrayType) arrayType).componentType;
+					} else {
+						errors.add("Type " + arrayType + " cannot be indexed" + iexp.getErr());
+						break;
+					}
+				}
+				for(Expression index : indices) {
+					if(index.getType() != VarType.INT)
+						errors.add("An index must have type int" + index.getErr());
 				}
 				
 			} else if(exp instanceof FunctionCallExp) {

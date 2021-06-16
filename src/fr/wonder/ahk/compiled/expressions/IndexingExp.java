@@ -32,12 +32,29 @@ public class IndexingExp extends Expression {
 	@Override
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
 		VarType type = getArray().getType();
-		if(type instanceof VarArrayType) {
-			return ((VarArrayType) type).componentType;
-		} else {
-			errors.add("Type " + type + " cannot be indexed " + getErr());
-			return Invalids.TYPE;
+		int indicesCount = expressions.length-1;
+		for(int i = 0; i < indicesCount; i++) {
+			if(type instanceof VarArrayType) {
+				type = ((VarArrayType) type).componentType;
+			} else {
+				errors.add("Type " + type + " cannot be indexed " + getErr());
+				return Invalids.TYPE;
+			}
 		}
+		return type;
+	}
+	
+	public IndexingExp subIndexingExpression() {
+		if(!(this.type instanceof VarArrayType))
+			throw new IllegalStateException("Cannot sub-index a non-array typed indexing expression");
+		IndexingExp subExp = new IndexingExp(
+				getSource(),
+				getSourceStart(),
+				getSourceStop(),
+				getArray(),
+				Arrays.copyOfRange(expressions, 1, expressions.length-2));
+		subExp.type = ((VarArrayType) this.type).componentType;
+		return subExp;
 	}
 	
 }

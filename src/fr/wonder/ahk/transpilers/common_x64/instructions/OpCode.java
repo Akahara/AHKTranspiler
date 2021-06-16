@@ -32,6 +32,8 @@ public enum OpCode {
 	 * convert quadword to octoword, used in divisions
 	 * to extend signed values in rax to rdx:rax
 	 */
-	CQO, 
+	CQO,
+	/** negates a number */
+	NEG
 	
 }

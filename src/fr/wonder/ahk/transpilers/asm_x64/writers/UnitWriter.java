@@ -15,6 +15,7 @@ import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
@@ -234,7 +235,7 @@ public class UnitWriter {
 		instructions.section(SectionDeclaration.TEXT);
 		instructions.skip();
 		
-		FunctionSection initFunction = new FunctionSection(Invalids.SOURCE, 0, 0, 0);
+		FunctionSection initFunction = new FunctionSection(Invalids.SOURCE, 0, 0, 0, DeclarationModifiers.NONE);
 		
 		// write the initialization function
 		instructions.label(getUnitRegistry(unit) + "_init");
@@ -242,11 +243,16 @@ public class UnitWriter {
 			instructions.createStackFrame();
 			mem.enterFunction(initFunction, 0);
 			for(VariableDeclaration var : initializableVariables) {
-				Expression defaultVal = var.getDefaultValue();
-				if(defaultVal == null)
-					defaultVal = new NoneExp(MemSize.getPointerSize(var.getType()).bytes);
 				Address address = new MemAddress(new LabelAddress(getRegistry(var.getPrototype())));
-				mem.writeTo(address, defaultVal, errors);
+				if(var.modifiers.hasModifier(Modifier.NATIVE)) {
+					String nativeLabel = var.modifiers.getModifier(NativeModifier.class).nativeRef;
+					instructions.mov(address, new LabelAddress(nativeLabel), MemSize.POINTER);
+				} else {
+					Expression defaultVal = var.getDefaultValue();
+					if(defaultVal == null)
+						defaultVal = new NoneExp(MemSize.getPointerSize(var.getType()).bytes);
+					mem.writeTo(address, defaultVal, errors);
+				}
 			}
 			instructions.endStackFrame();
 		}

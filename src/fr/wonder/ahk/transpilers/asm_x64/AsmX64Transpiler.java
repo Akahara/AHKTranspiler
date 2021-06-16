@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import fr.wonder.ahk.AHKTranspiler;
 import fr.wonder.ahk.compiled.AHKManifest;
+import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Unit;
@@ -85,8 +86,14 @@ public class AsmX64Transpiler implements Transpiler {
 	private void validateUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
-				if(!func.modifiers.getModifier(Modifier.NATIVE).validateArgs(func, NativeModifier::parseModifier))
+				if(!func.modifiers.getModifier(Modifier.NATIVE).validateArgs(func, (f,m) -> NativeModifier.parseModifier(m)))
 					errors.add("Invalid native modifier syntax" + func.getErr());
+			}
+		}
+		for(VariableDeclaration var : unit.variables) {
+			if(var.modifiers.hasModifier(Modifier.NATIVE)) {
+				if(!var.modifiers.getModifier(Modifier.NATIVE).validateArgs(var, (v,m) -> NativeModifier.parseModifier(m)))
+					errors.add("Invalid native modifier syntax" + var.getErr());
 			}
 		}
 	}
@@ -155,7 +162,7 @@ public class AsmX64Transpiler implements Transpiler {
 	@Override
 	public Process runProject(ExecutableHandle handle, File dir, ErrorWrapper errors)
 			throws IOException, WrappedException {
-		runCommand("./" + ((ExecutableHandleImpl) handle).manifest.OUTPUT_NAME, dir);
+		runCommand("./" + ((ExecutableHandleImpl) handle).manifest.OUTPUT_NAME + " f", dir);
 		return null;
 	}
 

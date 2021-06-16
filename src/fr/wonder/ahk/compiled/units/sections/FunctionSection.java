@@ -27,9 +27,10 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 	// set by the linker using #makeSignature
 	private FunctionPrototype prototype;
 	
-	public FunctionSection(UnitSource source, int sourceStart, int sourceStop, int declarationStop) {
+	public FunctionSection(UnitSource source, int sourceStart, int sourceStop, int declarationStop, DeclarationModifiers modifiers) {
 		super(source, sourceStart, sourceStop);
 		this.declarationStop = declarationStop;
+		this.modifiers = modifiers;
 	}
 	
 	@Override

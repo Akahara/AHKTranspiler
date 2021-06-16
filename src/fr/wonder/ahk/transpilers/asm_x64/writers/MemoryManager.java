@@ -1,6 +1,7 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
@@ -48,6 +49,7 @@ public class MemoryManager {
 	 */
 	public void writeTo(Address loc, Expression exp, ErrorWrapper errors) {
 		if(exp instanceof NoneExp) {
+			// note: "NONE" is a nasm macro that resolve to "0"
 			writeMov(loc, "NONE", MemSize.getSize(writer.types.getSize(exp.getType())));
 		} else if(exp instanceof LiteralExp) {
 			writeMov(loc, writer.getValueString((LiteralExp<?>) exp), MemSize.getPointerSize(exp.getType()));
@@ -60,6 +62,14 @@ public class MemoryManager {
 		}
 	}
 	
+	/**
+	 * stores the value of #exp in the location of #var
+	 * (this can only be done here as other classes cannot know where #var is stored)
+	 */
+	public void writeTo(VarAccess var, Expression exp, ErrorWrapper errors) {
+		writeTo(currentScope.getVarAddress(var), exp, errors);
+	}
+	
 	/** Moves a literal to #loc, literals being ints, floats, string labels... */
 	private void writeMov(Address loc, String literal, MemSize literalSize) {
 		if(loc instanceof Register && literal.equals("0") || literal.equals("0x0")) {
@@ -68,18 +78,9 @@ public class MemoryManager {
 			writer.instructions.mov(loc, literal);
 		} else if(loc instanceof MemAddress) {
 			moveData(new ImmediateValue(literal), loc, literalSize);
-//			writer.instructions.mov(loc, literal, MemSize.getSize(literalSize));
 		} else {
 			throw new IllegalStateException("Unhandled location type " + loc.getClass());
 		}
-	}
-	
-	/**
-	 * stores the value of #exp in the location of #var
-	 * (this can only be done here as other classes cannot know where #var is stored)
-	 */
-	public void writeTo(VarAccess var, Expression exp, ErrorWrapper errors) {
-		writeTo(currentScope.getVarAddress(var), exp, errors);
 	}
 	
 	/**
@@ -95,6 +96,11 @@ public class MemoryManager {
 		return currentScope.getVarAddress(declaration);
 	}
 	
+	/**
+	 * Writes the consecutive {@code mov} instructions to move any data stored at #from to #to.
+	 * If both addresses are memory addresses, {@code rax} is used as a temporary storage,
+	 * otherwise a single {@code mov} is enough.
+	 */
 	public void moveData(OperationParameter from, Address to) {
 		moveData(from, to, null);
 	}
@@ -120,6 +126,38 @@ public class MemoryManager {
 			from = Register.RAX;
 		}
 		writer.instructions.mov(to, from, cast);
+	}
+
+	public void writeAffectationTo(Expression variable, Expression value, ErrorWrapper errors) {
+		if(variable instanceof VarExp) {
+			writeTo(((VarExp) variable).declaration, value, errors);
+		} else if(variable instanceof IndexingExp) {
+			// TODO this can be heavily optimized
+			IndexingExp exp = (IndexingExp) variable;
+			Expression[] indices = exp.getIndices();
+			if(indices.length > 1) {
+				IndexingExp subExp = exp.subIndexingExpression();
+				writeTo(Register.RAX, subExp, errors);
+			} else {
+				writeTo(Register.RAX, exp.getArray(), errors);
+			}
+			writer.instructions.push(Register.RAX);
+			addStackOffset(8);
+			writeTo(Register.RAX, indices[indices.length-1], errors);
+			writer.instructions.push(Register.RAX);
+			addStackOffset(8);
+			writeTo(Register.RCX, value, errors);
+			writer.instructions.pop(Register.RBX);
+			writer.instructions.pop(Register.RAX);
+			addStackOffset(-16);
+			int pointerSize = MemSize.getPointerSize(exp.getType()).bytes;
+			// TODO check for out of bounds affectations
+			writer.instructions.mov(
+					new MemAddress(Register.RAX, Register.RBX, pointerSize),
+					Register.RCX);
+		} else {
+			errors.add("Cannot affect a value to type " + variable.getType().getName());
+		}
 	}
 	
 }
