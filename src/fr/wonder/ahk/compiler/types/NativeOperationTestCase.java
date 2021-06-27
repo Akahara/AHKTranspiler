@@ -28,6 +28,15 @@ class NativeOperationTestCase {
 				System.out.println();
 			}
 		}
+		
+		System.out.println("\nnull_SUBSTRACT");
+		for(VarType r : types) {
+			NativeOperation op = NativeOperation.getOperation(null, r, Operator.SUBSTRACT, true);
+			if(op == null)
+				System.out.println("_ ");
+			else
+				System.out.println(op.getResultType().getName().charAt(0) + " ");
+		}
 	}
 	
 }

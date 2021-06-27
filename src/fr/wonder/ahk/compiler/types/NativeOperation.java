@@ -1,6 +1,6 @@
 package fr.wonder.ahk.compiler.types;
 
-import static fr.wonder.ahk.compiled.expressions.Operator.ADD;
+import static fr.wonder.ahk.compiled.expressions.Operator.*;
 import static fr.wonder.ahk.compiled.expressions.Operator.NOT;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
@@ -59,6 +59,8 @@ public class NativeOperation implements Operation {
 	private static final NativeOperation STR_ADD_STR = new NativeOperation(STR, STR, ADD, STR);
 	/** boolean negation "!x" */
 	private static final NativeOperation NOT_BOOL = new NativeOperation(null, BOOL, NOT, BOOL);
+	private static final NativeOperation NEG_FLOAT = new NativeOperation(null, FLOAT, SUBSTRACT, FLOAT);
+	private static final NativeOperation NEG_INT = new NativeOperation(null, INT, SUBSTRACT, INT);
 	
 	/**
 	 * I for int, B for bool, F for float, O for check order: check for the same
@@ -70,6 +72,11 @@ public class NativeOperation implements Operation {
 	 * These tables contain the result for operations between native types:
 	 * the column represents the left operand type: B, I or F (in this order),
 	 * and the row represents the right operand type.
+	 * 
+	 * When a cell contains O, it "redirects" to the nearest cell on the descending
+	 * diagonal, this means that a single NativeOperation instance is created
+	 * (ie int_int_ADD) and (if cast is allowed in #getOperation) more than one
+	 * pair of types will use it (ie int,bool bool,int bool,bool and int,int).
 	 */
 	private static final int[][] RESULT_TABLES = {
 			{ // + - *
@@ -108,6 +115,14 @@ public class NativeOperation implements Operation {
 			if(getOrder(r) != -1) // r is int/float/bool
 				return NOT_BOOL;
 			return null;
+		}
+		if(o == Operator.SUBSTRACT && l == null) {
+			if(r == INT)
+				return NEG_INT;
+			else if(r == FLOAT)
+				return NEG_FLOAT;
+			else
+				return null;
 		}
 
 		int lorder = getOrder(l);
