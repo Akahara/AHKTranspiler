@@ -146,5 +146,7 @@ public class Tokens {
 			operatorsMap.put(OP_NEQUALS,Operator.NEQUALS);
 			operatorsMap.put(OP_MOD,	Operator.MOD);
 			operatorsMap.put(OP_NOT,	Operator.NOT);
+			operatorsMap.put(OP_SHR, 	Operator.SHR);
+			operatorsMap.put(OP_SHL, 	Operator.SHL);
 	}
 }

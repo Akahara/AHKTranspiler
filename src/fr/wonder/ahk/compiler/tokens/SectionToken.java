@@ -51,6 +51,8 @@ public enum SectionToken {
 	SEC_KW_EQUAL_MOD	(KW_EQUAL_MOD),
 	SEC_OP_MOD			(OP_MOD),
 	SEC_KW_EQUAL		(KW_EQUAL),
+	SEC_OP_SHR			(OP_SHR),
+	SEC_OP_SHL			(OP_SHL),
 
 	;
 	

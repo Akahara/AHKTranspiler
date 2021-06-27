@@ -2,9 +2,12 @@ package fr.wonder.ahk.compiled.expressions;
 
 public enum Operator {
 	
-	NOT			(5, true),
+	NOT			(-10, true),
+
+	SHR			(0, false),
+	SHL			(0, false),
 	
-	ADD			(10, true),
+	ADD			(10, false),
 	SUBSTRACT	(10, true),
 	MULTIPLY	(20, false),
 	DIVIDE		(20, false),
@@ -16,6 +19,7 @@ public enum Operator {
 	GEQUALS		(50, false),
 	LEQUALS		(50, false),
 	NEQUALS		(50, false),
+	/** Strict egality check '===' */
 	SEQUALS		(60, false),
 	
 	;

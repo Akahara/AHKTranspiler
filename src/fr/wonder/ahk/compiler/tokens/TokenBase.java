@@ -76,6 +76,8 @@ public enum TokenBase {
 	OP_LOWER("<"),
 	OP_MOD("%"),
 	OP_NOT("!"),
+	OP_SHR(">>"),
+	OP_SHL("<<"),
 	
 	OP_DIRECT_PLUS("++"),
 	OP_DIRECT_MINUS("--"),

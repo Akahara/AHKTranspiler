@@ -1,26 +1,32 @@
 package fr.wonder.ahk.compiler.types;
 
+import static fr.wonder.ahk.compiled.expressions.Operator.ADD;
+import static fr.wonder.ahk.compiled.expressions.Operator.NOT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.STR;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Triplet;
-
-import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class NativeOperation implements Operation {
 	
 	private final VarType resultType;
 	private final VarType leftOperand, rightOperand;
 	private final String registry;
-
+	
 	private NativeOperation(VarType l, VarType r, Operator o, VarType resultType) {
 		this.resultType = resultType;
 		this.leftOperand = l;
 		this.rightOperand = r;
-		this.registry = (l == null ? "" : l.getName())+'_'+r.getName()+'_'+o.name();
+		this.registry = (l == null ? "" : l.getName()+'_') + r.getName()+'_'+o.name();
 	}
 	
 	@Override
@@ -43,66 +49,130 @@ public class NativeOperation implements Operation {
 		return registry;
 	}
 	
+	/** Used to minimize the number */
 	private static final VarType[] nativeOrder = { BOOL, INT, FLOAT };
+	
 	private static final int getOrder(VarType t) {
-		for(int i = 0; i < nativeOrder.length; i++)
-			if(t == nativeOrder[i])
-				return i;
-		return -1;
+		return ArrayOperator.indexOf(nativeOrder, t);
 	}
 	
-	private static final Map<Triplet<VarType, VarType, Operator>, NativeOperation> nativeOperations = new HashMap<>();
+	private static final NativeOperation STR_ADD_STR = new NativeOperation(STR, STR, ADD, STR);
+	/** boolean negation "!x" */
+	private static final NativeOperation NOT_BOOL = new NativeOperation(null, BOOL, NOT, BOOL);
+	
+	/**
+	 * I for int, B for bool, F for float, O for check order: check for the same
+	 * operation with higher order types (bool+int refers to int+int for example),
+	 * X for none.
+	 */
+	private static final int I=1,B=0,F=2,O=-1,X=-2;
+	/**
+	 * These tables contain the result for operations between native types:
+	 * the column represents the left operand type: B, I or F (in this order),
+	 * and the row represents the right operand type.
+	 */
+	private static final int[][] RESULT_TABLES = {
+			{ // + - *
+				O,O,O,
+				O,I,O,
+				O,O,F
+			},
+			{ // == != < > <= >= ===
+				B,O,O,
+				O,B,O,
+				O,O,B
+			},
+			{ // / %
+				X,X,X,
+				X,I,O,
+				X,O,F
+			},
+			{ // << >>
+				X,O,X,
+				O,I,X,
+				X,X,X
+			}
+	};
+	
+	private static final Map<Triplet<Integer, Integer, Operator>, NativeOperation> strictOperations = new HashMap<>();
+	private static final Map<Triplet<Integer, Integer, Operator>, NativeOperation> castedOperations = new HashMap<>();
+	
+	/** May return null */
+	public static NativeOperation getOperation(VarType l, VarType r, Operator o, boolean allowCast) {
+		// "special" operators
+		if(l == STR && r == STR && o == ADD)
+			return STR_ADD_STR;
+		if(o == Operator.NOT) {
+			if(l == null)
+				throw new IllegalArgumentException("The negation operation takes one argument only");
+			if(getOrder(r) != -1) // r is int/float/bool
+				return NOT_BOOL;
+			return null;
+		}
 
-	private static void createOperation(VarType l, VarType r, Operator o, VarType result) {
-		nativeOperations.put(new Triplet<>(l, r, o), new NativeOperation(l, r, o, result));
-	}
-	
-	static {
-		createOperation(INT,  INT, ADD,       INT);
-		createOperation(INT,  INT, SUBSTRACT, INT);
-		createOperation(null, INT, SUBSTRACT, INT);
-		createOperation(INT,  INT, MULTIPLY,  INT);
-		createOperation(INT,  INT, DIVIDE,    INT);
-		createOperation(INT,  INT, MOD,       INT);
-		createOperation(INT,  INT, EQUALS,    BOOL);
-		createOperation(INT,  INT, GREATER,   BOOL);
-		createOperation(INT,  INT, GEQUALS,   BOOL);
-		createOperation(INT,  INT, LOWER,     BOOL);
-		createOperation(INT,  INT, LEQUALS,   BOOL);
-		createOperation(INT,  INT, NEQUALS,   BOOL);
+		int lorder = getOrder(l);
+		int rorder = getOrder(r);
 		
-		createOperation(FLOAT, FLOAT, ADD,       FLOAT);
-		createOperation(FLOAT, FLOAT, SUBSTRACT, FLOAT);
-		createOperation(null,  FLOAT, SUBSTRACT, FLOAT);
-		createOperation(FLOAT, FLOAT, MULTIPLY,  FLOAT);
-		createOperation(FLOAT, FLOAT, DIVIDE,    FLOAT);
-		createOperation(FLOAT, FLOAT, MOD,       FLOAT);
-		createOperation(FLOAT, FLOAT, EQUALS,    BOOL);
-		createOperation(FLOAT, FLOAT, GREATER,   BOOL);
-		createOperation(FLOAT, FLOAT, GEQUALS,   BOOL);
-		createOperation(FLOAT, FLOAT, LOWER,     BOOL);
-		createOperation(FLOAT, FLOAT, LEQUALS,   BOOL);
-
-		createOperation(BOOL, BOOL, EQUALS,  BOOL);
-		createOperation(BOOL, BOOL, NEQUALS, BOOL);
+		if(lorder == -1 || rorder == -1)
+			return null;
 		
-		createOperation(STR, STR, ADD, STR);
+		var key = new Triplet<>(lorder, rorder, o);
+		
+		var operationsMap = allowCast ? castedOperations : strictOperations;
+		if(operationsMap.containsKey(key))
+			return operationsMap.get(key);
+		
+		int[] table = getOperatorTable(o);
+		int resultOrder = table[lorder+rorder*3];
+		
+		VarType result = resultOrder < 0 ? null : nativeOrder[resultOrder];
+		NativeOperation strictOperation = result == null ? null : new NativeOperation(l, r, o, result);
+		NativeOperation castedOperation = strictOperation;
+		strictOperations.put(key, strictOperation);
+		
+		if(resultOrder == O) { // O means "refer to the upper order type"
+			int castedOrder = Math.max(Math.max(lorder, rorder), I);
+			resultOrder = table[castedOrder*4];
+			var castedKey = new Triplet<>(castedOrder, castedOrder, o);
+			if(strictOperations.containsKey(castedKey)) {
+				castedOperation = strictOperations.get(castedKey);
+			} else {
+				VarType castedType = nativeOrder[castedOrder];
+				castedOperation = resultOrder < 0 ? null : new NativeOperation(
+						castedType, castedType, o, nativeOrder[resultOrder]);
+				strictOperations.put(castedKey, castedOperation);
+				castedOperations.put(castedKey, castedOperation);
+			}
+		}
+		castedOperations.put(key, castedOperation);
+		
+		return allowCast ? castedOperation : strictOperation;
 	}
 	
-	/** This function may return null */
-	private static NativeOperation getStrict(VarType l, VarType r, Operator o) {
-		return nativeOperations.get(new Triplet<>(l, r, o));
-	}
-
-	public static NativeOperation getOperation(VarType leftOp, VarType rightOp, Operator operator, boolean allowCast) {
-		if(!allowCast)
-			return getStrict(leftOp, rightOp, operator);
-		int lo = getOrder(leftOp);
-		int ro = getOrder(rightOp);
-		if(lo == -1 || ro == -1)
-			return getStrict(leftOp, rightOp, operator);
-		int maxOrder = lo > ro ? lo : ro;
-		return getStrict(nativeOrder[maxOrder], nativeOrder[maxOrder], operator);
+	private static int[] getOperatorTable(Operator o) {
+		switch(o) {
+		case ADD:
+		case SUBSTRACT:
+		case MULTIPLY:
+			return RESULT_TABLES[0];
+		case EQUALS:
+		case GEQUALS:
+		case GREATER:
+		case LEQUALS:
+		case LOWER:
+		case NEQUALS:
+		case SEQUALS:
+			return RESULT_TABLES[1];
+		case DIVIDE:
+		case MOD:
+			return RESULT_TABLES[2];
+		case SHL:
+		case SHR:
+			return RESULT_TABLES[3];
+		case NOT:
+		default:
+			throw new UnreachableException();
+		}
 	}
 	
 }
