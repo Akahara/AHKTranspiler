@@ -61,13 +61,15 @@ public class AsmOperationWriter {
 	
 	static {
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, ADD, false), AsmOperationWriter::op_intADDint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, SUBSTRACT, false), AsmOperationWriter::op_intSUBint);
+		nativeOperations.put(NativeOperation.getOperation(null, INT, SUBSTRACT, false), AsmOperationWriter::op_nullSUBint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MULTIPLY, false), AsmOperationWriter::op_intMULint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, DIVIDE, false), AsmOperationWriter::op_intDIVint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MOD, false), AsmOperationWriter::op_intMODint);
-		nativeOperations.put(NativeOperation.getOperation(INT, INT, SUBSTRACT, false), AsmOperationWriter::op_intSUBint);
-		nativeOperations.put(NativeOperation.getOperation(null, INT, SUBSTRACT, false), AsmOperationWriter::op_nullSUBint);
 		
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, ADD, false), AsmOperationWriter::op_floatADDfloat);
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, SUBSTRACT, false), AsmOperationWriter::op_floatSUBfloat);
+		nativeOperations.put(NativeOperation.getOperation(null, FLOAT, SUBSTRACT, false), AsmOperationWriter::op_nullSUBfloat);
 		
 		Assertions.assertNull(nativeOperations.get(null), "An unimplemented native operation was given an asm implementation");
 	}
@@ -198,6 +200,26 @@ public class AsmOperationWriter {
 		asmWriter.writer.instructions.add(OpCode.FADDP);
 		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
 		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+	}
+	
+	private static void op_floatSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
+		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		if(ro instanceof FloatLiteral && ((FloatLiteral) ro).value == 1) {
+			asmWriter.writer.instructions.add(OpCode.FLD1);
+		} else {
+			asmWriter.writer.mem.moveData(GlobalLabels.ADDRESS_FLOATST, ro, MemSize.QWORD);
+			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		}
+		asmWriter.writer.instructions.add(OpCode.FSUBP);
+		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+	}
+	
+	private static void op_nullSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
+		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, GlobalLabels.ADDRESS_VAL_FSIGNBIT);
 	}
 	
 	/* =============================================== Jumps ============================================== */

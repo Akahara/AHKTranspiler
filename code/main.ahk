@@ -62,9 +62,10 @@ func int main() {
 		Kernel.print(i%5);
 		Kernel.println();
 	}
-	Kernel.println("------ Expected -1 3 -2");
+	Kernel.println("------ Expected -1 3 -2 -3");
 	Kernel.println(-2/2);
 	Kernel.println(int:(3.8));
 	Kernel.println(int:(2+(-3.5)));
+	Kernel.println(int:(-(3.+0.)));
 	return 5;
 }

@@ -1,0 +1,11 @@
+global global_val_zero
+global global_val_one
+global global_val_two
+global global_val_fsignbit
+
+section .data
+
+global_val_zero dq 0
+global_val_one dq 1
+global_val_two dq 2
+global_val_fsignbit dq 0x8000000000000000

@@ -119,6 +119,8 @@ class ExpressionWriter {
 		case LEQUALS:	return "<=";
 		case LOWER:		return "<";
 		case DIVIDE:	return o.getType() == VarType.INT ? "//" : "/";
+		case SHL:		return "<<";
+		case SHR:		return ">>";
 		}
 		throw new IllegalStateException("Unknown operator " + o);
 	}

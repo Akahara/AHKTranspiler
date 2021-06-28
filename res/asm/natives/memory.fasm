@@ -2,7 +2,7 @@
 
 global mem_init
 global mem_alloc_block
-extern e_throw
+extern error_throw
 
 section .data
 
@@ -139,7 +139,7 @@ grow_heap:
   cmp rax,rbx
   je .success
   mov rax,E_BRK_ERROR
-  call e_throw
+  call error_throw
 .success:
   ; fill the allocated space with 0xcc
   mov rdi,[current_break]
@@ -227,7 +227,7 @@ get_empty_block:
   cmp rsi,0xffff
   jle .alloc
   mov rax,E_ALLOC_OVERFLOW ; too large size
-  call e_throw
+  call error_throw
 .alloc:
   
   ; rsi = S the size of the block to allocate

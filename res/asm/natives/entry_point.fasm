@@ -15,9 +15,9 @@
 ; are replaced at compile time by the manifest value
 ; for "entry-point".
 ; 
-; ;The FPU is initialized with rounding countrol set
-; ;toward 0. The variable "floatst" is stored in
-; ;FPUControl.fasm
+; The FPU is initialized with rounding control set
+; to round down. The variable "global_floatst" is stored
+; in kernel.fasm
 ; 
 ; There must be no other global _start method in any
 ; other .asm file.
@@ -32,7 +32,7 @@ segment .text
 global _main
 
 extern &entry_point
-extern floatst
+extern global_floatst
 extern ker_init
 extern mem_init
 extern ahk_Kernel_print_hex
@@ -48,11 +48,11 @@ _main:
   ; see http://www.nacad.ufrj.br/online/intel/Documentation/en_US/compiler_f/main_for/fpops/fortran/fpops_contw_f.htm
   ; for the floating point control word
   finit
-  fnstcw [floatst]
-  mov ax,[floatst]
+  fnstcw [global_floatst]
+  mov ax,[global_floatst]
   or ax,0x400
-  mov [floatst],ax
-  fldcw [floatst]
+  mov [global_floatst],ax
+  fldcw [global_floatst]
   
   ; call the dynamic memory allocation initialization
   call mem_init

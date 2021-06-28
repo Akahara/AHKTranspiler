@@ -99,9 +99,9 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 
 	private static String writeUnit(TranspilableHandle handle, Unit unit, File dir, ErrorWrapper errors) throws IOException {
-		String file = unit.fullBase.replaceAll("\\.", "/");
+		String file = unit.fullBase.replaceAll("\\.", "/")+".asm";
 		InstructionSet instructions = UnitWriter.writeUnit(handle, unit, errors);
-		File f = new File(dir, file+".asm");
+		File f = new File(dir, file);
 		if(!f.isFile()) { f.getParentFile().mkdirs(); f.createNewFile(); }
 		FilesUtils.write(f, instructions.toString());
 		return file;
@@ -115,7 +115,7 @@ public class AsmX64Transpiler implements Transpiler {
 		
 		String nasm = handle.manifest.NASM_PATH + " -f " + handle.manifest.BUILD_ARCHITECTURE + " ";
 		if(handle.manifest.DEBUG_SYMBOLS) nasm += "-g -F dwarf ";
-		String asme = ".asm -o obj_files/";
+		String asme = " -o obj_files/";
 		
 		boolean compiled = true;
 		

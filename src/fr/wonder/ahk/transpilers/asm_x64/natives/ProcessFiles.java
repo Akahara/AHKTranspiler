@@ -27,7 +27,7 @@ public class ProcessFiles {
 	}
 	
 	static {
-		AHK_LIB.put("ahk.Kernel", (h, d, e) -> copyNative(d, "asm/natives/kernel.fasm", "natives/kernel"));
+		AHK_LIB.put("ahk.Kernel", (h, d, e) -> copyNative(d, "asm/natives/kernel.fasm", "natives/kernel.asm"));
 	}
 	
 	public static String[] writeFiles(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
@@ -35,8 +35,9 @@ public class ProcessFiles {
 		
 		files.add(writeIntrinsic(handle, dir, errors));
 		files.add(writeEntryPoint(handle, dir, errors));
-		files.add(copyNative(dir, "asm/natives/memory.fasm", "natives/memory"));
-		files.add(copyNative(dir, "asm/natives/errors.fasm", "natives/errors"));
+		files.add(copyNative(dir, "asm/natives/memory.fasm", "natives/memory.asm"));
+		files.add(copyNative(dir, "asm/natives/errors.fasm", "natives/errors.asm"));
+		files.add(copyNative(dir, "asm/natives/values.fasm", "natives/values.asm"));
 		
 		for(Entry<String, FileWriter> unit : AHK_LIB.entrySet()) {
 			if(handle.requiresNative(unit.getKey())) {
@@ -66,7 +67,7 @@ public class ProcessFiles {
 	}
 	
 	private static String writeFile(File dir, String source, String name) throws IOException {
-		File f = new File(dir, name+".asm");
+		File f = new File(dir, name);
 		f.getParentFile().mkdirs();
 		f.createNewFile();
 		FilesUtils.write(f, source);
@@ -88,7 +89,7 @@ public class ProcessFiles {
 		}, "");
 		String source = formatNative("asm/natives/intrinsic.fasm", 
 				"&SYSCALLS", syscalls);
-		return writeFile(dir, source, "intrinsic");
+		return writeFile(dir, source, "intrinsic.asm");
 	}
 	
 	private static String writeEntryPoint(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
@@ -104,7 +105,7 @@ public class ProcessFiles {
 				"&entry_point", UnitWriter.getRegistry(handle.manifest.entryPointFunction.getPrototype()),
 				"&units_initialization_externs", initializationFunctionsExterns,
 				"&units_initialization_calls", initializationFunctionsCalls);
-		return writeFile(dir, source, "natives/entry_point");
+		return writeFile(dir, source, "natives/entry_point.asm");
 	}
 	
 }

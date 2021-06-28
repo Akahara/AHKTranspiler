@@ -1,7 +1,5 @@
 %include"intrinsic.asm"
 
-section .data
-
 global ker_init
 global ker_exit
 global ahk_Kernel_argv
@@ -12,18 +10,31 @@ global ahk_Kernel_print_dec
 global ahk_Kernel_print_str
 global ahk_Kernel_print_strlen
 global ahk_Kernel_print_ln
-global floatst
+global global_floatst
+
+
+
+section .data
 
 extern mem_alloc_block
 
 ln_chars db `\n`,0xa
-hex_chars db '0x................',0xa  ; hexadecimal characters
+hex_chars db '0x................',0xa     ; hexadecimal characters
 dec_chars db '-00000000000000000000',0xa  ; decimal characters, a 64 bits integer will always fit in 20 digites and the - sign
+
+
 
 section .bss
 
+; argv, the address pointing to the array of process argument
+; strings
 ahk_Kernel_argv resq 1
-floatst resq 1
+
+; global_floatst, the designated memory location for transfers
+; to and from the fpu stack (st(0) to st(7))
+global_floatst resq 1
+
+
 
 section .text
   

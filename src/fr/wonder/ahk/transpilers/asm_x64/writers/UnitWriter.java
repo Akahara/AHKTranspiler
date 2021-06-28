@@ -176,9 +176,12 @@ public class UnitWriter {
 		}
 		if(unit.functions.length != 0)
 			instructions.skip();
+		
 		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_FLOATST));
 		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_ALLOC));
 		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_THROW));
+		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_VAL_FSIGNBIT));
+		
 		for(VarAccess i : unit.prototype.externalAccesses) {
 			// i can safely be casted to a prototype because it cannot be a function
 			// argument. It's either a Variable or a Function prototype.
