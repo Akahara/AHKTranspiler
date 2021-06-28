@@ -26,10 +26,10 @@ func int gcd2(int x, int y) {
 }
 
 func int main() {
-	Kernel.println("Expected: argc argv[1]");
+	Kernel.println("------ Expected: argc argv[1]");
 	Kernel.println(sizeof(Kernel.argv));
 	Kernel.println(Kernel.argv[1]);
-	Kernel.println("Expected: 4 6 6 2 1 10");
+	Kernel.println("------ Expected: 4 6 6 2 1 10");
 	int c = 2;
 	int l = 4;
 	int j = 3;
@@ -43,7 +43,7 @@ func int main() {
 	Kernel.println(7/3);
 	Kernel.println(7%3);
 	Kernel.println(gi+c);
-	Kernel.println("Expected str 56 42 37 3 32");
+	Kernel.println("------ Expected str 56 42 37 3 32");
 	Kernel.println(x);
 	Kernel.println(array[0]);
 	Kernel.println(array[1]);
@@ -51,6 +51,7 @@ func int main() {
 	Kernel.println(sizeof(array));
 	array[1] = 32;
 	Kernel.println(array[1]);
+	Kernel.println("------ Expected a division/modulus table");
 	for(int i : -10..10) {
 		Kernel.print(i);
 		Kernel.print(" / 5 = ");
@@ -61,7 +62,9 @@ func int main() {
 		Kernel.print(i%5);
 		Kernel.println();
 	}
-	Kernel.println("Expected -1");
+	Kernel.println("------ Expected -1 3 -2");
 	Kernel.println(-2/2);
+	Kernel.println(int:(3.8));
+	Kernel.println(int:(2+(-3.5)));
 	return 5;
 }

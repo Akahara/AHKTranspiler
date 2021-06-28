@@ -12,6 +12,7 @@ import fr.wonder.ahk.transpilers.common_x64.declarations.Comment;
 import fr.wonder.ahk.transpilers.common_x64.declarations.EmptyLine;
 import fr.wonder.ahk.transpilers.common_x64.declarations.Label;
 import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
+import fr.wonder.ahk.transpilers.common_x64.instructions.CastedInstruction;
 import fr.wonder.ahk.transpilers.common_x64.instructions.Instruction;
 import fr.wonder.ahk.transpilers.common_x64.instructions.MovOperation;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
@@ -37,6 +38,19 @@ public class InstructionSet {
 				OperationParameter[]::new,
 				InstructionSet::asOperationParameter);
 		add(new Operation(instruction, ps));
+	}
+	
+	public void addCasted(OpCode instruction, Object... params) {
+		Object[] ps = ArrayOperator.map(
+				params,
+				InstructionSet::asExtendedOperationParameter);
+		add(new CastedInstruction(instruction, ps));
+	}
+	
+	private static Object asExtendedOperationParameter(Object param) {
+		if(param instanceof MemSize)
+			return param;
+		return asOperationParameter(param);
 	}
 	
 	private static OperationParameter asOperationParameter(Object param) {

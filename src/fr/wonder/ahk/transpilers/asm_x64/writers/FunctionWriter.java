@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -143,14 +142,14 @@ public class FunctionWriter {
 			if(s instanceof SectionEndSt) {
 				current = sections.remove(sections.size()-1);
 			} else if(s instanceof VariableDeclaration) {
-				current += MemSize.getPointerSize(((VariableDeclaration) s).getType()).bytes;
+				current += MemSize.POINTER_SIZE;
 				max = Math.max(current, max);
 			} else if(s instanceof ForSt && ((ForSt) s).declaration != null) {
-				current += MemSize.getPointerSize(((ForSt) s).declaration.getType()).bytes;
+				current += MemSize.POINTER_SIZE;
 				max = Math.max(current, max);
 				sections.add(current);
 			} else if(s instanceof RangedForSt) {
-				current += MemSize.getPointerSize(((RangedForSt) s).getVariableDeclaration().getType()).bytes;
+				current += MemSize.POINTER_SIZE;
 				max = Math.max(current, max);
 				sections.add(current);
 			} else if(SECTION_STATEMENTS.contains(s.getClass())) {
@@ -161,10 +160,7 @@ public class FunctionWriter {
 	}
 	
 	public static int getArgumentsSize(FunctionPrototype func) {
-		int size = 0;
-		for(VarType arg : func.functionType.arguments)
-			size += MemSize.getPointerSize(arg).bytes;
-		return size;
+		return func.functionType.arguments.length * MemSize.POINTER_SIZE;
 	}
 	
 	private String getLabel(Statement st) {

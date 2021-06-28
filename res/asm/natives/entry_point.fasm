@@ -35,6 +35,7 @@ extern &entry_point
 extern floatst
 extern ker_init
 extern mem_init
+extern ahk_Kernel_print_hex
 
 &units_initialization_externs
 
@@ -43,11 +44,13 @@ _main:
   mov rbp,rsp
   
   ; initialize the floating point unit (FPU)
-  ; set rounding control to round to 0 with 0xc00
+  ; set rounding control to round down with 0x400
+  ; see http://www.nacad.ufrj.br/online/intel/Documentation/en_US/compiler_f/main_for/fpops/fortran/fpops_contw_f.htm
+  ; for the floating point control word
   finit
   fnstcw [floatst]
   mov ax,[floatst]
-  or ax,0xc00
+  or ax,0x400
   mov [floatst],ax
   fldcw [floatst]
   

@@ -6,7 +6,6 @@ import java.util.List;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -42,18 +41,14 @@ class Scope {
 	
 	Address getVarAddress(VarAccess var) {
 		// search through the stack frame
-		int loc = 0;
-		for(VariableDeclaration v : variables) {
-			loc += MemSize.getPointerSize(v.getType()).bytes;
-			if(var.matchesDeclaration(v))
-				return new MemAddress(Register.RSP, stackSpace-loc+stackOffset);
+		for(int i = 0; i < variables.size(); i++) {
+			if(var.matchesDeclaration(variables.get(i)))
+				return new MemAddress(Register.RSP, stackSpace-(i+1)*MemSize.POINTER_SIZE+stackOffset);
 		}
 		// search through the function arguments
-		loc = 16;
-		for(FunctionArgument a : func.arguments) {
-			if(var.matchesDeclaration(a))
-				return new MemAddress(Register.RBP, loc);
-			loc += MemSize.getPointerSize(a.getType()).bytes;
+		for(int i = 0; i < func.arguments.length; i++) {
+			if(var.matchesDeclaration(func.arguments[i]))
+				return new MemAddress(Register.RBP, (i+2)*MemSize.POINTER_SIZE);
 		}
 		// TODO check if #var is accessible
 		// search through global variables

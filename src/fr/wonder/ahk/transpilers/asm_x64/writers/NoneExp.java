@@ -27,13 +27,9 @@ public class NoneExp extends Expression {
 		}
 	}
 	
-	/** The size (in bytes) of the "none" value */
-	public final int size;
-	
 	/** @see NoneExp */
-	public NoneExp(int size) {
+	public NoneExp() {
 		super(null, 0, 0);
-		this.size = size;
 		this.type = NoneType.INSTANCE;
 	}
 

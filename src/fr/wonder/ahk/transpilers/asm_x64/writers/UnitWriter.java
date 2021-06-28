@@ -250,7 +250,7 @@ public class UnitWriter {
 				} else {
 					Expression defaultVal = var.getDefaultValue();
 					if(defaultVal == null)
-						defaultVal = new NoneExp(MemSize.getPointerSize(var.getType()).bytes);
+						defaultVal = new NoneExp();
 					mem.writeTo(address, defaultVal, errors);
 				}
 			}

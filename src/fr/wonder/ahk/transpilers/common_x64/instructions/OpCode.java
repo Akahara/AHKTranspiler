@@ -33,7 +33,21 @@ public enum OpCode {
 	 * to extend signed values in rax to rdx:rax
 	 */
 	CQO,
-	/** negates a number */
-	NEG
+	/** negates a number in a register */
+	NEG,
+	
+	
+	/** FPU: load float on top of the fpu stack */
+	FLD,
+	/** FPU: converts and load an int on top of the fpu stack */
+	FILD,
+	/** FPU: converts the top of the fpu stack to an int and pop it to memory*/
+	FISTP,
+	/** FPU: pops the top of the fpu stack to memory */
+	FSTP,
+	/** FPU: add the value 1 on the stack */
+	FLD1,
+	/** FPU: add st(0) and st(1), store to st(1) and pop */
+	FADDP,
 	
 }

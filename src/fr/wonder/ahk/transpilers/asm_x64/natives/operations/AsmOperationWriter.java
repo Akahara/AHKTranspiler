@@ -1,6 +1,14 @@
 package fr.wonder.ahk.transpilers.asm_x64.natives.operations;
 
-import static fr.wonder.ahk.compiled.expressions.Operator.*;
+import static fr.wonder.ahk.compiled.expressions.Operator.ADD;
+import static fr.wonder.ahk.compiled.expressions.Operator.DIVIDE;
+import static fr.wonder.ahk.compiled.expressions.Operator.EQUALS;
+import static fr.wonder.ahk.compiled.expressions.Operator.LOWER;
+import static fr.wonder.ahk.compiled.expressions.Operator.MOD;
+import static fr.wonder.ahk.compiled.expressions.Operator.MULTIPLY;
+import static fr.wonder.ahk.compiled.expressions.Operator.NEQUALS;
+import static fr.wonder.ahk.compiled.expressions.Operator.SUBSTRACT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
 
 import java.util.HashMap;
@@ -8,6 +16,7 @@ import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
@@ -15,13 +24,14 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
+import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
+import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.types.Tuple;
 import fr.wonder.commons.utils.Assertions;
 
@@ -56,7 +66,9 @@ public class AsmOperationWriter {
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MOD, false), AsmOperationWriter::op_intMODint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, SUBSTRACT, false), AsmOperationWriter::op_intSUBint);
 		nativeOperations.put(NativeOperation.getOperation(null, INT, SUBSTRACT, false), AsmOperationWriter::op_nullSUBint);
-	
+		
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, ADD, false), AsmOperationWriter::op_floatADDfloat);
+		
 		Assertions.assertNull(nativeOperations.get(null), "An unimplemented native operation was given an asm implementation");
 	}
 	
@@ -104,7 +116,7 @@ public class AsmOperationWriter {
 		}
 		writer.mem.writeTo(Register.RAX, e1, errors);
 		if(e2 instanceof LiteralExp) {
-			return new ImmediateValue(((LiteralExp<?>) e2).toString());
+			return new ImmediateValue(writer.getValueString((LiteralExp<?>) e2));
 		} else if(e2 instanceof VarExp) {
 			return writer.mem.getVarAddress(((VarExp) e2).declaration);
 		} else {
@@ -173,6 +185,21 @@ public class AsmOperationWriter {
 		asmWriter.writer.instructions.add(OpCode.IDIV, Register.RBX);
 	}
 	
+	private static void op_floatADDfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, true, errors);
+		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		if(ro instanceof FloatLiteral && ((FloatLiteral) ro).value == 1) {
+			asmWriter.writer.instructions.add(OpCode.FLD1);
+		} else {
+			asmWriter.writer.mem.moveData(GlobalLabels.ADDRESS_FLOATST, ro, MemSize.QWORD);
+			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		}
+		asmWriter.writer.instructions.add(OpCode.FADDP);
+		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+	}
+	
 	/* =============================================== Jumps ============================================== */
 	
 	/**
@@ -229,16 +256,17 @@ public class AsmOperationWriter {
 	}
 	
 	private static void conv_intTOfloat(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-//		asmWriter.writer.buffer.writeLine("; conv");
-		throw new UnimplementedException();
+		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
 	}
 	
 	private static void conv_floatTOint(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		throw new UnimplementedException();
-//		asmWriter.writer.buffer.writeLine("mov ["+floatst+"],rax"); // floatst -> GlobalLabels.floatst
-//		asmWriter.writer.buffer.writeLine("fld qword["+floatst+"]");
-//		asmWriter.writer.buffer.writeLine("fistp qword["+floatst+"]");
-//		asmWriter.writer.buffer.writeLine("mov rax,["+floatst+"]");
+		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.addCasted(OpCode.FISTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
 	}
 	
 }

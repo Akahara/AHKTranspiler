@@ -37,9 +37,9 @@ public abstract class LiteralExp<T> extends Expression {
 		
 	}
 	
-	public static class FloatLiteral extends LiteralExp<Float> {
+	public static class FloatLiteral extends LiteralExp<Double> {
 		
-		public FloatLiteral(UnitSource source, int sourceStart, int sourceStop, float f) {
+		public FloatLiteral(UnitSource source, int sourceStart, int sourceStop, double f) {
 			super(source, sourceStart, sourceStop, f);
 		}
 

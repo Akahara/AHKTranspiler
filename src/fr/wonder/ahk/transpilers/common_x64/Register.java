@@ -9,7 +9,7 @@ public class Register implements Address {
 	public static final Register RCX = new Register("rcx");
 	public static final Register RDX = new Register("rdx");
 	
-	public static final Register EAX = new Register("eax");
+//	public static final Register EAX = new Register("eax");
 	
 	public static final Register RSP = new Register("rsp");
 	public static final Register RBP = new Register("rbp");

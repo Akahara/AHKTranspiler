@@ -50,15 +50,15 @@ public class MemoryManager {
 	public void writeTo(Address loc, Expression exp, ErrorWrapper errors) {
 		if(exp instanceof NoneExp) {
 			// note: "NONE" is a nasm macro that resolve to "0"
-			writeMov(loc, "NONE", MemSize.getSize(writer.types.getSize(exp.getType())));
+			writeMov(loc, "NONE", MemSize.POINTER);
 		} else if(exp instanceof LiteralExp) {
-			writeMov(loc, writer.getValueString((LiteralExp<?>) exp), MemSize.getPointerSize(exp.getType()));
+			writeMov(loc, writer.getValueString((LiteralExp<?>) exp), MemSize.POINTER);
 		} else if(exp instanceof VarExp) {
-			moveData(currentScope.getVarAddress(((VarExp) exp).declaration), loc);
+			moveData(loc, currentScope.getVarAddress(((VarExp) exp).declaration));
 		} else {
 			writer.expWriter.writeExpression(exp, errors);
 			if(loc != Register.RAX)
-				moveData(Register.RAX, loc);
+				moveData(loc, Register.RAX);
 		}
 	}
 	
@@ -77,7 +77,7 @@ public class MemoryManager {
 		} else if(loc instanceof Register || loc instanceof LabelAddress) {
 			writer.instructions.mov(loc, literal);
 		} else if(loc instanceof MemAddress) {
-			moveData(new ImmediateValue(literal), loc, literalSize);
+			moveData(loc, new ImmediateValue(literal), literalSize);
 		} else {
 			throw new IllegalStateException("Unhandled location type " + loc.getClass());
 		}
@@ -101,8 +101,8 @@ public class MemoryManager {
 	 * If both addresses are memory addresses, {@code rax} is used as a temporary storage,
 	 * otherwise a single {@code mov} is enough.
 	 */
-	public void moveData(OperationParameter from, Address to) {
-		moveData(from, to, null);
+	public void moveData(Address to, OperationParameter from) {
+		moveData(to, from, null);
 	}
 
 	/**
@@ -110,22 +110,30 @@ public class MemoryManager {
 	 * If both addresses are memory addresses, {@code rax} is used as a temporary storage,
 	 * otherwise a single {@code mov} is enough.
 	 */
-	public void moveData(OperationParameter from, Address to, MemSize cast) {
+	public void moveData(Address to, OperationParameter from, MemSize cast) {
 		if(from instanceof MemAddress && ((MemAddress) from).base instanceof MemAddress) {
 			MemAddress f = (MemAddress) from;
-			moveData(f.base, Register.RAX);
+			moveData(Register.RAX, f.base);
 			from = new MemAddress(Register.RAX, f.index, f.scale, f.offset);
 		}
 		if(to instanceof MemAddress && ((MemAddress) to).base instanceof MemAddress) {
 			MemAddress t = (MemAddress) to;
-			moveData(t.base, Register.RBX);
+			moveData(Register.RBX, t.base);
 			to = new MemAddress(Register.RBX, t.index, t.scale, t.offset);
 		}
 		if(from instanceof MemAddress && to instanceof MemAddress) {
-			moveData(from, Register.RAX);
+			moveData(Register.RAX, from);
 			from = Register.RAX;
 		}
-		writer.instructions.mov(to, from, cast);
+		
+		
+		if(from instanceof ImmediateValue && to instanceof MemAddress) {
+			//  mov mem,imm64  does not exist, we must use rax to pass data
+			moveData(Register.RAX, from);
+			moveData(to, Register.RAX);
+		} else {
+			writer.instructions.mov(to, from, cast);
+		}
 	}
 
 	public void writeAffectationTo(Expression variable, Expression value, ErrorWrapper errors) {
@@ -150,10 +158,9 @@ public class MemoryManager {
 			writer.instructions.pop(Register.RBX);
 			writer.instructions.pop(Register.RAX);
 			addStackOffset(-16);
-			int pointerSize = MemSize.getPointerSize(exp.getType()).bytes;
 			// TODO check for out of bounds affectations
 			writer.instructions.mov(
-					new MemAddress(Register.RAX, Register.RBX, pointerSize),
+					new MemAddress(Register.RAX, Register.RBX, MemSize.POINTER_SIZE),
 					Register.RCX);
 		} else {
 			errors.add("Cannot affect a value to type " + variable.getType().getName());

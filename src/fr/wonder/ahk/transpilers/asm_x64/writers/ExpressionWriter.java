@@ -64,11 +64,9 @@ public class ExpressionWriter {
 				writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
 				writer.mem.addStackOffset(argsSpace);
 			}
-			int offset = 0;
 			for(int i = 0; i < arguments.length; i++) {
 				Expression arg = arguments[i];
-				writer.mem.writeTo(new MemAddress(Register.RSP, offset), arg, errors);
-				offset += MemSize.getPointerSize(arg.getType()).bytes;
+				writer.mem.writeTo(new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE), arg, errors);
 			}
 			writer.instructions.call(UnitWriter.getRegistry(function));
 			writer.mem.addStackOffset(-argsSpace);
@@ -95,13 +93,12 @@ public class ExpressionWriter {
 	}
 	
 	private void writeArrayExp(ArrayExp exp, ErrorWrapper errors) {
-		int elemSize = MemSize.getPointerSize(exp.getType().componentType).bytes;
-		writer.callAlloc(exp.getLength()*elemSize);
+		writer.callAlloc(exp.getLength()*MemSize.POINTER_SIZE);
 		if(exp.getLength() != 0) {
 			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 			writer.instructions.push(Register.RAX);
 			for(int i = 0; i < exp.getValues().length; i++) {
-				MemAddress address = new MemAddress(Register.RSP).then(i*elemSize); // [[rsp]+i*elemSize]
+				MemAddress address = new MemAddress(Register.RSP).then(i*MemSize.POINTER_SIZE); // [[rsp]+i*elemSize]
 				writer.mem.writeTo(address, exp.getValues()[i], errors);
 			}
 			writer.instructions.pop(Register.RAX);
@@ -111,7 +108,6 @@ public class ExpressionWriter {
 	
 	private void writeIndexingExp(IndexingExp exp, ErrorWrapper errors) {
 		writer.mem.writeTo(Register.RAX, exp.getArray(), errors);
-		VarArrayType arrayType = (VarArrayType) exp.getArray().getType();
 		for(Expression index : exp.getIndices()) {
 			String specialLabel1 = writer.getSpecialLabel();
 			if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
@@ -121,7 +117,7 @@ public class ExpressionWriter {
 				writer.instructions.call(GlobalLabels.SPECIAL_THROW);
 				writer.instructions.label(specialLabel1);
 				writer.instructions.add(OpCode.ADD, Register.RAX, new MemAddress(Register.RAX, -8));
-				writer.instructions.add(OpCode.SUB, Register.RAX, MemSize.getPointerSize(arrayType.componentType));
+				writer.instructions.add(OpCode.SUB, Register.RAX, MemSize.POINTER_SIZE);
 				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX)); // mov rax,[rax]
 				throw new UnimplementedException("array[-1] indexing won't work untill the memory system is not changed, see the FIX below");
 			} else {
@@ -131,11 +127,7 @@ public class ExpressionWriter {
 				writer.mem.writeTo(Register.RAX, index, errors);
 				writer.instructions.pop(Register.RBX); // rbx is the array pointer
 				writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
-				int csize = MemSize.getPointerSize(arrayType.componentType).bytes;
-				if(csize == 8)
-					writer.instructions.add(OpCode.SHL, Register.RAX, 3);
-				else
-					writer.instructions.add(OpCode.IMUL, Register.RAX, csize);
+				writer.instructions.add(OpCode.SHL, Register.RAX, 3); // shift left by 3 is equivalent to multiply by 8 (the pointer size)
 				// TODO0 check if the scaled index overflows the 64 bits limit
 				writer.instructions.test(Register.RAX);
 				writer.instructions.add(OpCode.JS, specialLabel2); // the index 
@@ -157,14 +149,7 @@ public class ExpressionWriter {
 			writer.mem.writeTo(Register.RBX, exp.getExpression(), errors);
 			writer.instructions.clearRegister(Register.RAX); // clear the 32 higher bits
 			writer.instructions.mov(Register.RAX, new MemAddress(Register.RBX, -8)); // mov rax,[rbx-8]
-			int csize = MemSize.getPointerSize(((VarArrayType) type).componentType).bytes;
-			if(csize == 8)
-				writer.instructions.add(OpCode.SHR, Register.RAX, 3);
-			else {
-				writer.instructions.clearRegister(Register.RDX);
-				writer.instructions.mov(Register.RBX, csize);
-				writer.instructions.add(OpCode.DIV, Register.RBX);
-			}
+			writer.instructions.add(OpCode.SHR, Register.RAX, 3); // shift right by 3 is equivalent to divide by 8 (the pointer size)
 		} else {
 			errors.add("Sizeof used on non-array type" + exp.getErr());
 		}

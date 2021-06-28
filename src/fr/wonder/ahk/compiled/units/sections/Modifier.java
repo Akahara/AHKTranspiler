@@ -53,7 +53,7 @@ public class Modifier {
 		return ((BoolLiteral) arguments[pos]).value;
 	}
 	
-	public float getFloat(int pos) {
+	public double getDouble(int pos) {
 		assertMod(pos, FloatLiteral.class);
 		return ((FloatLiteral) arguments[pos]).value;
 	}
