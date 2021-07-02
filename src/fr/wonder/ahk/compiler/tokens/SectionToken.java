@@ -32,6 +32,8 @@ public enum SectionToken {
 	 * do not mistake an operator (OP_) for a keyword (KW_), the latter looks like "+="
 	 * and must be placed BEFORE both operators "+" and "="
 	 */
+	SEC_OP_SHR			(OP_SHR),
+	SEC_OP_SHL			(OP_SHL),
 	SEC_OP_SEQUALS		(OP_SEQUALS),
 	SEC_OP_EQUALS		(OP_EQUALS),
 	SEC_OP_GEQUALS		(OP_GEQUALS),
@@ -51,8 +53,6 @@ public enum SectionToken {
 	SEC_KW_EQUAL_MOD	(KW_EQUAL_MOD),
 	SEC_OP_MOD			(OP_MOD),
 	SEC_KW_EQUAL		(KW_EQUAL),
-	SEC_OP_SHR			(OP_SHR),
-	SEC_OP_SHL			(OP_SHL),
 
 	;
 	

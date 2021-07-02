@@ -22,7 +22,6 @@ import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.handles.TranspilableHandle;
-import fr.wonder.ahk.transpilers.asm_x64.ConcreteTypesTable;
 import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
@@ -38,6 +37,7 @@ import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
+import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
 import fr.wonder.ahk.transpilers.common_x64.macros.StringDefinition;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -67,7 +67,6 @@ public class UnitWriter {
 	
 	public final InstructionSet instructions = new InstructionSet();
 	
-	public final ConcreteTypesTable types = new ConcreteTypesTable();
 	public final TranspilableHandle project;
 	public final Unit unit;
 	public final MemoryManager mem;
@@ -145,7 +144,7 @@ public class UnitWriter {
 		if(exp instanceof IntLiteral)
 			return String.valueOf(((IntLiteral) exp).value);
 		else if(exp instanceof FloatLiteral)
-			return "__float64__("+((FloatLiteral)exp).value+")";
+			return ((FloatLiteral)exp).value == 0 ? "0" : "__float64__("+((FloatLiteral)exp).value+")";
 		else if(exp instanceof BoolLiteral)
 			return ((BoolLiteral) exp).value ? "1" : "0";
 		else if(exp instanceof StrLiteral)
@@ -289,7 +288,11 @@ public class UnitWriter {
 	}
 	
 	public void callAlloc(int size) {
-		instructions.push(new ImmediateValue(size, MemSize.QWORD));
+		callAlloc(new ImmediateValue(size, MemSize.QWORD));
+	}
+	
+	public void callAlloc(OperationParameter size) {
+		instructions.push(size);
 		instructions.call(GlobalLabels.SPECIAL_ALLOC);
 		// TODO0 implement other calling conventions (__stdcall currently)
 		testThrowError();

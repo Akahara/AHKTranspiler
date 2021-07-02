@@ -1,6 +1,6 @@
 package fr.wonder.ahk.transpilers.asm_x64.natives.operations;
 
-import static fr.wonder.ahk.compiled.expressions.Operator.ADD;
+import static fr.wonder.ahk.compiled.expressions.Operator.*;
 import static fr.wonder.ahk.compiled.expressions.Operator.DIVIDE;
 import static fr.wonder.ahk.compiled.expressions.Operator.EQUALS;
 import static fr.wonder.ahk.compiled.expressions.Operator.LOWER;
@@ -9,14 +9,13 @@ import static fr.wonder.ahk.compiled.expressions.Operator.MULTIPLY;
 import static fr.wonder.ahk.compiled.expressions.Operator.NEQUALS;
 import static fr.wonder.ahk.compiled.expressions.Operator.SUBSTRACT;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
-import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
@@ -29,6 +28,7 @@ import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
+import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -66,10 +66,25 @@ public class AsmOperationWriter {
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MULTIPLY, false), AsmOperationWriter::op_intMULint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, DIVIDE, false), AsmOperationWriter::op_intDIVint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MOD, false), AsmOperationWriter::op_intMODint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, SHR, false), AsmOperationWriter::op_intSHRint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, SHL, false), AsmOperationWriter::op_intSHLint);
 		
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, ADD, false), AsmOperationWriter::op_floatADDfloat);
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, SUBSTRACT, false), AsmOperationWriter::op_floatSUBfloat);
 		nativeOperations.put(NativeOperation.getOperation(null, FLOAT, SUBSTRACT, false), AsmOperationWriter::op_nullSUBfloat);
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, MULTIPLY, false), AsmOperationWriter::op_floatMULfloat);
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, DIVIDE, false), AsmOperationWriter::op_floatDIVfloat);
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, MOD, false), AsmOperationWriter::op_floatMODfloat);
+		
+		nativeOperations.put(NativeOperation.getOperation(BOOL, BOOL, EQUALS, false), AsmOperationWriter::op_universalEquality);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, EQUALS, false), AsmOperationWriter::op_universalEquality);
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, EQUALS, false), AsmOperationWriter::op_universalEquality);
+		nativeOperations.put(NativeOperation.getOperation(BOOL, BOOL, NEQUALS, false), AsmOperationWriter::op_universalNEquality);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, NEQUALS, false), AsmOperationWriter::op_universalNEquality);
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, NEQUALS, false), AsmOperationWriter::op_universalNEquality);
+		
+		nativeOperations.put(NativeOperation.getOperation(null, BOOL, NOT, false), AsmOperationWriter::op_nullNOTbool);
+		nativeOperations.put(NativeOperation.getOperation(STR, STR, ADD, false), AsmOperationWriter::op_strADDstr);
 		
 		Assertions.assertNull(nativeOperations.get(null), "An unimplemented native operation was given an asm implementation");
 	}
@@ -140,6 +155,55 @@ public class AsmOperationWriter {
 		writer.instructions.pop(Register.RAX);
 	}
 	
+	private void simpleFPUOperation(Expression e1, Expression e2, boolean commutativeOperation, OpCode opCode, ErrorWrapper errors) {
+		OperationParameter ro = prepareRAXRBX(e1, e2, commutativeOperation, errors);
+		writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
+		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		writer.mem.moveData(GlobalLabels.ADDRESS_FLOATST, ro, MemSize.QWORD);
+		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		writer.instructions.add(opCode);
+		writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+	}
+	
+	private static void op_universalEquality(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		// TODO find a better way of avoiding 64bits immediate values 
+		// a lot of instructions cannot take 64bits immediate values, only 32bits.
+		// cmp is one of them, therefore we should move both operand to registers
+		// before using cmp
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, true, errors);
+		if(ro instanceof ImmediateValue && ((ImmediateValue) ro).text.equals("0")) {
+			asmWriter.writer.instructions.test(Register.RAX);
+		} else {
+			asmWriter.writer.instructions.cmp(Register.RAX, ro);
+		}
+		
+//		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+//		asmWriter.writer.instructions.cmp(Register.RAX, Register.RBX);
+		
+		asmWriter.writer.instructions.mov(Register.RAX, 0); // clear rax without setting rflags
+		asmWriter.writer.instructions.add(OpCode.SETE, Register.AL);
+	}
+	
+	private static void op_universalNEquality(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		// TODO find a better way of avoiding 64bits immediate values 
+		// a lot of instructions cannot take 64bits immediate values, only 32bits.
+		// cmp is one of them, therefore we should move both operand to registers
+		// before using cmp
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, true, errors);
+		if(ro instanceof ImmediateValue && ((ImmediateValue) ro).text.equals("0")) {
+			asmWriter.writer.instructions.test(Register.RAX);
+		} else {
+			asmWriter.writer.instructions.cmp(Register.RAX, ro);
+		}
+		
+//		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+//		asmWriter.writer.instructions.cmp(Register.RAX, Register.RBX);
+		
+		asmWriter.writer.instructions.mov(Register.RAX, 0); // clear rax without setting rflags
+		asmWriter.writer.instructions.add(OpCode.SETNE, Register.AL);
+	}
+	
 	private static void op_intADDint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, true, errors);
 		if(ro instanceof IntLiteral) {
@@ -182,44 +246,71 @@ public class AsmOperationWriter {
 	private static void op_intDIVint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		// TODO check for mod 2^x operations that can be heavily optimized
 		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
-//		asmWriter.writer.instructions.clearRegister(Register.RDX);
 		asmWriter.writer.instructions.add(OpCode.CQO);
 		asmWriter.writer.instructions.add(OpCode.IDIV, Register.RBX);
 	}
+
+	private static void op_intSHRint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
+		asmWriter.writer.instructions.add(OpCode.SHR, Register.RAX, ro);
+	}
+
+	private static void op_intSHLint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
+		asmWriter.writer.instructions.add(OpCode.SHL, Register.RAX, ro);
+	}
 	
 	private static void op_floatADDfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, true, errors);
-		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
-		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		if(ro instanceof FloatLiteral && ((FloatLiteral) ro).value == 1) {
-			asmWriter.writer.instructions.add(OpCode.FLD1);
-		} else {
-			asmWriter.writer.mem.moveData(GlobalLabels.ADDRESS_FLOATST, ro, MemSize.QWORD);
-			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		}
-		asmWriter.writer.instructions.add(OpCode.FADDP);
-		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.simpleFPUOperation(leftOperand, rightOperand, true, OpCode.FADDP, errors);
 	}
 	
 	private static void op_floatSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
-		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
-		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		if(ro instanceof FloatLiteral && ((FloatLiteral) ro).value == 1) {
-			asmWriter.writer.instructions.add(OpCode.FLD1);
-		} else {
-			asmWriter.writer.mem.moveData(GlobalLabels.ADDRESS_FLOATST, ro, MemSize.QWORD);
-			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		}
-		asmWriter.writer.instructions.add(OpCode.FSUBP);
-		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.simpleFPUOperation(leftOperand, rightOperand, false, OpCode.FSUBP, errors);
 	}
 	
 	private static void op_nullSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
 		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, GlobalLabels.ADDRESS_VAL_FSIGNBIT);
+	}
+	
+	private static void op_floatMULfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.simpleFPUOperation(leftOperand, rightOperand, true, OpCode.FMULP, errors);
+	}
+	
+	private static void op_floatDIVfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.simpleFPUOperation(leftOperand, rightOperand, true, OpCode.FDIVP, errors);
+	}
+	
+	private static void op_floatMODfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.simpleFPUOperation(rightOperand, leftOperand, true, OpCode.FPREM, errors);
+		asmWriter.writer.instructions.add(OpCode.FSTP);
+	}
+
+	private static void op_nullNOTbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
+		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, 1);
+	}
+
+	private static void op_strADDstr(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+		asmWriter.writer.instructions.mov(Register.RCX, new MemAddress(Register.RAX, -MemSize.POINTER_SIZE));
+		asmWriter.writer.instructions.add(OpCode.ADD, Register.RCX, new MemAddress(Register.RBX, -MemSize.POINTER_SIZE));
+		asmWriter.writer.instructions.push(Register.RBX);
+		asmWriter.writer.instructions.push(Register.RAX);
+		asmWriter.writer.callAlloc(Register.RCX);
+		asmWriter.writer.instructions.mov(Register.RDI, Register.RAX);
+		
+		// copy bytes twice
+		
+		asmWriter.writer.instructions.pop(Register.RSI); // pop the first string address
+		asmWriter.writer.instructions.mov(Register.RCX, new MemAddress(Register.RSI, -MemSize.POINTER_SIZE));
+		asmWriter.writer.instructions.add(OpCode.CLD);
+		asmWriter.writer.instructions.repeat(OpCode.MOVSB);
+		
+		asmWriter.writer.instructions.pop(Register.RSI); // pop the second string address
+		asmWriter.writer.instructions.mov(Register.RCX, new MemAddress(Register.RSI, -MemSize.POINTER_SIZE));
+		asmWriter.writer.instructions.add(OpCode.CLD);
+		asmWriter.writer.instructions.repeat(OpCode.MOVSB);
 	}
 	
 	/* =============================================== Jumps ============================================== */

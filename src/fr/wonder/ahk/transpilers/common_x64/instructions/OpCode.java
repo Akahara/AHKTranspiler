@@ -20,6 +20,9 @@ public enum OpCode {
 	INC, DEC,
 	SHL, SHR,
 	
+	AND,
+	OR,
+	
 	CMP,
 	TEST,
 	JL, JLE, // lower
@@ -50,5 +53,23 @@ public enum OpCode {
 	FADDP,
 	/** FPU: substract st(1) from st(0), store to st(1) and pop */
 	FSUBP,
+	/** FPU: multiply st(0) and st(1), store to st(1) and pop */
+	FMULP,
+	/** FPU: divide st(0) by st(1), store to st(1) and pop */
+	FDIVP,
+	/** FPU: stores the remainder of st(0)/st(1) in st(0) */
+	FPREM,
+	
+	/** set-byte-if-equal */
+	SETE,
+	/** set-byte-if-not-equal */
+	SETNE,
+	
+	/** clear direction flag */
+	CLD,
+	/** repeat next string instruction */
+	REP,
+	/** string operation: move byte */
+	MOVSB,
 	
 }

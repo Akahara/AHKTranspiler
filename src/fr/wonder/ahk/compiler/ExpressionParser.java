@@ -189,14 +189,14 @@ public class ExpressionParser {
 		switch(t.base) {
 		case LIT_INT:
 			try {
-				return new IntLiteral(t.getSource(), t.sourceStart, t.sourceStop, Integer.parseInt(t.text));
+				return new IntLiteral(t.getSource(), t.sourceStart, t.sourceStop, Long.parseLong(t.text));
 			} catch (NumberFormatException e) {
 				errors.add("Unable to parse int literal: " + e.getMessage() + t.getErr());
 				return Invalids.LITERAL_EXPRESSION;
 			}
 		case LIT_FLOAT:
 			try {
-				return new FloatLiteral(t.getSource(), t.sourceStart, t.sourceStop, Float.parseFloat(t.text));
+				return new FloatLiteral(t.getSource(), t.sourceStart, t.sourceStop, Double.parseDouble(t.text));
 			} catch (NumberFormatException e) {
 				errors.add("Unable to parse float literal: " + e.getMessage() + t.getErr());
 				return Invalids.LITERAL_EXPRESSION;

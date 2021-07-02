@@ -13,7 +13,7 @@ func void print(float f) {}
 func void print(str s) {}
 @native("ahk_Kernel_print_strlen");
 func void print(str s, int len) {}
-@native("ahk_Kernel_print_hex");
+@native("ahk_Kernel_print_bool");
 func void print(bool b) {}
 @native("ahk_Kernel_print_ln");
 func void println() {}
@@ -30,6 +30,11 @@ func void println(float f) {
 
 func void println(str s) {
 	print(s);
+	println();
+}
+
+func void println(bool b) {
+	print(b);
 	println();
 }
 

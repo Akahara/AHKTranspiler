@@ -36,7 +36,7 @@ class Scope {
 	Address declareVariable(VariableDeclaration var) {
 		variables.add(var);
 		currentScopeSize++;
-		return getVarAddress(var.getPrototype()); //TODO0 retrieve the created variable address more efficiently
+		return new MemAddress(Register.RSP, stackSpace-variables.size()*MemSize.POINTER_SIZE);
 	}
 	
 	Address getVarAddress(VarAccess var) {

@@ -9,21 +9,18 @@ public class Register implements Address {
 	public static final Register RCX = new Register("rcx");
 	public static final Register RDX = new Register("rdx");
 	
-//	public static final Register EAX = new Register("eax");
+	public static final Register AL = new Register("al");
+	
+	public static final Register RSI = new Register("rsi");
+	public static final Register RDI = new Register("rdi");
 	
 	public static final Register RSP = new Register("rsp");
 	public static final Register RBP = new Register("rbp");
 
 	public final String name;
-	public final MemSize size;
 	
 	private Register(String name) {
 		this.name = name;
-		switch(name.charAt(0)) {
-		case 'r': this.size = MemSize.QWORD; break;
-		case 'e': this.size = MemSize.DWORD; break;
-		default: throw new IllegalStateException("Unknown size for register " + name);
-		}
 	}
 	
 	@Override

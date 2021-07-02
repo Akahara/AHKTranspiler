@@ -1,6 +1,10 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
-public class VarStrType extends VarType {
+public class VarStrType extends VarNativeType {
+
+	VarStrType() {
+		super("string");
+	}
 
 	@Override
 	public String getName() {

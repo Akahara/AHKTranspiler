@@ -9,6 +9,7 @@ global ahk_Kernel_print_hex
 global ahk_Kernel_print_dec
 global ahk_Kernel_print_str
 global ahk_Kernel_print_strlen
+global ahk_Kernel_print_bool
 global ahk_Kernel_print_ln
 global global_floatst
 
@@ -21,7 +22,8 @@ extern mem_alloc_block
 ln_chars db `\n`,0xa
 hex_chars db '0x................',0xa     ; hexadecimal characters
 dec_chars db '-00000000000000000000',0xa  ; decimal characters, a 64 bits integer will always fit in 20 digites and the - sign
-
+true_chars db 'true',0xa
+false_chars db 'false',0xa
 
 
 section .bss
@@ -134,6 +136,26 @@ ahk_Kernel_print_hex:
   mov rsp,rbp
   pop rbp
   ret 8 ; __stdcall convention
+  
+  
+ahk_Kernel_print_bool:
+  push rbp
+  mov rbp,rsp
+  mov rdx,[rbp+16]
+  mov rcx,true_chars
+  test rdx,rdx
+  ; cmov rcx,false_chars  ; TODO find out why this doesn't work (invalid combination of opcode and operands)
+  jnz .true_str
+  mov rcx,false_chars
+.true_str:
+  mov rax,SYSCALL_WRITE
+  mov rbx,STD_OUT
+  neg rdx
+  add rdx,5
+  int 0x80
+  mov rsp,rbp
+  pop rbp
+  ret 8
   
   
 ; used to print a string which length is stored as a qword before

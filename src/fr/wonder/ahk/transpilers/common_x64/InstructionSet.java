@@ -18,6 +18,7 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.MovOperation;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.Operation;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
+import fr.wonder.ahk.transpilers.common_x64.instructions.RepeatedInstruction;
 import fr.wonder.commons.utils.ArrayOperator;
 
 public class InstructionSet {
@@ -77,6 +78,10 @@ public class InstructionSet {
 	
 	public void xor(Address target, Address with) { add(XOR, target, with); }
 
+	public void repeat(OpCode stringOperation) {
+		add(new RepeatedInstruction(new Operation(stringOperation)));
+	}
+	
 	public void cmp(Address a, Object b) { add(CMP, a, b); }
 	public void test(Address a, Address b) { add(TEST, a, b); }
 	public void test(Register reg) { test(reg, reg); }

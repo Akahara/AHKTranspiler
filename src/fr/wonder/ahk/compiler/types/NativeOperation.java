@@ -110,7 +110,7 @@ public class NativeOperation implements Operation {
 		if(l == STR && r == STR && o == ADD)
 			return STR_ADD_STR;
 		if(o == Operator.NOT) {
-			if(l == null)
+			if(l != null)
 				throw new IllegalArgumentException("The negation operation takes one argument only");
 			if(getOrder(r) != -1) // r is int/float/bool
 				return NOT_BOOL;

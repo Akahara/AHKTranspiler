@@ -62,10 +62,21 @@ func int main() {
 		Kernel.print(i%5);
 		Kernel.println();
 	}
-	Kernel.println("------ Expected -1 3 -2 -3");
+	Kernel.println("------ Expected -1 3 -2 -3 63 12 12 10 2 1");
 	Kernel.println(-2/2);
 	Kernel.println(int:(3.8));
 	Kernel.println(int:(2+(-3.5)));
 	Kernel.println(int:(-(3.+0.)));
+	Kernel.println(255>>2);
+	Kernel.println(3<<2);
+	Kernel.println(int:(8*1.5));
+	Kernel.println(int:(32./3.));
+	Kernel.println(int:(32.%3.));
+	Kernel.println("------ Expected F T T");
+	Kernel.println(3==0);
+	Kernel.println(!false);
+	Kernel.println(3 != true);
+	Kernel.println("------ Expected composed strings:");
+	Kernel.println("a composed " + "string");
 	return 5;
 }
