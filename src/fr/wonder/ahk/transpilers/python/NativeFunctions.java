@@ -9,8 +9,8 @@ import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.FuncArguments;
 import fr.wonder.ahk.compiler.types.ConversionTable;
+import fr.wonder.ahk.compiler.types.FuncArguments;
 import fr.wonder.commons.types.Tuple;
 
 class NativeFunctions {

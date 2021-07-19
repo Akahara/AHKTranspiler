@@ -68,6 +68,9 @@ public class Tokens {
 		return base == VAR_UNIT || typesMap.containsKey(base);
 	}
 
+	// FIX new instances of struct types must NOT be created
+	// existing one must be collected per-unit so that they
+	// can be all linked by the linker
 	public static VarType getType(Token token) {
 		if(token.base == VAR_UNIT)
 			return new VarStructType(token.text);

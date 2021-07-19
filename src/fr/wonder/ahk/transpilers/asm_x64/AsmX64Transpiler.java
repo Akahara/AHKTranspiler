@@ -6,9 +6,9 @@ import java.io.IOException;
 import fr.wonder.ahk.AHKTranspiler;
 import fr.wonder.ahk.compiled.AHKManifest;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.handles.ExecutableHandle;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
@@ -19,8 +19,8 @@ import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.files.FilesUtils;
+import fr.wonder.commons.systems.process.ProcessUtils;
 import fr.wonder.commons.utils.ArrayOperator;
-import fr.wonder.commons.utils.ProcessUtils;
 
 public class AsmX64Transpiler implements Transpiler {
 	

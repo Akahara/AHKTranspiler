@@ -1,12 +1,12 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
-import fr.wonder.ahk.compiler.types.TypesTable;
+import fr.wonder.ahk.compiled.units.sections.StructSection;
 
 public class VarStructType extends VarType {
 	
 	public final String name;
-	// set by the linked
-	public VarStructType superType;
+	
+	public StructSection structure;
 	
 	public VarStructType(String name) {
 		this.name = name;
@@ -22,14 +22,10 @@ public class VarStructType extends VarType {
 		return String.format("S%02d", Math.floorMod(name.hashCode(), 100)); // FUTURE rework the struct signature
 	}
 	
-	/**
-	 * There can only be one struct type (VarStructType instance) per actual structure (in the source code),
-	 * all references are kept by the {@link TypesTable}.
-	 * Therefore to check equality between two struct types can be done with the '==' operator.
-	 */
 	@Override
-	public boolean equals(Object o) {
-		return o == this;
+	public boolean equals(Object other) {
+		return other instanceof VarStructType &&
+				((VarStructType) other).structure.equals(structure);
 	}
 	
 }

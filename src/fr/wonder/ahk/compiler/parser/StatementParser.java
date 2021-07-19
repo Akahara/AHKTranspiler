@@ -1,4 +1,4 @@
-package fr.wonder.ahk.compiler;
+package fr.wonder.ahk.compiler.parser;
 
 import java.util.Arrays;
 
@@ -28,7 +28,8 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
-import fr.wonder.ahk.compiler.ExpressionParser.Section;
+import fr.wonder.ahk.compiler.Invalids;
+import fr.wonder.ahk.compiler.parser.ExpressionParser.Section;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;

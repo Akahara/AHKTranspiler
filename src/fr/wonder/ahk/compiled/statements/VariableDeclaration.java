@@ -69,4 +69,12 @@ public class VariableDeclaration extends Statement implements ValueDeclaration {
 		return modifiers;
 	}
 	
+	@Override
+	public boolean equals(Object other) {
+		if(!(other instanceof VariableDeclaration))
+			return false;
+		VariableDeclaration o = (VariableDeclaration) other;
+		return o.name.equals(name) && o.type.equals(type) && o.visibility == visibility;
+	}
+	
 }

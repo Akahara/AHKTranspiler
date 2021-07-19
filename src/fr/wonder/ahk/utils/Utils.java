@@ -10,11 +10,11 @@ import java.util.function.Function;
 
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
-import fr.wonder.commons.utils.ReflectUtils;
+import fr.wonder.commons.utils.StringUtils;
 
 public class Utils {
 	
@@ -127,7 +127,7 @@ public class Utils {
 	
 	public static void dump(Object o) {
 		System.out.println("-".repeat(20));
-		ReflectUtils.printObject(o);
+		System.out.println(StringUtils.toObjectString(o).replaceAll(", ", "\n"));
 		System.out.println("-".repeat(20));
 	}
 	

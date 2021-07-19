@@ -13,6 +13,7 @@ import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -74,7 +75,8 @@ public class Invalids {
 
 	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(Invalids.SOURCE, 0, 0, null) {
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return Invalids.TYPE; }
-		
 	};
+
+	public static final StructSection STRUCT = new StructSection(Invalids.SOURCE, 0, 0, Invalids.STRING, Invalids.MODIFIERS, new VariableDeclaration[0]);
 	
 }

@@ -33,29 +33,8 @@ public class TypesTable {
 		if((leftOp instanceof VarNativeType || leftOp == null) && rightOp instanceof VarNativeType)
 			return NativeOperation.getOperation(leftOp, rightOp, operator, true);
 		
-		if(leftOp instanceof VarStructType || rightOp instanceof VarStructType) {
-			// check if this operation was already mapped
-			Operation operation = operations.getOperation(leftOp, operator, OperationTable.TYPE_ANY);
-			if(operation != null)
-				return operation;
-			// else retrieve the operation
-			VarType original = leftOp;
-			do {
-				// if no operation matches, check for super type
-				leftOp = ((VarStructType) leftOp).superType;
-				operation = operations.getOperation(leftOp, operator, OperationTable.TYPE_ANY);
-			} while (operation == null && leftOp != null);
-			if(operation != null) {
-				// map the found operation for future queries
-				while(true) {
-					operations.registerOperation(original, operator, OperationTable.TYPE_ANY, operation);
-					original = ((VarStructType) original).superType;
-					if(original == leftOp)
-						break;
-				}
-				return operation;
-			}
-		}
+		if(leftOp instanceof VarStructType || rightOp instanceof VarStructType)
+			return operations.getOperation(leftOp, operator, OperationTable.TYPE_ANY);
 		
 		return null;
 	}

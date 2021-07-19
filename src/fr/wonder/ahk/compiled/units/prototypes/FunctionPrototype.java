@@ -5,10 +5,10 @@ import java.util.Objects;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.FuncArguments;
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.compiler.types.FuncArguments;
 
 public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> {
 

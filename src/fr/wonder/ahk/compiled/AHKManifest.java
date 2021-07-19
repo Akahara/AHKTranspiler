@@ -3,10 +3,10 @@ package fr.wonder.ahk.compiled;
 import java.util.Arrays;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
-import fr.wonder.ahk.compiler.FuncArguments;
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.compiler.types.FuncArguments;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.CallingConvention;
 import fr.wonder.ahk.transpilers.asm_x64.natives.OSInstrinsic;

@@ -1,6 +1,8 @@
 package fr.wonder.ahk.compiler;
 
 import fr.wonder.ahk.UnitSource;
+import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiler.parser.UnitParser;
 import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.handles.ProjectHandle;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -17,7 +19,8 @@ public class Compiler {
 		for (int i = 0; i < project.units.length; i++) {
 			try {
 				UnitSource source = project.units[i];
-				units[i] = UnitParser.parseUnit(source, errors.subErrrors("Parsing errors in unit " + source.name));
+				ErrorWrapper subErrors = errors.subErrrors("Parsing errors in unit " + source.name);
+				units[i] = UnitParser.parseUnit(source, subErrors);
 			} catch (WrappedException x) {
 				// catching there only results in skipping a part of
 				// the compilation of the current source, errors will

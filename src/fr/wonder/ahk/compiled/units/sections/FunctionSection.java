@@ -13,7 +13,7 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class FunctionSection extends SourceObject implements ValueDeclaration {
 	
-	public final int declarationStop;
+	private final int declarationStop;
 	
 	// set by the unit parser
 	public String name;

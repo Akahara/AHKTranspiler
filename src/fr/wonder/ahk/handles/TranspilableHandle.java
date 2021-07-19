@@ -1,7 +1,7 @@
 package fr.wonder.ahk.handles;
 
 import fr.wonder.ahk.compiled.AHKManifest;
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 
 public class TranspilableHandle {

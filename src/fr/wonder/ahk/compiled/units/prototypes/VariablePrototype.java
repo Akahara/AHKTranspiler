@@ -6,8 +6,8 @@ import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.commons.utils.Assertions;
 
 public class VariablePrototype implements VarAccess, Prototype<VariableDeclaration> {

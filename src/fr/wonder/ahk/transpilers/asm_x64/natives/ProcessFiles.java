@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import fr.wonder.ahk.compiler.Unit;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.files.FilesUtils;
-import fr.wonder.commons.utils.ReflectUtils;
+import fr.wonder.commons.systems.reflection.ReflectUtils;
 
 public class ProcessFiles {
 	

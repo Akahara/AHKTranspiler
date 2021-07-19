@@ -26,4 +26,5 @@ module AHKTranspiler {
 	exports fr.wonder.ahk.transpilers.common_x64.instructions;
 
 	requires transitive fr.wonder.commons;
+	requires transitive fr.wonder.commons.systems;
 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,8 +12,10 @@ import java.util.Map;
 import java.util.Set;
 
 import fr.wonder.ahk.UnitSource;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiler.linker.Linker;
+import fr.wonder.ahk.compiler.parser.UnitParser;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
@@ -82,7 +85,7 @@ public class Natives {
 		Unit unit;
 		try {
 			unit = UnitParser.parseUnit(unitSource, unitErrors);
-			Linker.prelinkUnit(unit, unitErrors);
+			Linker.prelinkUnit(unit, Collections.emptyMap(), unitErrors);
 		} catch (WrappedException e) {
 			return null;
 		}

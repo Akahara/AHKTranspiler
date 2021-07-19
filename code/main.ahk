@@ -2,7 +2,7 @@ base fr.wonder.main;
 
 import ahk.Kernel;
 
-unit Unit;
+unit Main;
 
 int ii = -3;
 	

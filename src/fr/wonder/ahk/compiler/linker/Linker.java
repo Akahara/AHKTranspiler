@@ -1,19 +1,26 @@
 package fr.wonder.ahk.compiler.linker;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.sections.StructSection;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.Natives;
-import fr.wonder.ahk.compiler.Unit;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
+import fr.wonder.commons.types.Triplet;
 import fr.wonder.commons.utils.ArrayOperator;
 
 public class Linker {
@@ -58,9 +65,13 @@ public class Linker {
 		}
 		errors.assertNoErrors();
 		
+		Map<String, StructSection[]> declaredStructures = new HashMap<>();
+		for(Unit u : handle.units)
+			declaredStructures.put(u.fullBase, u.structures);
+		
 		// prelink units (project & natives)
 		for(Unit unit : linkedUnits)
-			prelinkUnit(unit, errors);
+			prelinkUnit(unit, declaredStructures, errors);
 		errors.assertNoErrors();
 		
 		UnitPrototype[] prototypes = ArrayOperator.map(linkedUnits, UnitPrototype[]::new, u -> u.prototype);
@@ -78,7 +89,17 @@ public class Linker {
 	}
 	
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
-	public static void prelinkUnit(Unit unit, ErrorWrapper errors) throws WrappedException {
+	public static void prelinkUnit(Unit unit, Map<String, StructSection[]> declaredStructures,
+			ErrorWrapper errors) throws WrappedException {
+		
+		for(Triplet<VarStructType, SourceElement, Integer> composite : unit.usedStructTypes) {
+			VarStructType structType = composite.a;
+			structType.structure = searchStructSection(unit, structType.name, declaredStructures, errors);
+			if(structType.structure == Invalids.STRUCT)
+				errors.add("Unknown structure type used: " + structType.name + 
+						" (" + composite.c + " references)" + composite.b.getErr());
+		}
+		
 		// TODO when struct types are implemented…
 		// make sure that the function argument types and return type are linked BEFORE computing its signature
 		for(FunctionSection func : unit.functions) {
@@ -129,7 +150,17 @@ public class Linker {
 			for(int j = 1; j < func.arguments.length; j++) {
 				for(int k = 0; k < j; k++) {
 					if(func.arguments[j].name.equals(func.arguments[k].name))
-						errors.add("Two arguments have the same name" + func.getErr());
+						errors.add("Two arguments have the same name:" + func.getErr());
+				}
+			}
+		}
+		
+		for(int i = 0; i < unit.structures.length; i++) {
+			StructSection structure = unit.structures[i];
+			for(int j = 1; j < structure.members.length; j++) {
+				for(int k = 0; k < j; k++) {
+					if(structure.members[j].name.equals(structure.members[k].name))
+						errors.add("Two struct members have the same name:" + structure.members[j].getErr());
 				}
 			}
 		}
@@ -138,6 +169,22 @@ public class Linker {
 		errors.assertNoErrors();
 	}
 	
+	private static StructSection searchStructSection(Unit unit, String name,
+			Map<String, StructSection[]> declaredStructures, ErrorWrapper errors) {
+		for(StructSection structure : unit.structures) {
+			if(structure.structName.equals(name))
+				return structure;
+		}
+		for(String imported : unit.importations) {
+			StructSection[] structures = declaredStructures.get(imported);
+			for(StructSection structure : structures) {
+				if(structure.structName.equals(name))
+					return structure;
+			}
+		}
+		return Invalids.STRUCT;
+	}
+
 	/**
 	 * Assumes that the unit has been prelinked.
 	 */

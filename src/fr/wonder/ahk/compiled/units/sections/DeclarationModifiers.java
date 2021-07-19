@@ -1,7 +1,6 @@
 package fr.wonder.ahk.compiled.units.sections;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -46,10 +45,24 @@ public class DeclarationModifiers {
 		return getModifier(name) != null;
 	}
 	
-	@Override
-	public int hashCode() {
-		return Objects.hash((Object[]) modifiers);
-	}
+//	@Override
+//	public int hashCode() {
+//		return Objects.hash((Object[]) modifiers);
+//	}
+//	
+//	@Override
+//	public boolean equals(Object other) {
+//		if(!(other instanceof DeclarationModifiers))
+//			return false;
+//		DeclarationModifiers o = (DeclarationModifiers) other;
+//		if(o.modifiers.length != modifiers.length)
+//			return false;
+//		for(Modifier m : modifiers) {
+//			if(!m.equals(o.getModifier(m.name)))
+//				return false;
+//		}
+//		return true;
+//	}
 	
 	@Override
 	public String toString() {

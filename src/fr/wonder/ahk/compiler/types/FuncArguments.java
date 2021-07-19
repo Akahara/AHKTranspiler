@@ -1,9 +1,8 @@
-package fr.wonder.ahk.compiler;
+package fr.wonder.ahk.compiler.types;
 
 import java.util.Arrays;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiler.types.ConversionTable;
 
 public class FuncArguments {
 

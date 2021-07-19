@@ -154,16 +154,16 @@ public class MemoryManager {
 			writeTo(Register.RAX, indices[indices.length-1], errors);
 			writer.instructions.push(Register.RAX);
 			addStackOffset(8);
-			writeTo(Register.RCX, value, errors);
-			writer.instructions.pop(Register.RBX);
-			writer.instructions.pop(Register.RAX);
+			writeTo(Register.RCX, value, errors);  // value
+			writer.instructions.pop(Register.RBX); // index
+			writer.instructions.pop(Register.RAX); // array
 			addStackOffset(-16);
 			// TODO check for out of bounds affectations
 			writer.instructions.mov(
 					new MemAddress(Register.RAX, Register.RBX, MemSize.POINTER_SIZE),
 					Register.RCX);
 		} else {
-			errors.add("Cannot affect a value to type " + variable.getType().getName());
+			errors.add("Cannot affect a value to type " + variable.getType().getName() + variable.getErr());
 		}
 	}
 	

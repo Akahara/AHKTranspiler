@@ -3,7 +3,7 @@ package fr.wonder.ahk.compiler.linker;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 
-public interface Scope {
+interface Scope {
 	
 	Scope innerScope();
 	Scope outerScope();

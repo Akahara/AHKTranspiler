@@ -1,4 +1,4 @@
-package fr.wonder.ahk.compiler;
+package fr.wonder.ahk.compiler.parser;
 
 import java.util.ArrayList;
 import java.util.Arrays;

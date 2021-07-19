@@ -5,11 +5,11 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiler.FuncArguments;
 import fr.wonder.ahk.compiler.types.ConversionTable;
+import fr.wonder.ahk.compiler.types.FuncArguments;
 import fr.wonder.commons.types.Tuple;
 
-public class UnitScope implements Scope {
+class UnitScope implements Scope {
 	
 	private final UnitPrototype unit;
 	private final UnitPrototype[] importedUnits;

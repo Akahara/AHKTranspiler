@@ -1,5 +1,5 @@
 # specify the program entry point, using the #main function
-entry-point=fr.wonder.main.Unit
+entry-point=fr.wonder.main.Main
 build-architecture=elf64
 build-target=unix
 # add debugging symbols

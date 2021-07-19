@@ -13,11 +13,11 @@ import fr.wonder.ahk.transpilers.asm_x64.AsmX64Transpiler;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.files.FilesUtils;
-import fr.wonder.commons.files.Manifest;
 import fr.wonder.commons.loggers.AnsiLogger;
 import fr.wonder.commons.loggers.Logger;
-import fr.wonder.commons.utils.ManifestUtils;
-import fr.wonder.commons.utils.ProcessUtils;
+import fr.wonder.commons.systems.process.Manifest;
+import fr.wonder.commons.systems.process.ManifestUtils;
+import fr.wonder.commons.systems.process.ProcessUtils;
 
 public class AHKTranspiler {
 	

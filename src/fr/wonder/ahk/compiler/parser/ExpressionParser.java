@@ -1,4 +1,4 @@
-package fr.wonder.ahk.compiler;
+package fr.wonder.ahk.compiler.parser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +19,7 @@ import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -29,7 +30,7 @@ import fr.wonder.commons.types.Tuple;
 
 public class ExpressionParser {
 	
-	public static class Section {
+	static class Section {
 		
 		SectionToken type;
 		/** Inner positions (line[start|stop] won't likely be a parenthesis) */
@@ -87,7 +88,7 @@ public class ExpressionParser {
 		
 	}
 
-	public static Section getVisibleSection(Token[] line, int start, int stop) {
+	static Section getVisibleSection(Token[] line, int start, int stop) {
 		List<Section> sections = new ArrayList<>();
 		Section current = new Section(start, stop);
 		
