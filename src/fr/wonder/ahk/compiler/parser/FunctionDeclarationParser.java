@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -22,29 +22,29 @@ import fr.wonder.commons.types.Tuple;
 class FunctionDeclarationParser {
 
 	/** Assumes that the first line token is KW_FUNC and the last TK_BRACE_OPEN */
-	static FunctionSection parseFunctionSection(UnitSource source, Token[][] lines,
+	static FunctionSection parseFunctionSection(Unit unit, Token[][] lines,
 			int start, int stop, DeclarationModifiers modifiers, ErrorWrapper errors) {
 		
 		Token[] declaration = lines[start];
 		FunctionSection function = new FunctionSection(
-				source,
+				unit.source,
 				declaration[0].sourceStart, // source start
 				lines[stop-1][lines[stop-1].length-1].sourceStop, // source stop
 				declaration[declaration.length-1].sourceStop, // declaration stop
 				modifiers);
 		
-		readFunctionDeclaration(function, declaration, errors.subErrrors("Invalid function declaration"));
+		readFunctionDeclaration(unit, function, declaration, errors.subErrrors("Invalid function declaration"));
 		
 		function.body = new Statement[stop-start-1];
 		ErrorWrapper functionErrors = errors.subErrrors("Unable to parse function");
 		for(int i = start+1; i < stop; i++)
-			function.body[i-start-1] = StatementParser.parseStatement(source, lines[i], functionErrors);
+			function.body[i-start-1] = StatementParser.parseStatement(unit, lines[i], functionErrors);
 		if(functionErrors.noErrors() && !modifiers.hasModifier(Modifier.NATIVE))
-			StatementsFinalizer.finalizeStatements(source, function);
+			StatementsFinalizer.finalizeStatements(function);
 		return function;
 	}
 
-	private static void readFunctionDeclaration(FunctionSection func, Token[] declaration, ErrorWrapper errors) {
+	private static void readFunctionDeclaration(Unit unit, FunctionSection func, Token[] declaration, ErrorWrapper errors) {
 		if(declaration.length < 6) {
 			errors.add("Incomplete function declaration" + func.getErr());
 			return;
@@ -52,7 +52,7 @@ class FunctionDeclarationParser {
 		
 		int k;
 		if(declaration[1].base == TokenBase.TK_PARENTHESIS_OPEN) {
-			Tuple<List<Argument>, Integer> composite = readArguments(declaration, 1, errors);
+			Tuple<List<Argument>, Integer> composite = readArguments(unit, declaration, 1, errors);
 			k = composite.b;
 			String[] names = new String[composite.a.size()];
 			VarType[] types = new VarType[composite.a.size()];
@@ -68,7 +68,7 @@ class FunctionDeclarationParser {
 		} else {
 			if(!Tokens.isVarType(declaration[1].base))
 				errors.add("Expected return type" + declaration[1].getErr());
-			func.returnType = Tokens.getType(declaration[1]);
+			func.returnType = Tokens.getType(unit, declaration[1]);
 			k = 2;
 		}
 		
@@ -85,7 +85,7 @@ class FunctionDeclarationParser {
 		
 		k++;
 		
-		Tuple<List<Argument>, Integer> composite = readArguments(declaration, k, errors);
+		Tuple<List<Argument>, Integer> composite = readArguments(unit, declaration, k, errors);
 		List<Argument> arguments = composite.a;
 		k = composite.b;
 		
@@ -112,7 +112,9 @@ class FunctionDeclarationParser {
 		
 	}
 	
-	private static Tuple<List<Argument>, Integer> readArguments(Token[] tokens, int begin, ErrorWrapper errors) {
+	private static Tuple<List<Argument>, Integer> readArguments(
+			Unit unit, Token[] tokens, int begin, ErrorWrapper errors) {
+		
 		if(tokens[begin].base != TokenBase.TK_PARENTHESIS_OPEN) {
 			errors.add("Expected '(' :" + tokens[begin].getErr());
 			return new Tuple<>(Collections.emptyList(), begin);
@@ -132,7 +134,7 @@ class FunctionDeclarationParser {
 			Token name = tokens[k+1];
 			if(!Tokens.isVarType(type.base))
 				errors.add("Expected type" + type.getErr());
-			arg.type = Tokens.getType(type);
+			arg.type = Tokens.getType(unit, type);
 			arg.sourceStart = type.sourceStart;
 			if(name.base != TokenBase.VAR_VARIABLE)
 				errors.add("Expected name" + name.getErr());

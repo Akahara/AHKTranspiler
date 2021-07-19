@@ -29,11 +29,15 @@ public class UnitParser {
 		UnitHeader header = parseHeader(source, unitTokens, errors.subErrrors("Unable to parse unit header"));
 		errors.assertNoErrors();
 		
-		UnitBody body = parseSections(source, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
-		errors.assertNoErrors();
+		Unit unit = new Unit(source,
+				header.base,
+				header.name,
+				header.unitDeclarationStart,
+				header.unitDeclarationStop,
+				header.importations);
 		
-		Unit unit = new Unit(source, header.base, header.name, header.unitDeclarationStart, header.unitDeclarationStop,
-				header.importations, body.variables, body.functions, body.structures);
+		parseSections(unit, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
+		errors.assertNoErrors();
 		
 		return unit;
 	}
@@ -47,14 +51,6 @@ public class UnitParser {
 		int unitDeclarationStart, unitDeclarationStop;
 		
 		int declarationEnd;
-		
-	}
-	
-	private static class UnitBody {
-		
-		VariableDeclaration[] variables;
-		FunctionSection[] functions;
-		public StructSection[] structures;
 		
 	}
 	
@@ -133,7 +129,7 @@ public class UnitParser {
 	}
 	
 	/** Assumes no line is empty */
-	private static UnitBody parseSections(UnitSource source, Token[][] lines, int headerEnd, ErrorWrapper errors) {
+	private static void parseSections(Unit unit, Token[][] lines, int headerEnd, ErrorWrapper errors) {
 		List<FunctionSection> functions = new ArrayList<>();
 		List<VariableDeclaration> variables = new ArrayList<>();
 		List<StructSection> structures = new ArrayList<>();
@@ -150,12 +146,12 @@ public class UnitParser {
 				} else {
 					int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
 					if(functionEnd == -1) {
-						errors.add("Unfinished function:" + source.getErr(lines[i]));
+						errors.add("Unfinished function:" + unit.source.getErr(lines[i]));
 					} else {
 						DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
 						ErrorWrapper subErrors = errors.subErrrors("Invalid struct declaration");
 						FunctionSection func = FunctionDeclarationParser.parseFunctionSection(
-								source, lines, i, functionEnd, mods, subErrors);
+								unit, lines, i, functionEnd, mods, subErrors);
 						i = functionEnd;
 						functions.add(func);
 						modifiers.clear();
@@ -169,16 +165,16 @@ public class UnitParser {
 			} else if(line[0].base == TokenBase.KW_STRUCT) {
 				// parse struct
 				if(line.length < 3) {
-					errors.add("Invalid struct declaration:" + source.getErr(lines[i]));
+					errors.add("Invalid struct declaration:" + unit.source.getErr(lines[i]));
 				} else if(line[2].base != TokenBase.TK_BRACE_OPEN) {
 					errors.add("Expected '{' to begin struct:" + line[2].getErr());
 				} else {
 					int structEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
 					if(structEnd == -1) {
-						errors.add("Unfinished struct:" + source.getErr(lines[i]));
+						errors.add("Unfinished struct:" + unit.source.getErr(lines[i]));
 					} else {
 						DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
-						StructSection struct = StructSectionParser.parseStruct(source, lines, i, structEnd, mods, errors);
+						StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, mods, errors);
 						i = structEnd;
 						structures.add(struct);
 						modifiers.clear();
@@ -187,22 +183,20 @@ public class UnitParser {
 				
 			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
-				VariableDeclaration var = StatementParser.parseVariableDeclaration(source, line, errors);
+				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, errors);
 				if(var != null)
 					var.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
 				variables.add(var);
 				modifiers.clear();
 				
 			} else {
-				errors.add("Unexpected line begin token:" + source.getErr(line));
+				errors.add("Unexpected line begin token:" + unit.source.getErr(line));
 			}
 		}
 		
-		UnitBody body = new UnitBody();
-		body.variables = variables.toArray(VariableDeclaration[]::new);
-		body.functions = functions.toArray(FunctionSection[]::new);
-		body.structures = structures.toArray(StructSection[]::new);
-		return body;
+		unit.variables = variables.toArray(VariableDeclaration[]::new);
+		unit.functions = functions.toArray(FunctionSection[]::new);
+		unit.structures = structures.toArray(StructSection[]::new);
 	}
 	
 	private static int getSectionEnd(Token[][] lines, Token sectionStop, int start) {

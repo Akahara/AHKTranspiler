@@ -1,14 +1,69 @@
 package fr.wonder.ahk.compiler.tokens;
 
-import static fr.wonder.ahk.compiler.tokens.SectionToken.*;
-import static fr.wonder.ahk.compiler.tokens.TokenBase.*;
+import static fr.wonder.ahk.compiler.tokens.SectionToken.SEC_BRACES;
+import static fr.wonder.ahk.compiler.tokens.SectionToken.SEC_BRACKETS;
+import static fr.wonder.ahk.compiler.tokens.SectionToken.SEC_PARENTHESIS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.DECL_BASE;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.DECL_IMPORT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.DECL_UNIT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_ELSE;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_EQUAL;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_EQUAL_DIV;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_EQUAL_MINUS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_EQUAL_MOD;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_EQUAL_MUL;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_EQUAL_PLUS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_FOR;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_FOREACH;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_FUNC;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_IF;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_RETURN;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_SIZEOF;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_STRUCT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_VAR;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.KW_WHILE;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_BOOL_FALSE;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_BOOL_TRUE;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_FLOAT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_INT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_NULL;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_STR;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_DIRECT_MINUS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_DIRECT_PLUS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_DIV;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_EQUALS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_GEQUALS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_GREATER;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_LEQUALS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_LOWER;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_MINUS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_MOD;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_MUL;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_NEQUALS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_NOT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_PLUS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_SEQUALS;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_SHL;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.OP_SHR;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TK_BRACE_CLOSE;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TK_BRACE_OPEN;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TK_LINE_BREAK;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TK_SPACE;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TYPE_BOOL;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TYPE_FLOAT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TYPE_INT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TYPE_STR;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TYPE_VOID;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.VAR_MODIFIER;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.VAR_UNIT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.VAR_VARIABLE;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
-import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiler.Invalids;
 
 public class Tokens {
@@ -68,12 +123,9 @@ public class Tokens {
 		return base == VAR_UNIT || typesMap.containsKey(base);
 	}
 
-	// FIX new instances of struct types must NOT be created
-	// existing one must be collected per-unit so that they
-	// can be all linked by the linker
-	public static VarType getType(Token token) {
+	public static VarType getType(Unit unit, Token token) {
 		if(token.base == VAR_UNIT)
-			return new VarStructType(token.text);
+			return unit.getStructType(token);
 		return typesMap.getOrDefault(token.base, Invalids.TYPE);
 	}
 	

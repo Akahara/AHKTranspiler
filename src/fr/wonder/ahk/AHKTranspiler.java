@@ -46,8 +46,8 @@ public class AHKTranspiler {
 				ManifestUtils.CONVENTION_SCREAMING_SNAKE_CASE);
 		try {
 			TranspilableHandle handle = project
-				.compile(new ErrorWrapper("Unable to compile"))
-				.link(new ErrorWrapper("Unable to link"))
+				.compile(new ErrorWrapper("Unable to compile", true))
+				.link(new ErrorWrapper("Unable to link", true))
 				.prepare(manifest);
 			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export"));
 			logger.warn("Running with " + transpiler.getName());

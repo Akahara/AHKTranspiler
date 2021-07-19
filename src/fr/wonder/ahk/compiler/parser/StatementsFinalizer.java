@@ -25,14 +25,16 @@ public class StatementsFinalizer {
 	);
 
 	/** Adds functionEndSt to complete single line ifs, elses ... */
-	public static void finalizeStatements(UnitSource source, FunctionSection function) {
+	public static void finalizeStatements(FunctionSection function) {
+		UnitSource source = function.getSource();
+		
 		List<Statement> statements = new ArrayList<>(Arrays.asList(function.body));
 		
 		// close single line statements
 		for(int s = 0; s < statements.size(); s++) {
 			Statement st = statements.get(s);
 			if(st instanceof LabeledStatement) {
-				s = closeStatement(source, statements, s)-1;
+				s = closeStatement(statements, s)-1;
 			}
 		}
 		
@@ -56,33 +58,33 @@ public class StatementsFinalizer {
 		function.body = statements.toArray(Statement[]::new);
 	}
 
-	private static int closeStatement(UnitSource source, List<Statement> statements, int idx) {
+	private static int closeStatement(List<Statement> statements, int idx) {
 		LabeledStatement toClose = (LabeledStatement) statements.get(idx);
 		if(toClose.singleLine) {
 			if(statements.size() == idx) {
-				statements.add(new SectionEndSt(source, statements.get(statements.size()-1).sourceStop));
+				statements.add(new SectionEndSt(toClose.getSource(), statements.get(statements.size()-1).sourceStop));
 				return statements.size();
 			} else if(statements.get(idx+1) instanceof LabeledStatement) {
-				idx = closeStatement(source, statements, idx+1);
+				idx = closeStatement(statements, idx+1);
 			} else {
 				idx += 2;
 			}
-			statements.add(idx, new SectionEndSt(source, statements.get(idx-1).sourceStop));
+			statements.add(idx, new SectionEndSt(toClose.getSource(), statements.get(idx-1).sourceStop));
 			idx++;
 			// handle section-end special cases
 			if(statements.size() != idx && StatementsFinalizer.sectionsPairs.get(toClose.getClass()) == statements.get(idx).getClass())
-				idx = closeStatement(source, statements, idx);
+				idx = closeStatement(statements, idx);
 			return idx;
 		} else {
 			for(int s = idx+1; s < statements.size(); s++) {
 				Statement st = statements.get(s);
 				if(st instanceof LabeledStatement) {
-					s = closeStatement(source, statements, s);
+					s = closeStatement(statements, s);
 				} else if(st instanceof SectionEndSt) {
 					s++;
 					// handle section-end special cases
 					if(statements.size() != s && StatementsFinalizer.sectionsPairs.get(toClose.getClass()) == statements.get(idx).getClass())
-						s = closeStatement(source, statements, s);
+						s = closeStatement(statements, s);
 					return s;
 				}
 			}

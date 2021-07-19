@@ -15,6 +15,7 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiler.linker.Linker;
+import fr.wonder.ahk.compiler.linker.Prelinker;
 import fr.wonder.ahk.compiler.parser.UnitParser;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -85,7 +86,7 @@ public class Natives {
 		Unit unit;
 		try {
 			unit = UnitParser.parseUnit(unitSource, unitErrors);
-			Linker.prelinkUnit(unit, Collections.emptyMap(), unitErrors);
+			Prelinker.prelinkUnit(unit, Collections.emptyMap(), unitErrors);
 		} catch (WrappedException e) {
 			return null;
 		}

@@ -159,7 +159,14 @@ public class ExpressionParser {
 		if(section.subSections.size() == 1 && lastSection.type == SectionToken.SEC_PARENTHESIS &&
 				lastSection.start == section.start+3 && line[section.start+1].base == TokenBase.TK_COLUMN) {
 			
-			VarType type = Tokens.getType(line[section.start]);
+			Token typeToken = line[section.start];
+			VarType type;
+			if(typeToken.base == TokenBase.VAR_UNIT) {
+				errors.add("Cannot cast to a struct type:" + typeToken.getErr());
+				type = Invalids.TYPE;
+			} else {
+				type = Tokens.getType(null, typeToken);
+			}
 			if(type != null) {
 				Expression casted = parseExpression(source, line, lastSection.start, lastSection.stop, errors);
 				return new ConversionExp(source, sourceStart, sourceStop, type, casted, false);
