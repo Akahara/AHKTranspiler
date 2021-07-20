@@ -79,8 +79,6 @@ public class AsmX64Transpiler implements Transpiler {
 		
 		for(Unit u : handle.units)
 			validateUnit(handle, u, errors.subErrrors("Unable to validate unit " + u.fullBase));
-		for(Unit u : handle.nativeRequirements)
-			validateUnit(handle, u, errors.subErrrors("Unable to validate native unit " + u.fullBase));
 	}
 
 	private void validateUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {

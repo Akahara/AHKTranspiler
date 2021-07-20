@@ -7,6 +7,7 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
@@ -36,8 +37,12 @@ public class UnitParser {
 				header.unitDeclarationStop,
 				header.importations);
 		
+		unit.compilationState = UnitCompilationState.PARSED_WITH_ERRORS;
+		
 		parseSections(unit, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
 		errors.assertNoErrors();
+		
+		unit.compilationState = UnitCompilationState.PARSED;
 		
 		return unit;
 	}

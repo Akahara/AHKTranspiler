@@ -6,22 +6,16 @@ import fr.wonder.ahk.compiler.types.TypesTable;
 
 public class LinkedHandle {
 	
-	/**
-	 * The list of units in this handle, contains both source units and all imported
-	 * native units of {@link #nativeRequirements} at the end of the array.
-	 */
 	public final Unit[] units;
-	public final Unit[] nativeRequirements;
+	public final TypesTable typesTable;
 	
-	public final TypesTable typesTable = new TypesTable();
-	
-	public LinkedHandle(Unit[] units, Unit[] nativeRequirements) {
+	public LinkedHandle(Unit[] units, TypesTable typesTable) {
 		this.units = units;
-		this.nativeRequirements = nativeRequirements;
+		this.typesTable = typesTable;
 	}
 	
 	public TranspilableHandle prepare(AHKManifest manifest) {
-		return new TranspilableHandle(units, nativeRequirements, typesTable, manifest);
+		return new TranspilableHandle(units, typesTable, manifest);
 	}
 	
 }

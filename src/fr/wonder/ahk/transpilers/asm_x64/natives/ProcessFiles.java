@@ -40,9 +40,9 @@ public class ProcessFiles {
 		files.add(copyNative(dir, "asm/natives/values.fasm", "natives/values.asm"));
 		
 		for(Entry<String, FileWriter> unit : AHK_LIB.entrySet()) {
-			if(handle.requiresNative(unit.getKey())) {
+//			if(handle.requiresNative(unit.getKey())) {
 				files.add(unit.getValue().writeFile(handle, dir, errors));
-			}
+//			}
 		}
 		
 		return files.toArray(String[]::new);

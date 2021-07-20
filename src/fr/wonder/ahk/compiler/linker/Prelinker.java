@@ -9,19 +9,24 @@ import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.types.Triplet;
 
 public class Prelinker {
 
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
 	public static void prelinkUnit(Unit unit, Map<String, StructSection[]> declaredStructures,
-			ErrorWrapper errors) throws WrappedException {
+			ErrorWrapper errors) {
+		
+		if(unit.compilationState != UnitCompilationState.PARSED)
+			throw new IllegalStateException("Cannot prelink an unit with state " + unit.compilationState);
+		
+		unit.compilationState = UnitCompilationState.PRELINKED_WITH_ERRORS;
 		
 		for(Triplet<VarStructType, Token, Integer> composite : unit.usedStructTypes) {
 			VarStructType structType = composite.a;
@@ -109,6 +114,9 @@ public class Prelinker {
 		}
 		
 		Prototypes.buildPrototype(unit);
+		
+		if(errors.noErrors())
+			unit.compilationState = UnitCompilationState.PRELINKED;
 	}
 
 	private static StructSection searchStructSection(Unit unit, String name,

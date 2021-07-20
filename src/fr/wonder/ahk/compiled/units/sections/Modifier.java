@@ -1,5 +1,6 @@
 package fr.wonder.ahk.compiled.units.sections;
 
+import java.util.Arrays;
 import java.util.function.BiFunction;
 
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
@@ -56,6 +57,13 @@ public class Modifier {
 	public double getDouble(int pos) {
 		assertMod(pos, FloatLiteral.class);
 		return ((FloatLiteral) arguments[pos]).value;
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof Modifier &&
+				((Modifier) other).name.equals(name) &&
+				Arrays.equals(((Modifier) other).arguments, arguments);
 	}
 	
 	@SuppressWarnings("unchecked")

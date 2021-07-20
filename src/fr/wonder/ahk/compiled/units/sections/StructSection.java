@@ -40,6 +40,8 @@ public class StructSection extends SourceObject {
 			if(!member.equals(o.getMember(member.name)))
 				return false;
 		}
+		if(!modifiers.equals(o.modifiers))
+			return false;
 		return true;
 	}
 	

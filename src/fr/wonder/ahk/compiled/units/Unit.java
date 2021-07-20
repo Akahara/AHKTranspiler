@@ -29,6 +29,8 @@ public class Unit {
 	public FunctionSection[] functions;
 	public StructSection[] structures;
 	
+	public UnitCompilationState compilationState = UnitCompilationState.FRESH;
+	
 	/**
 	 * List of structure types used through variable declarations,
 	 * when a declaration is read the structure type is not known

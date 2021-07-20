@@ -7,9 +7,3 @@ struct Structure {
   int a;
   
 }
-
-struct Structure {
-
-  int b;
-
-}

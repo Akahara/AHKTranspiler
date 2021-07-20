@@ -26,27 +26,16 @@ public class PythonTranspiler implements Transpiler {
 			throws IOException, WrappedException {
 		handle.manifest.validate(handle, errors, false);
 		errors.assertNoErrors();
-		ErrorWrapper[] unitErrors = new ErrorWrapper[handle.units.length+handle.nativeRequirements.length];
+		ErrorWrapper[] unitErrors = new ErrorWrapper[handle.units.length];
 		for(int i = 0; i < handle.units.length; i++) {
 			unitErrors[i] = errors.subErrrors("Unable to compile unit " + handle.units[i].fullBase);
 			refactorUnit(handle, handle.units[i], unitErrors[i]);
-		}
-		for(int i = 0; i < handle.nativeRequirements.length; i++) {
-			unitErrors[handle.units.length+i] = errors.subErrrors("Unable to compile native unit " +
-					handle.nativeRequirements[i].fullBase);
-			refactorUnit(handle, handle.nativeRequirements[i], errors);
 		}
 		for(int i = 0; i < handle.units.length; i++) {
 			if(!unitErrors[i].noErrors())
 				continue;
 			File unitFile = new File(dir, handle.units[i].fullBase.replaceAll("\\.", "_")+".py");
 			exportUnit(handle, handle.units[i], unitFile, unitErrors[i]);
-		}
-		for(int i = 0; i < handle.nativeRequirements.length; i++) {
-			if(!unitErrors[handle.units.length+i].noErrors())
-				continue;
-			File unitFile = new File(dir, handle.nativeRequirements[i].fullBase.replaceAll("\\.", "_")+".py");
-			exportUnit(handle, handle.nativeRequirements[i], unitFile, unitErrors[handle.units.length+i]);
 		}
 		errors.assertNoErrors();
 		return new PythonExecutable(handle.manifest.ENTRY_POINT.replaceAll("\\.", "_")+".py");
