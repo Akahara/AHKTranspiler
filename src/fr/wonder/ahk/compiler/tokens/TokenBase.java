@@ -28,8 +28,8 @@ public enum TokenBase {
 	KW_WHILE("while"),
 	KW_FUNC("func"),
 	KW_STRUCT("struct"),
+	KW_CONSTRUCTOR("constructor"),
 	KW_RETURN("return"),
-	
 	KW_SIZEOF("sizeof"),
 	
 	TYPE_VOID("void"),

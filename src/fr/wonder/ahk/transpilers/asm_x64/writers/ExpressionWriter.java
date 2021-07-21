@@ -1,7 +1,9 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import fr.wonder.ahk.compiled.expressions.ArrayExp;
+import fr.wonder.ahk.compiled.expressions.ConstructorExp;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
+import fr.wonder.ahk.compiled.expressions.DirectAccessExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionExp;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
@@ -11,7 +13,9 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
@@ -21,6 +25,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
+import fr.wonder.commons.exceptions.UnreachableException;
 
 public class ExpressionWriter {
 	
@@ -38,6 +43,8 @@ public class ExpressionWriter {
 			writeFunctionExp((FunctionExp) exp, errors);
 		else if(exp instanceof VarExp)
 			writer.mem.writeTo(Register.RAX, exp, errors);
+		else if(exp instanceof DirectAccessExp)
+			writeDirectAccessExp((DirectAccessExp) exp, errors);
 		else if(exp instanceof OperationExp)
 			writeOperationExp((OperationExp) exp, errors);
 		else if(exp instanceof ConversionExp)
@@ -48,8 +55,10 @@ public class ExpressionWriter {
 			writeIndexingExp((IndexingExp) exp, errors);
 		else if(exp instanceof SizeofExp)
 			writeSizeofExp((SizeofExp) exp, errors);
+		else if(exp instanceof ConstructorExp)
+			writeConstructorExp((ConstructorExp) exp, errors);
 		else
-			throw new IllegalStateException("Unknown expression type " + exp.getClass());
+			throw new UnreachableException("Unknown expression type " + exp.getClass());
 	}
 
 	private void writeFunctionExp(FunctionExp exp, ErrorWrapper errors) {
@@ -59,22 +68,32 @@ public class ExpressionWriter {
 	private void writeFunctionExp(FunctionPrototype function, Expression[] arguments,  ErrorWrapper errors) {
 		switch(writer.project.manifest.callingConvention) {
 		case __stdcall: {
-			int argsSpace = FunctionWriter.getArgumentsSize(function);
-			if(argsSpace != 0) {
+			
+			if(function.functionType.arguments.length != 0) {
+				int argsSpace = FunctionWriter.getArgumentsSize(function);
 				writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
 				writer.mem.addStackOffset(argsSpace);
-			}
-			for(int i = 0; i < arguments.length; i++) {
-				Expression arg = arguments[i];
-				writer.mem.writeTo(new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE), arg, errors);
+				for(int i = 0; i < arguments.length; i++) {
+					Expression arg = arguments[i];
+					writer.mem.writeTo(new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE), arg, errors);
+				}
+				writer.mem.addStackOffset(-argsSpace);
 			}
 			writer.instructions.call(UnitWriter.getRegistry(function));
-			writer.mem.addStackOffset(-argsSpace);
 			break;
+			
 		}
 		default:
 			throw new IllegalStateException("Unimplemented calling convention " + writer.project.manifest.callingConvention);
 		}
+	}
+
+	private void writeDirectAccessExp(DirectAccessExp exp, ErrorWrapper errors) {
+		writeExpression(exp.getStruct(), errors);
+		// TODO check for null instances
+		ConcreteType structType = writer.types.getConcreteType((VarStructType) exp.getStruct().getType());
+		int offset = structType.getOffset(exp.member);
+		writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, offset));
 	}
 	
 	private void writeOperationExp(OperationExp exp, ErrorWrapper errors) {
@@ -153,6 +172,24 @@ public class ExpressionWriter {
 		} else {
 			errors.add("Sizeof used on non-array type" + exp.getErr());
 		}
+	}
+
+	private void writeConstructorExp(ConstructorExp exp, ErrorWrapper errors) {
+		ConcreteType type = writer.types.getConcreteType(exp.getType());
+		ConstructorPrototype constructor = exp.constructor;
+		writer.callAlloc(type.size);
+		if(constructor.names.length == 0)
+			return;
+		writer.mem.addStackOffset(MemSize.POINTER_SIZE);
+		writer.instructions.push(Register.RAX);
+		MemAddress instanceAddress = new MemAddress(Register.RSP);
+		for(int i = 0; i < constructor.types.length; i++) {
+			int fieldOffset = type.getOffset(constructor.names[i]);
+			MemAddress fieldAddress = new MemAddress(instanceAddress, fieldOffset);
+			writer.mem.writeTo(fieldAddress, exp.expressions[i], errors);
+		}
+		writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
+		writer.instructions.pop(Register.RAX);
 	}
 
 }

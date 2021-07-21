@@ -79,7 +79,7 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 
 	@Override
 	public boolean matchesDeclaration(ValueDeclaration decl) {
-		return decl.getSignature().equals(getSignature());
+		return decl instanceof FunctionSection && decl.getSignature().equals(getSignature());
 	}
 	
 	@Override

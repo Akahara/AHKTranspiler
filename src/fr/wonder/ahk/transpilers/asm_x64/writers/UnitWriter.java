@@ -44,8 +44,10 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitWriter {
 	
-	public static InstructionSet writeUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
-		UnitWriter uw = new UnitWriter(handle, unit);
+	public static InstructionSet writeUnit(TranspilableHandle handle,
+			Unit unit, ConcreteTypesTable types, ErrorWrapper errors) {
+		
+		UnitWriter uw = new UnitWriter(handle, unit, types);
 		// variables that must be initialized (because they are not literals or computable constants)
 		List<VariableDeclaration> initializableVariables = new ArrayList<>();
 		// all other variables (which values can be computed beforehand)
@@ -72,17 +74,19 @@ public class UnitWriter {
 	public final MemoryManager mem;
 	public final ExpressionWriter expWriter;
 	public final AsmOperationWriter opWriter;
+	public final ConcreteTypesTable types;
 	/** populated by {@link #writeDataSegment(ErrorWrapper)} and used by {@link #getLabel(StrLiteral)} */
 	private final List<StrLiteral> strConstants = new ArrayList<>();
 	
 	private int specialCallCount = 0;
 	
-	private UnitWriter(TranspilableHandle handle, Unit unit) {
+	private UnitWriter(TranspilableHandle handle, Unit unit, ConcreteTypesTable types) {
 		this.project = handle;
 		this.unit = unit;
 		this.mem = new MemoryManager(this);
 		this.expWriter = new ExpressionWriter(this);
 		this.opWriter = new AsmOperationWriter(this);
+		this.types = types;
 	}
 	
 	// ------------------------ registries & labels ------------------------

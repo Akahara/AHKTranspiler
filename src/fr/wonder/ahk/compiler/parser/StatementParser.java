@@ -45,17 +45,17 @@ public class StatementParser {
 		TokenBase firstToken = line[0].base;
 		switch(firstToken) {
 		case KW_IF:
-			return parseIfStatement(unit.source, line, errors);
+			return parseIfStatement(unit, line, errors);
 		case KW_ELSE:
-			return parseElseStatement(unit.source, line, errors);
+			return parseElseStatement(unit, line, errors);
 		case KW_WHILE:
-			return parseWhileStatement(unit.source, line, errors);
+			return parseWhileStatement(unit, line, errors);
 		case KW_FOR:
 			return parseForStatement(unit, line, errors);
 		case KW_FOREACH:
 			return parseForeachStatement(unit, line, errors);
 		case KW_RETURN:
-			return parseReturnStatement(unit.source, line, errors);
+			return parseReturnStatement(unit, line, errors);
 		case TK_BRACE_CLOSE:
 			return new SectionEndSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop);
 		case TYPE_BOOL:
@@ -70,13 +70,13 @@ public class StatementParser {
 		TokenBase lastToken = line[line.length-1].base;
 		int affectationTokenPos = getAffectationTokenPos(line);
 		if(Tokens.isDirectAffectation(lastToken))
-			return parseDirectAffectationStatement(unit.source, line, errors);
+			return parseDirectAffectationStatement(unit, line, errors);
 		if(affectationTokenPos != -1 && isMultipleAffectationStatement(line, affectationTokenPos))
-			return parseMultipleAffectationStatement(unit.source, line, affectationTokenPos, errors);
+			return parseMultipleAffectationStatement(unit, line, affectationTokenPos, errors);
 		if(affectationTokenPos != -1)
-			return parseAffectationStatement(unit.source, line, affectationTokenPos, errors);
+			return parseAffectationStatement(unit, line, affectationTokenPos, errors);
 		if(isFunctionStatement(line))
-			return parseFunctionStatement(unit.source, line, errors);
+			return parseFunctionStatement(unit, line, errors);
 		
 		errors.add("Unknown statement:" + unit.source.getErr(line));
 		return Invalids.STATEMENT;
@@ -96,16 +96,16 @@ public class StatementParser {
 		return success;
 	}
 
-	private static AffectationSt parseDirectAffectationStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
+	private static AffectationSt parseDirectAffectationStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		ErrorWrapper subErrors = errors.subErrrors("Unable to parse variable affectation");
-		Expression leftOperand = ExpressionParser.parseExpression(source, line, 0, line.length-1, subErrors);
+		Expression leftOperand = ExpressionParser.parseExpression(unit, line, 0, line.length-1, subErrors);
 		if(!subErrors.noErrors())
 			return Invalids.AFFECTATION_STATEMENT;
 		Token last = line[line.length-1];
-		Expression rightOperand = new IntLiteral(source, last.sourceStart, last.sourceStop, 1);
+		Expression rightOperand = new IntLiteral(unit.source, last.sourceStart, last.sourceStop, 1);
 		Operator op = Tokens.getDirectOperation(last.base);
-		Expression affectation = new OperationExp(source, line[0].sourceStart, last.sourceStop, op, leftOperand, rightOperand);
-		return new AffectationSt(source, line[0].sourceStart, last.sourceStop, leftOperand, affectation);
+		Expression affectation = new OperationExp(unit.source, line[0].sourceStart, last.sourceStop, op, leftOperand, rightOperand);
+		return new AffectationSt(unit.source, line[0].sourceStart, last.sourceStop, leftOperand, affectation);
 	}
 
 	// TODO parse var declaration modifiers (visibility, constants...)
@@ -152,7 +152,7 @@ public class StatementParser {
 		if(line.length == t+1) {
 			defaultValue = getDefaultValue(varType, unit.source, line[t].sourceStop);
 		} else {
-			defaultValue = ExpressionParser.parseExpression(unit.source, line, t+2, line.length, subErrors);
+			defaultValue = ExpressionParser.parseExpression(unit, line, t+2, line.length, subErrors);
 		}
 		
 		return new VariableDeclaration(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, varName, varType, defaultValue);
@@ -176,9 +176,9 @@ public class StatementParser {
 	}
 	
 	/** Assumes that the first token is KW_IF */
-	private static Statement parseIfStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
+	private static Statement parseIfStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		if(line.length < 3) {
-			errors.add("Incomplete if statement:" + source.getErr(line));
+			errors.add("Incomplete if statement:" + unit.source.getErr(line));
 			return Invalids.STATEMENT;
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
@@ -186,21 +186,21 @@ public class StatementParser {
 		if(!assertParentheses(line, 1, conditionEnd, errors)) {
 			return Invalids.STATEMENT;
 		} else {
-			Expression condition = ExpressionParser.parseExpression(source, line, 2, conditionEnd, errors);
-			return new IfSt(source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
+			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
+			return new IfSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
 		}
 	}
 	
 	/** Assumes that the first token is KW_ELSE */
-	private static Statement parseElseStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
+	private static Statement parseElseStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
-		return new ElseSt(source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine);
+		return new ElseSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine);
 	}
 	
 	/** Assumes that the first token is KW_WHILE */
-	private static Statement parseWhileStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
+	private static Statement parseWhileStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		if(line.length < 3) {
-			errors.add("Incomplete while statement:" + source.getErr(line));
+			errors.add("Incomplete while statement:" + unit.source.getErr(line));
 			return Invalids.STATEMENT;
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
@@ -208,8 +208,8 @@ public class StatementParser {
 		if(!assertParentheses(line, 1, conditionEnd, errors)) {
 			return Invalids.STATEMENT;
 		} else {
-			Expression condition = ExpressionParser.parseExpression(source, line, 2, conditionEnd, errors);
-			return new WhileSt(source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
+			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
+			return new WhileSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
 		}
 	}
 	
@@ -253,7 +253,7 @@ public class StatementParser {
 					errors.subErrrors("Expected variable declaration in for statement"));
 		}
 		if(secondSplit != firstSplit+1) {
-			condition = ExpressionParser.parseExpression(unit.source, line, firstSplit+1, secondSplit, 
+			condition = ExpressionParser.parseExpression(unit, line, firstSplit+1, secondSplit, 
 					errors.subErrrors("Expected condition in for statement"));
 		} else {
 			condition = new BoolLiteral(unit.source, line[firstSplit].sourceStop, line[secondSplit].sourceStart, true);
@@ -262,11 +262,11 @@ public class StatementParser {
 			Token[] affectationTokens = Arrays.copyOfRange(line, secondSplit+1, conditionEnd);
 			ErrorWrapper subErrors = errors.subErrrors("Expected affectation in for statement");
 			if(Tokens.isDirectAffectation(affectationTokens[affectationTokens.length-1].base)) {
-				affectation = parseDirectAffectationStatement(unit.source, affectationTokens, subErrors);
+				affectation = parseDirectAffectationStatement(unit, affectationTokens, subErrors);
 			} else {
 				int opPos = getAffectationTokenPos(affectationTokens);
 				if(opPos != -1)
-					affectation = parseAffectationStatement(unit.source, affectationTokens, opPos, subErrors);
+					affectation = parseAffectationStatement(unit, affectationTokens, opPos, subErrors);
 				else
 					subErrors.add("Not an affectation" + unit.source.getErr(affectationTokens));
 			}
@@ -294,10 +294,10 @@ public class StatementParser {
 		}
 		VariableDeclaration declaration = parseVariableDeclaration(unit, Arrays.copyOfRange(line, 2, simpleRangeMarker), errors);
 		int maxStop = simpleRangeSecond == -1 ? conditionEnd : simpleRangeSecond;
-		Expression maximum = ExpressionParser.parseExpression(unit.source, line, simpleRangeMarker+1, maxStop, errors);
+		Expression maximum = ExpressionParser.parseExpression(unit, line, simpleRangeMarker+1, maxStop, errors);
 		Expression increment;
 		if(simpleRangeSecond != -1)
-			increment = ExpressionParser.parseExpression(unit.source, line, simpleRangeSecond+1, conditionEnd, errors);
+			increment = ExpressionParser.parseExpression(unit, line, simpleRangeSecond+1, conditionEnd, errors);
 		else
 			increment = new IntLiteral(unit.source, line[conditionEnd].sourceStart, line[conditionEnd].sourceStart, 1);
 		return new RangedForSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop,
@@ -324,23 +324,23 @@ public class StatementParser {
 		}
 		VariableDeclaration var = new VariableDeclaration(unit.source, line[2].sourceStart, line[3].sourceStop,
 				line[3].text, Tokens.getType(unit, line[2]), null);
-		Expression iterable = ExpressionParser.parseExpression(unit.source, line, 5, conditionEnd, errors);
+		Expression iterable = ExpressionParser.parseExpression(unit, line, 5, conditionEnd, errors);
 		
 		return new ForEachSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine, var, iterable);
 	}
 	
 	/** Assumes that the first token is KW_RETURN */
-	private static Statement parseReturnStatement(UnitSource unit, Token[] line, ErrorWrapper errors) {
+	private static Statement parseReturnStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		int sourceStart = line[0].sourceStart;
 		int sourceStop = line[line.length-1].sourceStop;
 		if(line.length == 1) {
-			return new ReturnSt(unit, sourceStart, sourceStop);
+			return new ReturnSt(unit.source, sourceStart, sourceStop);
 		} else {
 			Expression[] returnValues = ExpressionParser.parseArgumentList(unit, line, 1, line.length, errors);
 			if(returnValues.length == 1)
-				return new ReturnSt(unit, sourceStart, sourceStop, returnValues[0]);
+				return new ReturnSt(unit.source, sourceStart, sourceStop, returnValues[0]);
 			else
-				return new CompositeReturnSt(unit, sourceStart, sourceStop, returnValues);
+				return new CompositeReturnSt(unit.source, sourceStart, sourceStop, returnValues);
 		}
 	}
 	
@@ -372,21 +372,21 @@ public class StatementParser {
 	}
 	
 	/** Assumes that {@code opPos != -1} */
-	private static AffectationSt parseAffectationStatement(UnitSource source, Token[] line, int opPos,
+	private static AffectationSt parseAffectationStatement(Unit unit, Token[] line, int opPos,
 			ErrorWrapper errors) {
-		Expression leftOperand = ExpressionParser.parseExpression(source, line, 0, opPos, errors);
-		Expression rightOperand = ExpressionParser.parseExpression(source, line, opPos+1, line.length, errors);
+		Expression leftOperand = ExpressionParser.parseExpression(unit, line, 0, opPos, errors);
+		Expression rightOperand = ExpressionParser.parseExpression(unit, line, opPos+1, line.length, errors);
 		if(line[opPos].base != TokenBase.KW_EQUAL) {
 			Operator op = Tokens.getAffectationOperator(line[opPos].base);
-			rightOperand = new OperationExp(source, line[0].sourceStart, line[line.length-1].sourceStop,
+			rightOperand = new OperationExp(unit.source, line[0].sourceStart, line[line.length-1].sourceStop,
 					op, leftOperand, rightOperand);
 		}
-		return new AffectationSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
+		return new AffectationSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop,
 				leftOperand, rightOperand);
 	}
 	
 	/** Assumes that {@code opPos != -1} and {@link #isMultipleAffectationStatement(Token[], int)} returned true */
-	private static MultipleAffectationSt parseMultipleAffectationStatement(UnitSource source, Token[] line,
+	private static MultipleAffectationSt parseMultipleAffectationStatement(Unit unit, Token[] line,
 			int opPos, ErrorWrapper errors) {
 
 		String[] variables = new String[(opPos+1)/2];
@@ -406,10 +406,10 @@ public class StatementParser {
 		if(line[opPos].base != TokenBase.KW_EQUAL)
 			errors.add("Multiple affectations only support the '=' operator" + line[opPos].getErr());
 		
-		Expression[] values = ExpressionParser.parseArgumentList(source, line, opPos+1, line.length,
+		Expression[] values = ExpressionParser.parseArgumentList(unit, line, opPos+1, line.length,
 				errors.subErrrors("Cannot parse affectation values"));
 		
-		return new MultipleAffectationSt(source, line[0].sourceStart, line[line.length-1].sourceStop,
+		return new MultipleAffectationSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop,
 				line[opPos-1].sourceStop, variables, values);
 	}
 	
@@ -417,12 +417,12 @@ public class StatementParser {
 		return line[line.length-1].base == TokenBase.TK_PARENTHESIS_CLOSE;
 	}
 	
-	private static Statement parseFunctionStatement(UnitSource source, Token[] line, ErrorWrapper errors) {
-		Expression exp = ExpressionParser.parseExpression(source, line, 0, line.length, errors);
+	private static Statement parseFunctionStatement(Unit unit, Token[] line, ErrorWrapper errors) {
+		Expression exp = ExpressionParser.parseExpression(unit, line, 0, line.length, errors);
 		if(exp instanceof FunctionCallExp)
-			return new FunctionSt(source, line[0].sourceStart, line[line.length-1].sourceStop, (FunctionCallExp) exp);
+			return new FunctionSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, (FunctionCallExp) exp);
 		else
-			throw new IllegalStateException("Statement is not a function " + source.getErr(line));
+			throw new IllegalStateException("Statement is not a function " + unit.source.getErr(line));
 	}
 	
 }

@@ -3,7 +3,6 @@ package fr.wonder.ahk.compiled.units.prototypes;
 import java.util.HashSet;
 import java.util.Set;
 
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitDeclaration;
@@ -14,7 +13,7 @@ import fr.wonder.commons.utils.ArrayOperator;
 public class UnitPrototype implements Prototype<UnitDeclaration> {
 	
 	public static final UnitPrototype NULL_PROTOTYPE = 
-			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0], new VariablePrototype[0]);
+			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0], new VariablePrototype[0], new StructPrototype[0]);
 	
 	public final String base;
 	public final String fullBase;
@@ -22,6 +21,7 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 	
 	public final FunctionPrototype[] functions;
 	public final VariablePrototype[] variables;
+	public final StructPrototype[] structures;
 	
 	/**
 	 * The list of variables and functions used but not contained by this unit.
@@ -30,12 +30,13 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 	public Set<VarAccess> externalAccesses = new HashSet<>();
 	
 	public UnitPrototype(String fullBase, String[] importations,
-			FunctionPrototype[] functions, VariablePrototype[] variables) {
+			FunctionPrototype[] functions, VariablePrototype[] variables, StructPrototype[] structures) {
 		this.base = fullBase.substring(fullBase.lastIndexOf('.')+1);
 		this.fullBase = fullBase;
 		this.importations = importations;
 		this.functions = functions;
 		this.variables = variables;
+		this.structures = structures;
 	}
 	
 	@Override
@@ -89,12 +90,6 @@ public class UnitPrototype implements Prototype<UnitDeclaration> {
 		if(!unit.fullBase.equals(fullBase))
 			throw new IllegalArgumentException("Unit " + unit + " does not match prototype " + this);
 		return unit.declaration;
-	}
-
-	/** A unit prototype equals a unit declaration iff they have the same full base. */
-	@Override
-	public boolean matchesDeclaration(ValueDeclaration decl) {
-		return decl instanceof UnitDeclaration && ((UnitDeclaration) decl).fullBase.equals(fullBase);
 	}
 	
 	@Override

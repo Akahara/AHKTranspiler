@@ -9,6 +9,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.utils.Utils;
 
 public class Modifier {
 	
@@ -80,6 +81,11 @@ public class Modifier {
 			}
 		}
 		return false;
+	}
+	
+	@Override
+	public String toString() {
+		return '@' + name + '(' + Utils.toString(arguments) + ')';
 	}
 	
 }

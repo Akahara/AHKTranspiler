@@ -1,12 +1,13 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
-import fr.wonder.ahk.compiled.units.sections.StructSection;
+import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 
 public class VarStructType extends VarType {
 	
 	public final String name;
 	
-	public StructSection structure;
+	/** Set by the Prelinker */
+	public StructPrototype structure;
 	
 	public VarStructType(String name) {
 		this.name = name;
@@ -22,10 +23,15 @@ public class VarStructType extends VarType {
 		return String.format("S%02d", Math.floorMod(name.hashCode(), 100)); // FUTURE rework the struct signature
 	}
 	
+	/**
+	 * Two structure types are equal if the structure they point to are the same,
+	 * as a single unit cannot import multiple structure with the same name this
+	 * equality check can be done only by comparing the structures' names.
+	 */
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof VarStructType &&
-				((VarStructType) other).structure.equals(structure);
+				((VarStructType) other).name.equals(name);
 	}
 	
 }

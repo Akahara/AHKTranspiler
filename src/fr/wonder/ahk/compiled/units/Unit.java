@@ -5,7 +5,6 @@ import java.util.List;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -67,7 +66,7 @@ public class Unit {
 		return other instanceof Unit && fullBase.equals(((Unit) other).fullBase);
 	}
 
-	public VarType getStructType(Token token) {
+	public VarStructType getStructType(Token token) {
 		if(token.base != TokenBase.VAR_UNIT)
 			throw new IllegalArgumentException("Not a struct token");
 		for(var knownType : usedStructTypes) {

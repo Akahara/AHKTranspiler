@@ -1,6 +1,7 @@
 base fr.wonder.main;
 
 import ahk.Kernel;
+import fr.wonder.main.Structs;
 
 unit Main;
 
@@ -9,6 +10,7 @@ int ii = -3;
 int gi = 8;
 str x = "str";
 int[] array = [56, 42, 37];
+Structure structure = Structure(67);
 
 func int gcd(int x, int y) {
 	if(y == 0)
@@ -78,5 +80,7 @@ func int main() {
 	Kernel.println(3 != true);
 	Kernel.println("------ Expected composed strings:");
 	Kernel.println("a composed " + "string");
+	Kernel.println("");
+	Kernel.println(structure.a);
 	return 5;
 }

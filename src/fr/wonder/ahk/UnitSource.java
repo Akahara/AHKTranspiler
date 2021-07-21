@@ -81,27 +81,27 @@ public class UnitSource {
 		return idx == -1 ? null : tokens[idx];
 	}
 	
-	public String getErr(int i) {
-		int l = getLineIdx(i);
+	public String getErr(int chrIdx) {
+		int l = getLineIdx(chrIdx);
 		String line = getLine(l);
 		int llen = line.length();
 		line = line.stripLeading();
-		int spacing = i-(l>0?linebreaks[l-1]:0)+line.length()-llen;
+		int spacing = chrIdx-(l>0?linebreaks[l-1]:0)+line.length()-llen;
 		return  "\n  At " + name + " - " + (l+1) + ":" + spacing +
 				"\n    " + line +
 				"\n    " + " ".repeat(spacing) + "^";
 	}
 	
-	public String getErr(int i, int j) {
-		int l = getLineIdx(i);
+	public String getErr(int chrBegin, int chrEnd) {
+		int l = getLineIdx(chrBegin);
 		String line = getLine(l);
 		int llen = line.length();
 		line = line.stripLeading();
-		int spacing = i-(l>0?linebreaks[l-1]:0)+line.length()-llen;
-		return  "\n  At " + name + " - " + (l+1) + ":" + (i-(l>0?linebreaks[l-1]:0)) +
+		int spacing = chrBegin-(l>0?linebreaks[l-1]:0)+line.length()-llen;
+		return  "\n  At " + name + " - " + (l+1) + ":" + (chrBegin-(l>0?linebreaks[l-1]:0)) +
 				"\n    " + line +
 //				"\n    " + " ".repeat(spacing) + "^" + "~".repeat(Math.max(0, Math.min(j-i, llen-spacing)-1));
-				"\n    " + " ".repeat(spacing) + "~".repeat(Math.max(0, Math.min(j-i, llen-spacing)));
+				"\n    " + " ".repeat(spacing) + "~".repeat(Math.max(0, Math.min(chrEnd-chrBegin, llen-spacing)));
 	}
 	
 	public String getErr(SourceElement s) {

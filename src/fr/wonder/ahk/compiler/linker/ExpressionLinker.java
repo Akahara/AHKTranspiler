@@ -1,6 +1,7 @@
 package fr.wonder.ahk.compiler.linker;
 
 import fr.wonder.ahk.compiled.expressions.ArrayExp;
+import fr.wonder.ahk.compiled.expressions.ConstructorExp;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
@@ -9,6 +10,7 @@ import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
@@ -118,6 +120,12 @@ class ExpressionLinker {
 				}
 				// #setOperation replaces the operation expression operands by cast expressions if needed
 				oexp.setOperation(op);
+			
+			} else if(exp instanceof ConstructorExp) {
+				ConstructorExp cexp = (ConstructorExp) exp;
+				VarStructType type = cexp.getType();
+				// FIX search for the valid constructor
+				cexp.constructor = type.structure.constructors[0];
 			}
 			
 			exp.computeValueType(typesTable, errors);

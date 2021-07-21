@@ -14,6 +14,7 @@ import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.ahk.transpilers.asm_x64.natives.ProcessFiles;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
+import fr.wonder.ahk.transpilers.asm_x64.writers.ConcreteTypesTable;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -41,9 +42,11 @@ public class AsmX64Transpiler implements Transpiler {
 		
 		String[] files = new String[handle.units.length];
 		
+		ConcreteTypesTable types = new ConcreteTypesTable();
+		
 		for(int i = 0; i < handle.units.length; i++) {
 			Unit unit = handle.units[i];
-			files[i] = writeUnit(handle, unit, dir, errors);
+			files[i] = writeUnit(handle, unit, types, dir, errors);
 		}
 		
 		errors.assertNoErrors();
@@ -96,9 +99,9 @@ public class AsmX64Transpiler implements Transpiler {
 		}
 	}
 
-	private static String writeUnit(TranspilableHandle handle, Unit unit, File dir, ErrorWrapper errors) throws IOException {
+	private static String writeUnit(TranspilableHandle handle, Unit unit, ConcreteTypesTable types, File dir, ErrorWrapper errors) throws IOException {
 		String file = unit.fullBase.replaceAll("\\.", "/")+".asm";
-		InstructionSet instructions = UnitWriter.writeUnit(handle, unit, errors);
+		InstructionSet instructions = UnitWriter.writeUnit(handle, unit, types, errors);
 		File f = new File(dir, file);
 		if(!f.isFile()) { f.getParentFile().mkdirs(); f.createNewFile(); }
 		FilesUtils.write(f, instructions.toString());

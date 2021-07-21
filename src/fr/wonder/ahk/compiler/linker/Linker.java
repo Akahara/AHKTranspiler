@@ -2,15 +2,11 @@ package fr.wonder.ahk.compiler.linker;
 
 import static fr.wonder.commons.utils.ArrayOperator.map;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.handles.LinkedHandle;
@@ -71,14 +67,27 @@ public class Linker {
 	}
 	
 	private static void prelinkUnits(Unit[] units, ErrorWrapper errors) throws WrappedException {
-		Map<String, StructSection[]> declaredStructures = new HashMap<>();
-		for(Unit u : units)
-			declaredStructures.put(u.fullBase, u.structures);
+		// compute signatures before listing prototypes
+		// at this point their still might be name collisions, that will cause
+		// signature collisions but they will be detected by Prelinker#prelinkUnit
+		for(Unit unit : units) {
+			
+			if(unit.compilationState != UnitCompilationState.PARSED)
+				throw new IllegalStateException("Cannot prelink an unit with state " + unit.compilationState);
+			unit.compilationState = UnitCompilationState.PRELINKED_WITH_ERRORS;
+			
+			Prelinker.computeSignaturesAndPrototypes(unit);
+		}
+		
+		UnitPrototype[] prototypes = ArrayOperator.map(units, UnitPrototype[]::new, u->u.prototype);
 		
 		for(Unit unit : units) {
 			ErrorWrapper subErrors = errors.subErrrors("Unable to prelink unit " + unit.fullBase);
-			Prelinker.prelinkUnit(unit, declaredStructures, subErrors);
+			Prelinker.prelinkUnit(unit, prototypes, subErrors);
+			if(subErrors.noErrors())
+				unit.compilationState = UnitCompilationState.PRELINKED;
 		}
+		
 		errors.assertNoErrors();
 	}
 	

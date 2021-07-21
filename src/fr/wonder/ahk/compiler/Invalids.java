@@ -9,10 +9,15 @@ import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
+import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
@@ -77,6 +82,9 @@ public class Invalids {
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return Invalids.TYPE; }
 	};
 
-	public static final StructSection STRUCT = new StructSection(Invalids.SOURCE, 0, 0, Invalids.STRING, Invalids.MODIFIERS, new VariableDeclaration[0]);
+	public static final StructSection STRUCT = new StructSection(Invalids.SOURCE, 0, 0, Invalids.STRING, Invalids.MODIFIERS, new VariableDeclaration[0], new StructConstructor[0]);
+	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(Invalids.MODIFIERS, new VariablePrototype[0], new ConstructorPrototype[0], Invalids.ACCESS_SIGNATURE);
+	
+	public static final StructConstructor CONSTRUCTOR = new StructConstructor(Invalids.SOURCE, 0, 0, new FunctionArgument[0]);
 	
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -92,27 +93,26 @@ class FunctionDeclarationParser {
 		func.arguments = new FunctionArgument[arguments.size()];
 		for(int i = 0; i < arguments.size(); i++) {
 			Argument arg = arguments.get(i);
-			func.arguments[i] = new FunctionArgument(
-					func.getSource(),
-					arg.sourceStart,
-					arg.sourceStop,
-					arg.name,
-					arg.type);
+			func.arguments[i] = arg.asFunctionArgument(unit.source);
 		}
 		
 		if(k != declaration.length-1)
-			errors.add("Unexpected tokens" + func.getSource().getErr(declaration, k, declaration.length-1));
+			errors.add("Unexpected tokens" + unit.source.getErr(declaration, k, declaration.length-1));
 	}
 	
-	private static class Argument {
+	static class Argument {
 		
 		String name;
 		VarType type;
 		int sourceStart, sourceStop;
 		
+		FunctionArgument asFunctionArgument(UnitSource source) {
+			return new FunctionArgument(source, sourceStart, sourceStop, name, type);
+		}
+		
 	}
 	
-	private static Tuple<List<Argument>, Integer> readArguments(
+	static Tuple<List<Argument>, Integer> readArguments(
 			Unit unit, Token[] tokens, int begin, ErrorWrapper errors) {
 		
 		if(tokens[begin].base != TokenBase.TK_PARENTHESIS_OPEN) {
@@ -126,7 +126,7 @@ class FunctionDeclarationParser {
 		int k = begin+1;
 		while(true) {
 			if(tokens.length < k+3) {
-				errors.add("Icomplete composite:" + tokens[tokens.length-1].getErr());
+				errors.add("Incomplete composite:" + tokens[tokens.length-1].getErr());
 				return new Tuple<>(arguments, tokens.length-1);
 			}
 			Argument arg = new Argument();

@@ -3,9 +3,10 @@ package fr.wonder.ahk.compiler.parser;
 import java.util.ArrayList;
 import java.util.List;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.ArrayExp;
+import fr.wonder.ahk.compiled.expressions.ConstructorExp;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
+import fr.wonder.ahk.compiled.expressions.DirectAccessExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
@@ -18,7 +19,9 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
@@ -119,11 +122,11 @@ public class ExpressionParser {
 		return current;
 	}
 	
-	public static Expression parseExpression(UnitSource source, Token[] line, int start, int stop, ErrorWrapper errors) {
-		return parseExpression(source, line, getVisibleSection(line, start, stop), errors);
+	public static Expression parseExpression(Unit unit, Token[] line, int start, int stop, ErrorWrapper errors) {
+		return parseExpression(unit, line, getVisibleSection(line, start, stop), errors);
 	}
 	
-	private static Expression parseExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
+	private static Expression parseExpression(Unit unit, Token[] line, Section section, ErrorWrapper errors) {
 //		Utils.dump(line, section.start, section.stop);
 		if(section.stop == section.start) {
 			errors.add("Empty expression:" + line[section.start].getErr());
@@ -132,6 +135,7 @@ public class ExpressionParser {
 		
 		Section firstSection = section.subSections.isEmpty() ? null : section.subSections.get(0);
 		
+		// remove extra parenthesis
 		while(section.subSections.size() == 1 && firstSection.start == section.start+1 && 
 				firstSection.stop == section.stop-1 && firstSection.type == SectionToken.SEC_PARENTHESIS) {
 			section = firstSection;
@@ -141,21 +145,24 @@ public class ExpressionParser {
 		int sourceStart = line[section.start].sourceStart;
 		int sourceStop = line[section.start].sourceStop;
 		
+		// parse operation
 		if(!section.operators.isEmpty())
-			return parseOperationExpression(source, line, section, errors);
+			return parseOperationExpression(unit, line, section, errors);
 		
+		// parse single token expression
 		if(section.stop-section.start == 1) {
 			Token tk = line[section.start];
 			if(tk.base == TokenBase.VAR_VARIABLE)
-				return new VarExp(source, sourceStart, sourceStop, line[section.start].text);
+				return new VarExp(unit.source, sourceStart, sourceStop, line[section.start].text);
 			else if(Tokens.isLiteral(tk.base))
 				return parseLiteral(line[section.start], errors);
-			else
-				errors.add("Unknown expression type" + tk.getErr());
+			errors.add("Unknown expression type" + tk.getErr());
+			return Invalids.EXPRESSION;
 		}
 
 		Section lastSection = section.subSections.isEmpty() ? null : section.subSections.get(section.subSections.size()-1);
 		
+		// parse conversion expression
 		if(section.subSections.size() == 1 && lastSection.type == SectionToken.SEC_PARENTHESIS &&
 				lastSection.start == section.start+3 && line[section.start+1].base == TokenBase.TK_COLUMN) {
 			
@@ -168,31 +175,44 @@ public class ExpressionParser {
 				type = Tokens.getType(null, typeToken);
 			}
 			if(type != null) {
-				Expression casted = parseExpression(source, line, lastSection.start, lastSection.stop, errors);
-				return new ConversionExp(source, sourceStart, sourceStop, type, casted, false);
+				Expression casted = parseExpression(unit, line, lastSection.start, lastSection.stop, errors);
+				return new ConversionExp(unit.source, sourceStart, sourceStop, type, casted, false);
 			}
+			errors.add("Expected a type to cast to:" + typeToken.getErr());
+			return Invalids.EXPRESSION;
 		}
 		
+		// parse sizeof
 		if(line[section.start].base == TokenBase.KW_SIZEOF) {
-			Expression exp = parseExpression(source, line, section.getSubSection(section.start+1, section.stop), errors);
-			return new SizeofExp(source, sourceStart, sourceStop, exp);
+			Expression exp = parseExpression(unit, line, section.getSubSection(section.start+1, section.stop), errors);
+			return new SizeofExp(unit.source, sourceStart, sourceStop, exp);
 		}
 		
+		// parse direct access exp
+		if(section.stop-section.start >= 3 && line[section.stop-2].base == TokenBase.TK_DOT) {
+			return parseDirectAccessExpression(unit, line, section, errors);
+		}
+		
+		// parse function and arrays
 		if(lastSection != null) {
 			if(lastSection.type == SectionToken.SEC_PARENTHESIS) {
-				return parseFunctionExpression(source, line, section, errors);
+				if(section.start+2 == lastSection.start && line[section.start].base == TokenBase.VAR_UNIT)
+					return parseConstructorExpression(unit, line, lastSection, errors);
+				else
+					return parseFunctionExpression(unit, line, section, errors);
 			} else if(lastSection.type == SectionToken.SEC_BRACKETS) {
 				if(section.start+1 == lastSection.start)
-					return parseArrayExpression(source, line, section, errors);
+					return parseArrayExpression(unit, line, section, errors);
 				else
-					return parseIndexingExpression(source, line, section, errors);
+					return parseIndexingExpression(unit, line, section, errors);
 			}
+			throw new UnreachableException("Invalid section type " + lastSection.type);
 		}
 		
-		errors.add("Unknown expression type " + source.getErr(line, section.start, section.stop-1));
+		errors.add("Unknown expression type " + unit.source.getErr(line, section.start, section.stop-1));
 		return Invalids.EXPRESSION;
 	}
-	
+
 	public static LiteralExp<?> parseLiteral(Token t, ErrorWrapper errors) {
 		switch(t.base) {
 		case LIT_INT:
@@ -222,7 +242,7 @@ public class ExpressionParser {
 	}
 
 	/** Assumes that section.operators is not empty */
-	private static Expression parseOperationExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
+	private static Expression parseOperationExpression(Unit unit, Token[] line, Section section, ErrorWrapper errors) {
 		Tuple<Operator, Integer> operator = section.operators.get(0);
 		// Tuple.second is the operator position in the line
 		
@@ -238,12 +258,12 @@ public class ExpressionParser {
 			if(!operator.a.doesSingleOperand)
 				errors.add("Operator " + opt.text + " does not allow for single operand operations" + opt.getErr());
 		} else {
-			leftOperand = parseExpression(source, line, section.getSubSection(section.start, operator.b), errors);
+			leftOperand = parseExpression(unit, line, section.getSubSection(section.start, operator.b), errors);
 		}
 		if(operator.b+1 == section.stop) {
 			errors.add("Operator " + opt.text + " does not have a right operand" + opt.getErr());
 		} else {
-			rightOperand = parseExpression(source, line, section.getSubSection(operator.b+1, section.stop), errors);
+			rightOperand = parseExpression(unit, line, section.getSubSection(operator.b+1, section.stop), errors);
 		}
 		
 		int sourceStart = line[section.start].sourceStart;
@@ -252,58 +272,79 @@ public class ExpressionParser {
 		if(leftOperand == null) {
 			if(operator.a == Operator.SUBSTRACT) {
 				if(rightOperand instanceof IntLiteral)
-					return new IntLiteral(source, opt.sourceStart, rightOperand.sourceStop, -((IntLiteral) rightOperand).value);
+					return new IntLiteral(unit.source, opt.sourceStart, rightOperand.sourceStop, -((IntLiteral) rightOperand).value);
 				else if(rightOperand instanceof FloatLiteral)
-					return new FloatLiteral(source, opt.sourceStart, rightOperand.sourceStop, -((FloatLiteral) rightOperand).value);
+					return new FloatLiteral(unit.source, opt.sourceStart, rightOperand.sourceStop, -((FloatLiteral) rightOperand).value);
 			}
 			
-			return new OperationExp(source, sourceStart, sourceStop, operator.a, rightOperand);
+			return new OperationExp(unit.source, sourceStart, sourceStop, operator.a, rightOperand);
 		} else {
-			return new OperationExp(source, sourceStart, sourceStop, operator.a, leftOperand, rightOperand);
+			return new OperationExp(unit.source, sourceStart, sourceStop, operator.a, leftOperand, rightOperand);
 		}
 	}
 	
-	public static Expression[] parseArgumentList(UnitSource source, Token[] line, int start, int stop, ErrorWrapper errors) {
-		return parseArgumentList(source, line, getVisibleSection(line, start, stop), errors);
+	public static Expression[] parseArgumentList(Unit unit, Token[] line, int start, int stop, ErrorWrapper errors) {
+		return parseArgumentList(unit, line, getVisibleSection(line, start, stop), errors);
 	}
 	
-	private static Expression[] parseArgumentList(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
+	private static Expression[] parseArgumentList(Unit unit, Token[] line, Section section, ErrorWrapper errors) {
 		List<Expression> arguments = new ArrayList<>();
 		if(section.stop-section.start != 0) {
 			int last = section.start;
 			for(int i = section.start; i < section.stop; i = section.advancePointer(i)) {
 				if(line[i].base == TokenBase.TK_COMMA) {
-					arguments.add(parseExpression(source, line, section.getSubSection(last, i), errors));
+					arguments.add(parseExpression(unit, line, section.getSubSection(last, i), errors));
 					last = i+1;
 				}
 			}
-			arguments.add(parseExpression(source, line, section.getSubSection(last, section.stop), errors));
+			arguments.add(parseExpression(unit, line, section.getSubSection(last, section.stop), errors));
 		}
 		return arguments.toArray(Expression[]::new);
 	}
+
+	/** Assumes that the section has its size >= 3 and that the second-to-last token is a dot */
+	private static Expression parseDirectAccessExpression(Unit unit, Token[] line, Section section, ErrorWrapper errors) {
+		Token memberToken = line[section.stop-1];
+		if(memberToken.base != TokenBase.VAR_VARIABLE) {
+			errors.add("Expected a struct member name:" + memberToken.getErr());
+			return Invalids.EXPRESSION;
+		}
+		Expression structInstance = parseExpression(unit, line, section.getSubSection(section.start, section.stop-2), errors);
+		String memberName = memberToken.text;
+		return new DirectAccessExp(unit.source, line[section.start].sourceStart, line[section.stop-1].sourceStop, structInstance, memberName);
+	}
 	
 	/** Assumes that the last subsection of section is a parenthesis section */
-	private static Expression parseFunctionExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
+	private static Expression parseFunctionExpression(Unit unit, Token[] line, Section section, ErrorWrapper errors) {
 		Section parenthesis = section.subSections.get(section.subSections.size()-1);
-		Expression[] arguments = parseArgumentList(source, line, parenthesis, errors);
-		Expression function = parseExpression(source, line, section.getSubSection(section.start, parenthesis.start-1), errors);
-		return new FunctionCallExp(source, line[section.start].sourceStart, line[section.stop-1].sourceStop, function, arguments);
+		Expression[] arguments = parseArgumentList(unit, line, parenthesis, errors);
+		Expression function = parseExpression(unit, line, section.getSubSection(section.start, parenthesis.start-1), errors);
+		return new FunctionCallExp(unit.source, line[section.start].sourceStart, line[section.stop-1].sourceStop, function, arguments);
+	}
+	
+	/** Assumes that section is a parenthesis section and two tokens before it is a struct token */
+	private static Expression parseConstructorExpression(Unit unit, Token[] line,
+			Section section, ErrorWrapper errors) {
+		Expression[] arguments = parseArgumentList(unit, line, section, errors);
+		Token structToken = line[section.start-2];
+		VarStructType type = unit.getStructType(structToken);
+		return new ConstructorExp(unit.source, structToken.sourceStart, line[section.stop-1].sourceStop, type, arguments);
 	}
 	
 	/** Assumes that the last subsection of section is a bracket section */
-	private static Expression parseIndexingExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
+	private static Expression parseIndexingExpression(Unit unit, Token[] line, Section section, ErrorWrapper errors) {
 		Section brackets = section.subSections.get(section.subSections.size()-1);
-		Expression[] arguments = parseArgumentList(source, line, brackets, errors);
+		Expression[] arguments = parseArgumentList(unit, line, brackets, errors);
 		if(arguments.length == 0)
-			errors.add("Empty index" + source.getErr(line));
-		Expression array = parseExpression(source, line, section.getSubSection(section.start, brackets.start-1), errors);
-		return new IndexingExp(source, line[section.start].sourceStart, line[section.stop-1].sourceStop, array, arguments);
+			errors.add("Empty index" + unit.source.getErr(line));
+		Expression array = parseExpression(unit, line, section.getSubSection(section.start, brackets.start-1), errors);
+		return new IndexingExp(unit.source, line[section.start].sourceStart, line[section.stop-1].sourceStop, array, arguments);
 	}
 	
-	private static Expression parseArrayExpression(UnitSource source, Token[] line, Section section, ErrorWrapper errors) {
+	private static Expression parseArrayExpression(Unit unit, Token[] line, Section section, ErrorWrapper errors) {
 		Section brackets = section.subSections.get(section.subSections.size()-1);
-		Expression[] values = parseArgumentList(source, line, brackets, errors);
-		return new ArrayExp(source, line[section.start].sourceStart, line[section.stop-1].sourceStop, values);
+		Expression[] values = parseArgumentList(unit, line, brackets, errors);
+		return new ArrayExp(unit.source, line[section.start].sourceStart, line[section.stop-1].sourceStop, values);
 	}
 	
 }
