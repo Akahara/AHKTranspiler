@@ -179,7 +179,8 @@ public class UnitParser {
 						errors.add("Unfinished struct:" + unit.source.getErr(lines[i]));
 					} else {
 						DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
-						StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, mods, errors);
+						ErrorWrapper subErrors = errors.subErrrors("Cannot parse a struct declaration");
+						StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, mods, subErrors);
 						i = structEnd;
 						structures.add(struct);
 						modifiers.clear();

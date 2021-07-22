@@ -5,12 +5,12 @@ import fr.wonder.main.Structs;
 
 unit Main;
 
-int ii = -3;
+int ii = 3;
 	
 int gi = 8;
 str x = "str";
 int[] array = [56, 42, 37];
-Structure structure = Structure(67);
+Structure structure = null;
 
 func int gcd(int x, int y) {
 	if(y == 0)
@@ -82,5 +82,6 @@ func int main() {
 	Kernel.println("a composed " + "string");
 	Kernel.println("");
 	Kernel.println(structure.a);
+	Kernel.println(ii);
 	return 5;
 }

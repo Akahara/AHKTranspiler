@@ -45,9 +45,9 @@ public class OperationExp extends Expression {
 		if((op.getLOType() == null) != (getLOType() == null))
 			throw new IllegalStateException("Invalid operand count");
 		if(getLOType() != op.getLOType())
-			expressions[1] = new ConversionExp(getSource(), getLeftOperand(), op.getLOType(), true);
+			expressions[1] = new ConversionExp(getLeftOperand(), op.getLOType());
 		if(getROType() != op.getROType())
-			expressions[0] = new ConversionExp(getSource(), getRightOperand(), op.getROType(), true);
+			expressions[0] = new ConversionExp(getRightOperand(), op.getROType());
 	}
 	
 	public Operation getOperation() {

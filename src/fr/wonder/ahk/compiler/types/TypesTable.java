@@ -10,7 +10,6 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 public class TypesTable {
 	
 	public final OperationTable operations = new OperationTable();
-	public final ConversionTable conversions = new ConversionTable();
 	
 	public TypesTable() {
 		

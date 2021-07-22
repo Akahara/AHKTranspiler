@@ -1,12 +1,9 @@
 package fr.wonder.ahk.compiler.linker;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiler.types.ConversionTable;
-import fr.wonder.ahk.compiler.types.FuncArguments;
 import fr.wonder.commons.types.Tuple;
 
 class UnitScope implements Scope {
@@ -14,9 +11,9 @@ class UnitScope implements Scope {
 	private final UnitPrototype unit;
 	private final UnitPrototype[] importedUnits;
 	
-	UnitScope(UnitPrototype unit, UnitPrototype[] units) {
+	UnitScope(UnitPrototype unit, UnitPrototype[] importedUnits) {
 		this.unit = unit;
-		this.importedUnits = units;
+		this.importedUnits = importedUnits;
 	}
 
 	@Override
@@ -75,59 +72,13 @@ class UnitScope implements Scope {
 		throw new IllegalStateException("Invalid scope state");
 	}
 	
-	private static interface ArgumentsMatchPredicate {
-		
-		boolean matches(VarType[] args, VarType[] provided, ConversionTable conversions);
-		
-	}
-	
-	private int countMatchingFunctions(String name, VarType[] args, ConversionTable conversions, ArgumentsMatchPredicate predicate) {
-		Tuple<UnitPrototype, String> tuple = getUnitFromVarName(name);
-		UnitPrototype unit = tuple.a;
-		name = tuple.b;
-		if(unit == null)
-			return 0;
-		int count = 0;
-		for(FunctionPrototype func : unit.functions) {
-			if(func.getName().equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
-				count++;
-		}
-		return count;
-	}
-	
-	private FunctionPrototype getFunction(String name, VarType[] args, ConversionTable conversions, ArgumentsMatchPredicate predicate) {
+	FunctionPrototype[] getFunctions(String name) {
 		Tuple<UnitPrototype, String> tuple = getUnitFromVarName(name);
 		UnitPrototype unit = tuple.a;
 		name = tuple.b;
 		if(unit == null)
 			return null;
-		for(FunctionPrototype func : unit.functions) {
-			if(func.getName().equals(name) && predicate.matches(func.functionType.arguments, args, conversions))
-				return func;
-		}
-		return null;
+		return unit.getFunctions(name);
 	}
 	
-	/** Returns the only function with parameters that exactly match <code>args</code> */
-	FunctionPrototype getFunctionStrict(String name, VarType[] args) {
-		return getFunction(name, args, null, FuncArguments::argsMatch0c);
-	}
-	
-	/** Returns the number of functions that can be called using <code>args</code> with 1 implicit cast maximum */
-	int countMatchingFunction1c(String name, VarType[] args, ConversionTable conversions) {
-		return countMatchingFunctions(name, args, conversions, FuncArguments::argsMatch1c);
-	}
-	
-	/** Returns the first function that can be called used the given arguments with 1 implicit cast maximum */
-	FunctionPrototype getFunction1c(String name, VarType[] args, ConversionTable conversions) {
-		return getFunction(name, args, conversions, FuncArguments::argsMatch1c);
-	}
-	
-	int countMatchingFunctionXc(String name, VarType[] args, ConversionTable conversions) {
-		return countMatchingFunctions(name, args, conversions, FuncArguments::argsMatchXc);
-	}
-	
-	FunctionPrototype getFunctionXc(String name, VarType[] args, ConversionTable conversions) {
-		return getFunction(name, args, conversions, FuncArguments::argsMatchXc);
-	}
 }

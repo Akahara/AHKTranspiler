@@ -25,6 +25,7 @@ import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.utils.ArrayOperator;
@@ -106,7 +107,7 @@ class StatementLinker {
 					errors.add("This function must return a value of type " + func.returnType + rst.getErr());
 				} else {
 					VarType returnType = returnExp.getType();
-					if(!typesTable.conversions.canConvertImplicitely(returnType, func.returnType))
+					if(!ConversionTable.canConvertImplicitely(returnType, func.returnType))
 						errors.add("Invalid return type, " + returnType +
 								" cannot be converted to " + func.returnType + rst.getErr());
 				}
@@ -114,20 +115,16 @@ class StatementLinker {
 			
 		} else if(st instanceof IfSt) {
 			Expression condition = ((IfSt) st).getCondition();
-			if(!typesTable.conversions.canConvertImplicitely(condition.getType(), VarType.BOOL))
+			if(!ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
 				errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 			
 		} else if(st instanceof ElseSt) {
 			Expression condition = ((ElseSt) st).getCondition();
-			if(condition != null && !typesTable.conversions.canConvertImplicitely(condition.getType(), VarType.BOOL))
+			if(condition != null && !ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
 				errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 			
 		} else if(st instanceof AffectationSt) {
-			AffectationSt a = (AffectationSt) st;
-			VarType from = a.getValue().getType();
-			VarType to = a.getVariable().getType();
-			if(!typesTable.conversions.canConvertImplicitely(from, to))
-				errors.add("Invalid affectation, " + from.getName() + " cannot be converted to " + to.getName() + st.getErr());
+			Linker.checkAffectationType(st, 0, ((AffectationSt) st).getVariable().getType(), errors);
 			
 		} else if(st instanceof MultipleAffectationSt) {
 			MultipleAffectationSt a = (MultipleAffectationSt) st;
@@ -151,14 +148,19 @@ class StatementLinker {
 							+ valuesTypes.length + " values");
 				} else {
 					for(int i = 0; i < variables.length; i++) {
+//						Linker.checkAffectationType(a, i, null, errors); TODO use Linker#checkAffectationType for multipleAffectationSt
 						VarType from = valuesTypes[i];
 						VarType to = variables[i].getType();
-						if(!typesTable.conversions.canConvertImplicitely(from, to))
+						if(!ConversionTable.canConvertImplicitely(from, to))
 							errors.add("Invalid affectation, " + from.getName() + " cannot be casted to "
 									+ to.getName() + st.getErr());
 					}
 				}
 			}
+			
+		} else if(st instanceof ForSt) {
+			// FIX see ForSt fix first
+			// then use Linker#checkAffectationType for initialization and affectation
 		}
 	}
 

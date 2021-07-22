@@ -4,6 +4,7 @@ public class SectionDeclaration implements Declaration {
 
 	public static final String DATA = ".data";
 	public static final String TEXT = ".text";
+	public static final String BSS = ".bss";
 	
 	public final String section;
 	

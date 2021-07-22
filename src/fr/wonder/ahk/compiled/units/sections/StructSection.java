@@ -19,23 +19,34 @@ public class StructSection extends SourceObject implements ValueDeclaration {
 	
 	public final VariableDeclaration[] members;
 	public final StructConstructor[] constructors;
+	public final ConstructorDefaultValue[] nullFields;
 	
 	private StructPrototype prototype;
 	
 	public StructSection(UnitSource source, int sourceStart, int sourceStop,
 			String structName, DeclarationModifiers modifiers,
-			VariableDeclaration[] members, StructConstructor[] constructors) {
+			VariableDeclaration[] members, StructConstructor[] constructors,
+			ConstructorDefaultValue[] nullFields) {
 		super(source, sourceStart, sourceStop);
 		this.name = structName;
 		this.modifiers = modifiers;
 		this.members = members;
 		this.constructors = constructors;
+		this.nullFields = nullFields;
 	}
 	
 	public VariableDeclaration getMember(String name) {
 		for(VariableDeclaration member : members) {
 			if(member.name.equals(name))
 				return member;
+		}
+		return null;
+	}
+	
+	public ConstructorDefaultValue getNullField(String name) {
+		for(ConstructorDefaultValue field : nullFields) {
+			if(field.name.equals(name))
+				return field;
 		}
 		return null;
 	}
@@ -83,6 +94,7 @@ public class StructSection extends SourceObject implements ValueDeclaration {
 	public void setSignature(Signature signature) {
 		this.prototype = new StructPrototype(
 				modifiers,
+				getVisibility(),
 				ArrayOperator.map(members, VariablePrototype[]::new, VariableDeclaration::getPrototype),
 				ArrayOperator.map(constructors, ConstructorPrototype[]::new, StructConstructor::getPrototype),
 				signature);

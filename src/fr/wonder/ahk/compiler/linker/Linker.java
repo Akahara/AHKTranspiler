@@ -2,11 +2,20 @@ package fr.wonder.ahk.compiler.linker;
 
 import static fr.wonder.commons.utils.ArrayOperator.map;
 
+import fr.wonder.ahk.compiled.ExpressionHolder;
+import fr.wonder.ahk.compiled.expressions.ConversionExp;
+import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.NullExp;
+import fr.wonder.ahk.compiled.expressions.types.VarNullType;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
+import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.sections.StructSection;
+import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.handles.LinkedHandle;
@@ -101,13 +110,12 @@ public class Linker {
 		unit.compilationState = UnitCompilationState.LINKED_WITH_ERRORS;
 		
 		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(units));
-		for(int i = 0; i < unit.variables.length; i++) {
-			VariableDeclaration var = unit.variables[i];
+		for(VariableDeclaration var : unit.variables) {
 			ExpressionLinker.linkExpressions(unit, unitScope, var.getExpressions(), typesTable, errors);
+			checkAffectationType(var, 0, var.getType(), errors);
 		}
 		
-		for(int i = 0; i < unit.functions.length; i++) {
-			FunctionSection func = unit.functions[i];
+		for(FunctionSection func : unit.functions) {
 			ErrorWrapper ferrors = errors.subErrrors("Errors in function " + func.getSignature().computedSignature);
 			StatementLinker.linkStatements(
 					typesTable,
@@ -117,8 +125,41 @@ public class Linker {
 					ferrors);
 		}
 		
+		for(StructSection struct : unit.structures) {
+			for(ConstructorDefaultValue nullField : struct.nullFields) {
+				ExpressionLinker.linkExpressions(unit, unitScope, nullField.getExpressions(), typesTable, errors);
+				VariableDeclaration member = struct.getMember(nullField.name);
+				checkAffectationType(nullField, 0, member.getType(), errors);
+			}
+			for(VariableDeclaration member : struct.members) {
+				ExpressionLinker.linkExpressions(unit, unitScope, member.getExpressions(), typesTable, errors);
+				checkAffectationType(member, 0, member.getType(), errors);
+			}
+		}
+		
 		if(errors.noErrors())
 			unit.compilationState = UnitCompilationState.LINKED;
+	}
+	
+	// TODO comment #checkAffectationType
+	static void checkAffectationType(ExpressionHolder valueHolder, int valueIndex, VarType validType, ErrorWrapper errors) {
+		Expression value = valueHolder.getExpressions()[valueIndex];
+		if(value instanceof NullExp) {
+			if(!VarNullType.isAcceptableNullType(validType)) {
+				errors.add("Type mismatch, cannot use null with type " + validType + valueHolder.getErr());
+			} else {
+				((NullExp) value).setNullType(validType);
+			}
+			return;
+		}
+		if(value.getType().equals(validType))
+			return;
+		if(ConversionTable.canConvertImplicitely(value.getType(), validType)) {
+			value = new ConversionExp(value, validType);
+			valueHolder.getExpressions()[valueIndex] = value;
+		} else {
+			errors.add("Type mismatch, cannot convert " + value.getType() + " to " + validType + value.getErr());
+		}
 	}
 	
 }

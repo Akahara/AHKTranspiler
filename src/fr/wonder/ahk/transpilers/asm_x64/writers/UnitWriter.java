@@ -14,12 +14,15 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
+import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmOperationWriter;
@@ -35,6 +38,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
+import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarReservation;
 import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
@@ -61,7 +65,9 @@ public class UnitWriter {
 				initializableVariables.add(var);
 		}
 		
+		uw.writeSpecialSegment(errors);
 		uw.writeDataSegment(initializedVariables, errors);
+		uw.writeBSSSegment(errors);
 		uw.writeTextSegment(initializableVariables, errors);
 		
 		return uw.instructions;
@@ -125,6 +131,10 @@ public class UnitWriter {
 		throw new IllegalArgumentException("Unimplemented registry " + var.getClass());
 	}
 	
+	public static String getStructNullRegistry(StructPrototype struct) {
+		return getUnitRegistry(struct.getSignature().declaringUnit) + "@" + struct.getSignature().name + "_null";
+	}
+	
 	public String getLabel(StrLiteral lit) {
 		// beware! strConstants.indexOf cannot be used because the #equals method of StrLiteral
 		// will return true if two literals hold equal strings.
@@ -159,10 +169,14 @@ public class UnitWriter {
 
 	// ------------------------------ segments -----------------------------
 	
+	private void writeSpecialSegment(ErrorWrapper errors) {
+		instructions.add(new SpecialInstruction("%include\"intrinsic.asm\""));
+		instructions.skip(2);
+	}
+	
 	// *** Data segment ***
 	
 	private void writeDataSegment(List<VariableDeclaration> initializedVariables, ErrorWrapper errors) {
-		instructions.add(new SpecialInstruction("%include\"intrinsic.asm\""));
 		instructions.section(SectionDeclaration.DATA);
 		instructions.skip();
 		
@@ -179,6 +193,12 @@ public class UnitWriter {
 		}
 		if(unit.functions.length != 0)
 			instructions.skip();
+		for(StructSection s : unit.structures) {
+			if(s.getVisibility() == DeclarationVisibility.GLOBAL)
+				instructions.add(new GlobalDeclaration(getStructNullRegistry(s.getPrototype())));
+		}
+		if(unit.structures.length != 0)
+			instructions.skip();
 		
 		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_FLOATST));
 		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_ALLOC));
@@ -186,9 +206,14 @@ public class UnitWriter {
 		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_VAL_FSIGNBIT));
 		
 		for(VarAccess i : unit.prototype.externalAccesses) {
-			// i can safely be casted to a prototype because it cannot be a function
-			// argument. It's either a Variable or a Function prototype.
-			instructions.add(new ExternDeclaration(getGlobalRegistry((Prototype<?>) i)));
+			String globalLabel;
+			if(i instanceof StructPrototype)
+				// global structure prototype
+				globalLabel = getStructNullRegistry((StructPrototype) i);
+			else
+				// extern variable or function
+				globalLabel = getGlobalRegistry((Prototype<?>) i);
+			instructions.add(new ExternDeclaration(globalLabel));
 		}
 		if(unit.importations.length != 0)
 			instructions.skip();
@@ -220,8 +245,8 @@ public class UnitWriter {
 				value = "0";
 			instructions.add(new GlobalVarDeclaration(getLocalRegistry(var.getPrototype()), MemSize.QWORD, value));
 		}
-		if(unit.variables.length != 0)
-			instructions.skip();
+		
+		instructions.skip(2);
 	}
 	
 	private static void collectStrConstants(List<StrLiteral> csts, ExpressionHolder[] vars) {
@@ -235,6 +260,23 @@ public class UnitWriter {
 		}
 	}
 	
+	// *** BSS Segment ***
+	
+	private void writeBSSSegment(ErrorWrapper errors) {
+		if(unit.structures.length == 0)
+			return;
+		
+		instructions.section(SectionDeclaration.BSS);
+		instructions.skip();
+
+		for(StructSection struct : unit.structures) {
+			String nullLabel = getStructNullRegistry(struct.getPrototype());
+			instructions.add(new GlobalVarReservation(nullLabel, MemSize.QWORD, struct.members.length));
+		}
+		
+		instructions.skip(2);
+	}
+	
 	// *** Text segment ***
 	
 	private void writeTextSegment(List<VariableDeclaration> initializableVariables, ErrorWrapper errors) {
@@ -245,23 +287,33 @@ public class UnitWriter {
 		
 		// write the initialization function
 		instructions.label(getUnitRegistry(unit) + "_init");
-		if(!initializableVariables.isEmpty()) {
-			instructions.createStackFrame();
-			mem.enterFunction(initFunction, 0);
-			for(VariableDeclaration var : initializableVariables) {
-				Address address = new MemAddress(new LabelAddress(getRegistry(var.getPrototype())));
-				if(var.modifiers.hasModifier(Modifier.NATIVE)) {
-					String nativeLabel = var.modifiers.getModifier(NativeModifier.class).nativeRef;
-					instructions.mov(address, new LabelAddress(nativeLabel), MemSize.POINTER);
-				} else {
-					Expression defaultVal = var.getDefaultValue();
-					if(defaultVal == null)
-						defaultVal = new NoneExp();
-					mem.writeTo(address, defaultVal, errors);
-				}
+		instructions.createStackFrame();
+		mem.enterFunction(initFunction, 0);
+		
+		for(StructSection struct : unit.structures) {
+			ConcreteType concreteType = types.getConcreteType(struct);
+			MemAddress nullAddress = new MemAddress(new LabelAddress(getStructNullRegistry(struct.getPrototype())));
+			for(VariableDeclaration member : struct.members) {
+				ConstructorDefaultValue nullField = struct.getNullField(member.name);
+				Expression nullMemberValue = nullField == null ? member.getDefaultValue() : nullField.getValue();
+				Address fieldAddress = nullAddress.addOffset(concreteType.getOffset(member.name));
+				mem.writeTo(fieldAddress, nullMemberValue, errors);
 			}
-			instructions.endStackFrame();
 		}
+		for(VariableDeclaration var : initializableVariables) {
+			Address address = new MemAddress(new LabelAddress(getRegistry(var.getPrototype())));
+			if(var.modifiers.hasModifier(Modifier.NATIVE)) {
+				String nativeLabel = var.modifiers.getModifier(NativeModifier.class).nativeRef;
+				instructions.mov(address, new LabelAddress(nativeLabel), MemSize.POINTER);
+			} else {
+				Expression defaultVal = var.getDefaultValue();
+				if(defaultVal == null)
+					defaultVal = new NoneExp();
+				mem.writeTo(address, defaultVal, errors);
+			}
+		}
+		
+		instructions.endStackFrame();
 		instructions.ret();
 		instructions.skip();
 		
@@ -275,6 +327,8 @@ public class UnitWriter {
 			funcWriter.writeFunction(func, errors);
 			instructions.skip();
 		}
+		
+		instructions.skip(2);
 	}
 	
 	// --------------------------- special calls ---------------------------

@@ -58,6 +58,7 @@ public class TokensFactory {
 		return lines.toArray(Token[][]::new);
 	}
 
+	// FIX use the tokensFactory to make sure that opening and closing parenthesis are on the same line!
 	/**
 	 * Used to :
 	 * <ul>

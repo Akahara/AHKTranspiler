@@ -7,20 +7,22 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class NullExp extends Expression {
 	
-	public VarType type = null; // FIX implement null exceptions, set type via the linker
-	
 	public NullExp(UnitSource source, int sourceStart, int sourceStop) {
 		super(source, sourceStart, sourceStop);
 	}
 	
 	@Override
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return type;
+		return VarType.NULL;
 	}
 
 	@Override
 	public String toString() {
-		return "NULL";
+		return "null";
+	}
+	
+	public void setNullType(VarType actualType) {
+		this.type = actualType;
 	}
 
 }

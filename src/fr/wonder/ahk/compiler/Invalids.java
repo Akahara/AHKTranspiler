@@ -4,12 +4,14 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
@@ -27,64 +29,67 @@ public class Invalids {
 
 	public static final String STRING = "INVALID";
 	
-	public static final UnitSource SOURCE = new UnitSource(Invalids.STRING, "");
+	public static final UnitSource SOURCE = new UnitSource(STRING, "");
 	
 	public static final DeclarationModifiers MODIFIERS = new DeclarationModifiers(new Modifier[0]);
+
+	public static final Signature SIGNATURE = new Signature(STRING, "INVALID SIGNATURE", STRING);
 	
 	public static final VarType TYPE = new VarType() {
-		public String getSignature() { return Invalids.STRING; }
-		public String getName() { return Invalids.STRING; }
+		public String getSignature() { return STRING; }
+		public String getName() { return STRING; }
 		public boolean equals(Object o) { return this == o; }
 	};
 	
-	public static final Signature DECLARATION_SIGNATURE = new Signature(Invalids.STRING, "INVALID DECLARATION", "INVALID DECLARATION");
 	public static final ValueDeclaration VALUE = new ValueDeclaration() {
 		public int getSourceStop() { return 0; }
 		public int getSourceStart() { return 0; }
-		public UnitSource getSource() { return Invalids.SOURCE; }
+		public UnitSource getSource() { return SOURCE; }
 		public DeclarationVisibility getVisibility() { return DeclarationVisibility.SECTION; }
-		public VarType getType() { return Invalids.TYPE; }
-		public String getName() { return Invalids.STRING; }
-		public Signature getSignature() { return Invalids.DECLARATION_SIGNATURE; }
-		public DeclarationModifiers getModifiers() { return Invalids.MODIFIERS; }
+		public VarType getType() { return TYPE; }
+		public String getName() { return STRING; }
+		public Signature getSignature() { return SIGNATURE; }
+		public DeclarationModifiers getModifiers() { return MODIFIERS; }
 	};
 
 	public static final Operation OPERATION = new Operation() {
-		public VarType getResultType() { return Invalids.TYPE; }
-		public VarType getLOType() { return Invalids.TYPE; }
-		public VarType getROType() { return Invalids.TYPE; }
+		public VarType getResultType() { return TYPE; }
+		public VarType getLOType() { return TYPE; }
+		public VarType getROType() { return TYPE; }
 	};
 
-	public static final Signature ACCESS_SIGNATURE = new Signature(Invalids.STRING, "INVALID ACCESS", "INVALID ACCESS");
 	public static final VarAccess ACCESS = new VarAccess() {
-		public VarType getType() { return Invalids.TYPE; }
-		public Signature getSignature() { return Invalids.ACCESS_SIGNATURE; }
+		public VarType getType() { return TYPE; }
+		public Signature getSignature() { return SIGNATURE; }
 		public boolean matchesDeclaration(ValueDeclaration decl) {
 			throw new IllegalStateException("An invalid access was used");
 		}
 	};
 
-	public static final Expression EXPRESSION = new Expression(Invalids.SOURCE, 0, 0) {
-		public String toString() { return Invalids.STRING; }
-		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return Invalids.TYPE; }
+	public static final Expression EXPRESSION = new Expression(SOURCE, 0, 0) {
+		public String toString() { return STRING; }
+		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return TYPE; }
 	};
 	
-	public static final Statement STATEMENT = new Statement(Invalids.SOURCE, 0, 0) {
-		public String toString() { return Invalids.STRING; }
+	public static final Statement STATEMENT = new Statement(SOURCE, 0, 0) {
+		public String toString() { return STRING; }
 	};
 
-	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(Invalids.SOURCE, 0, 0,
-			Invalids.STRING, Invalids.TYPE, Invalids.EXPRESSION);
-	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(Invalids.SOURCE, 0, 0,
-			Invalids.EXPRESSION, Invalids.EXPRESSION);
+	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(SOURCE, 0, 0,
+			STRING, TYPE, EXPRESSION);
+	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(SOURCE, 0, 0,
+			EXPRESSION, EXPRESSION);
 
-	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(Invalids.SOURCE, 0, 0, null) {
-		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return Invalids.TYPE; }
+	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(SOURCE, 0, 0, null) {
+		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return TYPE; }
 	};
 
-	public static final StructSection STRUCT = new StructSection(Invalids.SOURCE, 0, 0, Invalids.STRING, Invalids.MODIFIERS, new VariableDeclaration[0], new StructConstructor[0]);
-	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(Invalids.MODIFIERS, new VariablePrototype[0], new ConstructorPrototype[0], Invalids.ACCESS_SIGNATURE);
+	public static final StructSection STRUCT = new StructSection(SOURCE, 0, 0, STRING, MODIFIERS, new VariableDeclaration[0], new StructConstructor[0], null);
+	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(MODIFIERS, DeclarationVisibility.GLOBAL, new VariablePrototype[0], new ConstructorPrototype[0], SIGNATURE);
 	
-	public static final StructConstructor CONSTRUCTOR = new StructConstructor(Invalids.SOURCE, 0, 0, new FunctionArgument[0]);
+	public static final StructConstructor CONSTRUCTOR = new StructConstructor(SOURCE, 0, 0, new FunctionArgument[0]);
+
+	public static final VarFunctionType FUNCTION_TYPE = new VarFunctionType(TYPE, new VarType[0]);
+	public static final FunctionPrototype FUNCTION_PROTO = new FunctionPrototype(SIGNATURE, FUNCTION_TYPE, MODIFIERS);
 	
 }

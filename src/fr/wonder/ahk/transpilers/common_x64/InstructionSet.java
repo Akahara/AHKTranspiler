@@ -102,6 +102,11 @@ public class InstructionSet {
 		add(EmptyLine.INSTANCE);
 	}
 	
+	public void skip(int lineCount) {
+		while(lineCount-- > 0)
+			skip();
+	}
+	
 	public void comment(String text) {
 		instructions.add(new Comment(text));
 	}

@@ -8,7 +8,7 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiler.types.FuncArguments;
+import fr.wonder.ahk.compiler.types.FunctionArguments;
 
 public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> {
 
@@ -71,7 +71,7 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 		if(unit.fullBase.equals(signature.declaringUnit))
 			throw new IllegalArgumentException("Function " + this + " is not declared in unit " + unit);
 		for(FunctionSection f : unit.functions) {
-			if(f.returnType.equals(functionType.returnType) && FuncArguments.argsMatch0c(functionType.arguments, f.getArgumentTypes()))
+			if(f.returnType.equals(functionType.returnType) && FunctionArguments.matchNoConversions(functionType.arguments, f.getArgumentTypes()))
 				return f;
 		}
 		return null;

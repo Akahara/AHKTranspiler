@@ -7,7 +7,7 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 
 public class ForSt extends LabeledStatement {
 	
-	public final VariableDeclaration declaration;
+	public final VariableDeclaration declaration; // FIX the ForSt expressions are not in a single array (expression holder)
 	public final Expression condition;
 	public final AffectationSt affectation;
 	

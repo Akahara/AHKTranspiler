@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -17,8 +18,8 @@ public class ConversionExp extends Expression {
 	}
 	
 	/** Used by the linker only, to cast function argument (for implicit conversions) for example */
-	public ConversionExp(UnitSource source, Expression value, VarType castType, boolean isImplicit) {
-		this(source, value.sourceStart, value.sourceStop, castType, value, isImplicit);
+	public ConversionExp(Expression value, VarType castType) {
+		this(value.getSource(), value.sourceStart, value.sourceStop, castType, value, true);
 		this.type = castType;
 	}
 	
@@ -28,8 +29,8 @@ public class ConversionExp extends Expression {
 	
 	@Override
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		if(!typesTable.conversions.canConvertImplicitely(getValue().getType(), castType) &&
-			(isImplicit || !typesTable.conversions.canConvertExplicitely(getValue().getType(), castType)))
+		if(!ConversionTable.canConvertImplicitely(getValue().getType(), castType) &&
+			(isImplicit || !ConversionTable.canConvertExplicitely(getValue().getType(), castType)))
 			errors.add("Unable to convert explicitely from type " + getValue().getType() + " to " + castType);
 		return castType;
 	}

@@ -16,6 +16,8 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiler.Invalids;
+import fr.wonder.ahk.compiler.types.ConversionTable;
+import fr.wonder.ahk.compiler.types.FunctionArguments;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -23,6 +25,7 @@ import fr.wonder.commons.exceptions.UnimplementedException;
 
 class ExpressionLinker {
 
+	// TODO use the ExpressionHolder interface
 	static void linkExpressions(Unit unit, Scope scope, Expression[] expressions,
 			TypesTable typesTable, ErrorWrapper errors) {
 		
@@ -52,7 +55,7 @@ class ExpressionLinker {
 					Expression[] values = array.getValues();
 					VarType componentsType = values[0].getType();
 					for(int j = 1; j < values.length; j++) {
-						componentsType = typesTable.conversions.getCommonParent(componentsType, values[j].getType());
+						componentsType = ConversionTable.getCommonParent(componentsType, values[j].getType());
 						if(componentsType == null)
 							break;
 					}
@@ -83,10 +86,11 @@ class ExpressionLinker {
 				
 			} else if(exp instanceof FunctionCallExp) {
 				FunctionCallExp fexp = (FunctionCallExp) exp;
+				// TODO implement functions as variables
 				if(fexp.getFunction() instanceof VarExp) {
 					// replace the FunctionCallExp by a FunctionExp
 					FunctionPrototype function = searchMatchingFunction(scope.getUnitScope(), fexp, typesTable, errors);
-					if(function != null) {
+					if(function != Invalids.FUNCTION_PROTO) {
 						if(!function.getSignature().declaringUnit.equals(unit.fullBase))
 							unit.prototype.externalAccesses.add(function);
 						FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
@@ -95,14 +99,10 @@ class ExpressionLinker {
 							Expression argument = functionExpression.getArguments()[j];
 							if(function.functionType.arguments[j] != argument.getType()) {
 								VarType converted = function.functionType.arguments[j];
-								ConversionExp conv = new ConversionExp(unit.source, argument, converted, true);
+								ConversionExp conv = new ConversionExp(argument, converted);
 								functionExpression.expressions[j] = conv;
 							}
 						}
-					} else {
-						errors.dump();
-						// TODO implement functions as variables
-						throw new UnimplementedException("No matching function " + fexp.getErr());
 					}
 				} else {
 					// TODO implement functions as expressions
@@ -135,34 +135,33 @@ class ExpressionLinker {
 	private static FunctionPrototype searchMatchingFunction(UnitScope unitScope, FunctionCallExp fexp,
 			TypesTable typesTable, ErrorWrapper errors) {
 		String funcName = ((VarExp) fexp.getFunction()).variable;
-		VarType[] argumentsTypes = fexp.getArgumentsTypes();
-		{ // search without casting
-			FunctionPrototype function = unitScope.getFunctionStrict(
-					funcName, argumentsTypes);
-			if(function != null)
-				return function;
-		}
-		{ // search with a single cast
-			int singleConversionCount = unitScope.countMatchingFunction1c(
-					funcName, argumentsTypes, typesTable.conversions);
-			if(singleConversionCount == 1)
-				return unitScope.getFunction1c(funcName, argumentsTypes, typesTable.conversions);
-			if(singleConversionCount > 1) {
-				errors.add("Multiple matching functions " + fexp.getErr());
-				return null;
+		VarType[] args = fexp.getArgumentsTypes();
+		FunctionPrototype[] functions = unitScope.getFunctions(funcName);
+		
+		int validFuncConversionCount = Integer.MAX_VALUE;
+		FunctionPrototype validFunc = Invalids.FUNCTION_PROTO;
+		boolean multipleMatches = false;
+		for(FunctionPrototype func : functions) {
+			if(func.functionType.arguments.length != args.length)
+				continue;
+			int convertionCount = FunctionArguments.getMinimumConvertionCount(func.functionType.arguments, args);
+			if(convertionCount == -1)
+				continue;
+			if(convertionCount == validFuncConversionCount) {
+				validFunc = Invalids.FUNCTION_PROTO;
+				multipleMatches = true;
+			} else if(convertionCount < validFuncConversionCount) {
+				validFunc = func;
+				validFuncConversionCount = convertionCount;
+				multipleMatches = false;
 			}
 		}
-		{ // search with any number of casts
-			int anyConversionCount = unitScope.countMatchingFunctionXc(
-					funcName, argumentsTypes, typesTable.conversions);
-			if(anyConversionCount == 1)
-				return unitScope.getFunctionXc(funcName, argumentsTypes, typesTable.conversions);
-			if(anyConversionCount > 1) {
-				errors.add("Multiple matching functions " + fexp.getErr());
-				return null;
-			}
-			return null;
+		if(multipleMatches) {
+			errors.add("Multiple functions match given parameters:" + fexp.getErr());
+		} else if(validFunc == Invalids.FUNCTION_PROTO) {
+			errors.add("No matching function match given parameters:" + fexp.getErr());
 		}
+		return validFunc;
 	}
 
 }

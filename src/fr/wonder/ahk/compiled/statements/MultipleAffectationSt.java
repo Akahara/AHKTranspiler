@@ -38,7 +38,7 @@ public class MultipleAffectationSt extends Statement {
 	/**
 	 * Returns an array of {@link VarExp}s, should be stored temporarily instead of
 	 * called multiple times because the returned array is computed for every call
-	 * but cannot be modified between calls.
+	 * and cannot be modified between calls.
 	 */
 	public Expression[] getVariables() {
 		return Arrays.copyOfRange(expressions, expressions.length - variables.length, expressions.length);
@@ -46,7 +46,7 @@ public class MultipleAffectationSt extends Statement {
 	
 	/**
 	 * Should be stored temporarily instead of called multiple times because the
-	 * returned array is computed for every call but cannot be modified between
+	 * returned array is computed for every call and cannot be modified between
 	 * calls.
 	 */
 	public Expression[] getValues() {

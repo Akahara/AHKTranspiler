@@ -8,6 +8,7 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionExp;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
@@ -57,6 +58,8 @@ public class ExpressionWriter {
 			writeSizeofExp((SizeofExp) exp, errors);
 		else if(exp instanceof ConstructorExp)
 			writeConstructorExp((ConstructorExp) exp, errors);
+		else if(exp instanceof NullExp)
+			writeNullExp((NullExp) exp, errors);
 		else
 			throw new UnreachableException("Unknown expression type " + exp.getClass());
 	}
@@ -190,6 +193,14 @@ public class ExpressionWriter {
 		}
 		writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
 		writer.instructions.pop(Register.RAX);
+	}
+	
+	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
+		VarType actualType = exp.getType();
+		if(actualType instanceof VarStructType) {
+			String nullLabel = UnitWriter.getStructNullRegistry(((VarStructType) actualType).structure);
+			writer.instructions.mov(Register.RAX, nullLabel);
+		}
 	}
 
 }

@@ -2,10 +2,10 @@ package fr.wonder.ahk.transpilers.common_x64;
 
 public enum MemSize {
 	
-	BYTE("byte",  'c', "db", 1),
-	WORD("word",  'w', "dw", 2),
-	DWORD("dword", 'l', "dd", 4),	// (double/long word)
-	QWORD("qword", 'q', "dq", 8);
+	BYTE("byte",  'c', "db", "resb", 1),
+	WORD("word",  'w', "dw", "resw", 2),
+	DWORD("dword", 'l', "dd", "resd", 4),	// (double/long word)
+	QWORD("qword", 'q', "dq", "resq", 8);
 //			SFLOAT = new MemSize("sfloat", 's', "dd", 4),
 //			DFLOAT = new MemSize("dfloat", 'd', "dq", 8);
 
@@ -17,12 +17,14 @@ public enum MemSize {
 	public final String name;
 	public final char prefix;
 	public final String declaration;
+	public final String reservation;
 	public final int bytes;
 	
-	private MemSize(String name, char prefix, String declaration, int bytes) {
+	private MemSize(String name, char prefix, String declaration, String reservation, int bytes) {
 		this.name = name;
 		this.prefix = prefix;
 		this.declaration = declaration;
+		this.reservation = reservation;
 		this.bytes = bytes;
 	}
 	

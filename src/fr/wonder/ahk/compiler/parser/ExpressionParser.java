@@ -15,6 +15,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
+import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
@@ -152,7 +153,9 @@ public class ExpressionParser {
 		// parse single token expression
 		if(section.stop-section.start == 1) {
 			Token tk = line[section.start];
-			if(tk.base == TokenBase.VAR_VARIABLE)
+			if(tk.base == TokenBase.LIT_NULL)
+				return new NullExp(unit.source, sourceStart, sourceStop);
+			else if(tk.base == TokenBase.VAR_VARIABLE)
 				return new VarExp(unit.source, sourceStart, sourceStop, line[section.start].text);
 			else if(Tokens.isLiteral(tk.base))
 				return parseLiteral(line[section.start], errors);

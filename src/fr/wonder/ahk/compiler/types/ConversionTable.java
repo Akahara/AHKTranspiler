@@ -4,6 +4,7 @@ import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,10 +15,12 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 
 public class ConversionTable {
 	
-	private final Map<VarType, Set<VarType>> implicitConversions = new HashMap<>();
-	private final Map<VarType, Set<VarType>> explicitConversions = new HashMap<>();
+	private static final Map<VarType, Set<VarType>> implicitConversions = new HashMap<>();
+	private static final Map<VarType, Set<VarType>> explicitConversions = new HashMap<>();
 	
-	public ConversionTable() {
+	private ConversionTable() {};
+	
+	static {
 		addImplicitConversion(INT,   FLOAT);
 		addImplicitConversion(BOOL,  INT);
 		
@@ -27,27 +30,27 @@ public class ConversionTable {
 		addExplicitConversion(BOOL,  INT);
 	}
 	
-	private void addImplicitConversion(VarType from, VarType to) {
+	private static void addImplicitConversion(VarType from, VarType to) {
 		implicitConversions.computeIfAbsent(from, x -> new HashSet<>()).add(to);
 	}
 	
-	private void addExplicitConversion(VarType from, VarType to) {
+	private static void addExplicitConversion(VarType from, VarType to) {
 		explicitConversions.computeIfAbsent(from, x -> new HashSet<>()).add(to);
 	}
 	
-	public boolean canConvertImplicitely(VarType from, VarType to) {
-		return from == to || (implicitConversions.containsKey(from) && implicitConversions.get(from).contains(to));
+	public static boolean canConvertImplicitely(VarType from, VarType to) {
+		return from.equals(to) || implicitConversions.getOrDefault(from, Collections.emptySet()).contains(to);
 	}
 	
 	/**
 	 * Explicit and Implicit conversions are exclusive to each other.
-	 * (if {@link #canConvertExplicitely(VarType, VarType)} returned true, this method will return false)
+	 * (if {@link #canConvertImplicitely(VarType, VarType)} returned true, this method will return false)
 	 */
-	public boolean canConvertExplicitely(VarType from, VarType to) {
+	public static boolean canConvertExplicitely(VarType from, VarType to) {
 		return explicitConversions.computeIfAbsent(from, x -> new HashSet<>()).contains(to);
 	}
 	
-	public VarType getCommonParent(VarType t1, VarType t2) {
+	public static VarType getCommonParent(VarType t1, VarType t2) {
 		if(t1.equals(t2))
 			return t1;
 		if(t1 instanceof VarNativeType && t2 instanceof VarNativeType) {

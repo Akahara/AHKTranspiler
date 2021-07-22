@@ -14,13 +14,15 @@ import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
+import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
-import fr.wonder.ahk.compiler.types.FuncArguments;
+import fr.wonder.ahk.compiler.types.FunctionArguments;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.types.Triplet;
 import fr.wonder.commons.utils.ArrayOperator;
@@ -86,6 +88,13 @@ class Prelinker {
 		Map<String, StructPrototype[]> declaredStructures = new HashMap<>();
 		for(UnitPrototype u : units)
 			declaredStructures.put(u.fullBase, u.structures);
+		
+		for(UnitPrototype u : unit.prototype.filterImportedUnits(units)) {
+			for(StructPrototype s : u.structures) {
+				if(s.getVisibility() == DeclarationVisibility.GLOBAL)
+					unit.prototype.externalAccesses.add(s);
+			}
+		}
 		
 		// link the structure types instances to their structure prototypes
 		
@@ -174,8 +183,23 @@ class Prelinker {
 				
 				for(int k = 0; k < j; k++) {
 					StructConstructor c2 = structure.constructors[j];
-					if(FuncArguments.argsMatch0c(c1.getArgumentTypes(), c2.getArgumentTypes()))
+					if(FunctionArguments.matchNoConversions(c1.getArgumentTypes(), c2.getArgumentTypes()))
 						errors.add("Duplicate constructor found:" + c1.getErr() + c2.getErr());
+				}
+			}
+			
+			// check for null instance
+			for(int j = 0; j < structure.nullFields.length; j++) {
+				ConstructorDefaultValue f1 = structure.nullFields[j];
+				VariableDeclaration member = structure.getMember(f1.name);
+				if(member == null)
+					errors.add("Null field " + f1.name + " does not refer to a member of"
+							+ " this structure:" + f1.getErr());
+				
+				for(int k = 0; k < j; k++) {
+					ConstructorDefaultValue f2 = structure.nullFields[k];
+					if(f1.name.equals(f2.name))
+						errors.add("Duplicate null field found:" + f1.getErr() + f2.getErr());
 				}
 			}
 		}
