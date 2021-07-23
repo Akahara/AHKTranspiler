@@ -1,5 +1,6 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
+import fr.wonder.ahk.compiled.expressions.DirectAccessExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
@@ -129,6 +130,7 @@ public class MemoryManager {
 		
 		if(from instanceof ImmediateValue && to instanceof MemAddress) {
 			//  mov mem,imm64  does not exist, we must use rax to pass data
+			// TODO find a way to separate imm32 and imm64
 			moveData(Register.RAX, from);
 			moveData(to, Register.RAX);
 		} else {
@@ -139,6 +141,7 @@ public class MemoryManager {
 	public void writeAffectationTo(Expression variable, Expression value, ErrorWrapper errors) {
 		if(variable instanceof VarExp) {
 			writeTo(((VarExp) variable).declaration, value, errors);
+			
 		} else if(variable instanceof IndexingExp) {
 			// TODO this can be heavily optimized
 			IndexingExp exp = (IndexingExp) variable;
@@ -162,6 +165,19 @@ public class MemoryManager {
 			writer.instructions.mov(
 					new MemAddress(Register.RAX, Register.RBX, MemSize.POINTER_SIZE),
 					Register.RCX);
+			
+		} else if(variable instanceof DirectAccessExp) {
+			DirectAccessExp exp = (DirectAccessExp) variable;
+			ConcreteType structType = writer.types.getConcreteType(exp.getStructType());
+			writer.expWriter.writeExpression(exp.getStruct(), errors);
+			writer.instructions.push(Register.RAX);
+			addStackOffset(8);
+			int memberOffset = structType.getOffset(exp.member);
+			Address memberAddress = new MemAddress(new MemAddress(Register.RSP), memberOffset);
+			writeTo(memberAddress, value, errors);
+			writer.instructions.pop(Register.RAX);
+			addStackOffset(-8);
+			
 		} else {
 			errors.add("Cannot affect a value to type " + variable.getType().getName() + variable.getErr());
 		}

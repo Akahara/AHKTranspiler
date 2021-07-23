@@ -8,10 +8,11 @@ import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class TokensFactory {
 
-	public static Token[][] splitTokens(Token[] tokens) {
+	public static Token[][] splitTokens(Token[] tokens, ErrorWrapper errors) {
 		List<Token[]> lines = new ArrayList<>();
 		
 		int begin = 0;
@@ -22,20 +23,24 @@ public class TokensFactory {
 					if(i > begin) {
 						// keep the '{' at the end of the line
 						int end = i;
-//						if(openedSections != 0 && tokens[i].base != TokenBase.TK_LINE_BREAK)
 						if(tokens[i].base != TokenBase.TK_LINE_BREAK)
 							end++;
 						// add a line composed of all encountered tokens since last 
 						// section begin excluding split losses
 						lines.add(Arrays.copyOfRange(tokens, begin, end));
+						for(int j = begin; j < end; j++) {
+							Token pair = tokens[j].sectionPair;
+							if(pair != null && pair.base != TokenBase.TK_BRACE_CLOSE && pair.sourceStart > tokens[i].sourceStop) {
+								errors.add("Unexpected break in section:" + tokens[i].getErr() + "\nOpened section:" + tokens[j].getErr());
+							}
+						}
 					}
 					if(tokens[i].base == TokenBase.TK_BRACE_OPEN) {
 						openedSections++;
 					} else if(tokens[i].base == TokenBase.TK_BRACE_CLOSE) {
 						openedSections--;
 						// add a line only composed of '}'
-//						if(openedSections != 0)
-							lines.add(new Token[] { tokens[i] });
+						lines.add(new Token[] { tokens[i] });
 					}
 					begin = i+1;
 					break;
@@ -58,7 +63,6 @@ public class TokensFactory {
 		return lines.toArray(Token[][]::new);
 	}
 
-	// FIX use the tokensFactory to make sure that opening and closing parenthesis are on the same line!
 	/**
 	 * Used to :
 	 * <ul>
@@ -102,19 +106,7 @@ public class TokensFactory {
 					line.remove(j+2);
 					line.remove(j+1);
 					modified = true;
-					
 				}
-//				else if(j < line.size()-1 &&
-//					line.get(j).base == TokenBase.OP_MINUS && (
-//					line.get(j+1).base == TokenBase.LIT_INT ||
-//					line.get(j+1).base == TokenBase.LIT_FLOAT)) {
-//					
-//					// replace '- intL' by 'intL' or '- floatL' by 'floatL'
-//					line.set(j, new Token(line.get(j).getSource(), line.get(j+1).base,
-//							line.get(j).text+line.get(j+1).text, line.get(j).sourceStart));
-//					line.remove(j+1);
-//					modified = true;
-//				}
 			}
 			if(modified)
 				lines.set(i, line.toArray(Token[]::new));

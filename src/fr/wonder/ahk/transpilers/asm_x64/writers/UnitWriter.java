@@ -3,7 +3,6 @@ package fr.wonder.ahk.transpilers.asm_x64.writers;
 import java.util.ArrayList;
 import java.util.List;
 
-import fr.wonder.ahk.compiled.ExpressionHolder;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
@@ -24,6 +23,7 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Invalids;
+import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;

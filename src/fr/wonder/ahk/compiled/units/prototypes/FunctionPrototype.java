@@ -4,13 +4,14 @@ import java.util.Objects;
 
 import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.types.FunctionArguments;
 
-public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> {
+public class FunctionPrototype implements VarAccess, Prototype<FunctionSection>, CallablePrototype {
 
 	public final Signature signature;
 	/** The type of this function, contains its arguments and return type */
@@ -64,6 +65,11 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionSection> 
 	@Override
 	public VarFunctionType getType() {
 		return functionType;
+	}
+	
+	@Override
+	public VarType[] getArgumentTypes() {
+		return functionType.arguments;
 	}
 
 	@Override

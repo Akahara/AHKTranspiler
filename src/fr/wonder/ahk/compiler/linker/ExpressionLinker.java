@@ -10,10 +10,11 @@ import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
-import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.ConversionTable;
@@ -22,17 +23,18 @@ import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
+import fr.wonder.commons.utils.ArrayOperator;
 
 class ExpressionLinker {
 
-	// TODO use the ExpressionHolder interface
-	static void linkExpressions(Unit unit, Scope scope, Expression[] expressions,
+	static void linkExpressions(Unit unit, Scope scope, ExpressionHolder expressionHolder,
 			TypesTable typesTable, ErrorWrapper errors) {
 		
+		Expression[] expressions = expressionHolder.getExpressions();
 		for(int i = 0; i < expressions.length; i++) {
 			Expression exp = expressions[i];
 			
-			linkExpressions(unit, scope, exp.expressions, typesTable, errors);
+			linkExpressions(unit, scope, exp, typesTable, errors);
 			
 			if(exp instanceof VarExp) {
 				// search for the variable/function declaration
@@ -123,9 +125,11 @@ class ExpressionLinker {
 			
 			} else if(exp instanceof ConstructorExp) {
 				ConstructorExp cexp = (ConstructorExp) exp;
-				VarStructType type = cexp.getType();
-				// FIX search for the valid constructor
-				cexp.constructor = type.structure.constructors[0];
+				StructPrototype structure = cexp.getType().structure;
+				VarType[] args = ArrayOperator.map(cexp.getExpressions(), VarType[]::new, Expression::getType);
+				ConstructorPrototype matchingConstructor = FunctionArguments.searchMatchingCallable(structure.constructors, args, cexp, errors);
+				cexp.constructor = matchingConstructor == null ? Invalids.CONSTRUCTOR_PROTOTYPE : matchingConstructor;
+				
 			}
 			
 			exp.computeValueType(typesTable, errors);
@@ -138,30 +142,8 @@ class ExpressionLinker {
 		VarType[] args = fexp.getArgumentsTypes();
 		FunctionPrototype[] functions = unitScope.getFunctions(funcName);
 		
-		int validFuncConversionCount = Integer.MAX_VALUE;
-		FunctionPrototype validFunc = Invalids.FUNCTION_PROTO;
-		boolean multipleMatches = false;
-		for(FunctionPrototype func : functions) {
-			if(func.functionType.arguments.length != args.length)
-				continue;
-			int convertionCount = FunctionArguments.getMinimumConvertionCount(func.functionType.arguments, args);
-			if(convertionCount == -1)
-				continue;
-			if(convertionCount == validFuncConversionCount) {
-				validFunc = Invalids.FUNCTION_PROTO;
-				multipleMatches = true;
-			} else if(convertionCount < validFuncConversionCount) {
-				validFunc = func;
-				validFuncConversionCount = convertionCount;
-				multipleMatches = false;
-			}
-		}
-		if(multipleMatches) {
-			errors.add("Multiple functions match given parameters:" + fexp.getErr());
-		} else if(validFunc == Invalids.FUNCTION_PROTO) {
-			errors.add("No matching function match given parameters:" + fexp.getErr());
-		}
-		return validFunc;
+		FunctionPrototype foundProto = FunctionArguments.searchMatchingCallable(functions, args, fexp, errors);
+		return foundProto == null ? Invalids.FUNCTION_PROTO : foundProto;
 	}
 
 }

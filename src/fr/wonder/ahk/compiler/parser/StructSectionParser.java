@@ -59,6 +59,9 @@ class StructSectionParser {
 					new FunctionArgument[0]));
 		}
 		
+		if(nullFields == null)
+			nullFields = new ConstructorDefaultValue[0];
+		
 		String structName = declaration[1].text;
 		return new StructSection(
 				unit.source,

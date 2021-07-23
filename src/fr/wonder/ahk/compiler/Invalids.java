@@ -88,8 +88,9 @@ public class Invalids {
 	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(MODIFIERS, DeclarationVisibility.GLOBAL, new VariablePrototype[0], new ConstructorPrototype[0], SIGNATURE);
 	
 	public static final StructConstructor CONSTRUCTOR = new StructConstructor(SOURCE, 0, 0, new FunctionArgument[0]);
+	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], SIGNATURE);
 
 	public static final VarFunctionType FUNCTION_TYPE = new VarFunctionType(TYPE, new VarType[0]);
 	public static final FunctionPrototype FUNCTION_PROTO = new FunctionPrototype(SIGNATURE, FUNCTION_TYPE, MODIFIERS);
-	
+
 }

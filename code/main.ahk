@@ -81,7 +81,8 @@ func int main() {
 	Kernel.println("------ Expected composed strings:");
 	Kernel.println("a composed " + "string");
 	Kernel.println("");
-	Kernel.println(structure.a);
-	Kernel.println(ii);
+	Cyclic1 cyclic1 = null;
+	cyclic1.a = 2;
+	Kernel.println(cyclic1.other.other.a);
 	return 5;
 }

@@ -1,9 +1,9 @@
 package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.ExpressionHolder;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 
 public class ConstructorDefaultValue extends SourceObject implements ExpressionHolder {
 

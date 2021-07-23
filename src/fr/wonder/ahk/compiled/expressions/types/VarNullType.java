@@ -21,6 +21,11 @@ public class VarNullType extends VarType {
 		return o == this;
 	}
 
+	/**
+	 * Returns whether {@code null} can be used as a value for a variable of the
+	 * given type . Acceptable types are {@link VarStructType}, {@link VarArrayType}
+	 * and {@link VarFunctionType}.
+	 */
 	public static boolean isAcceptableNullType(VarType type) {
 		return type instanceof VarStructType ||
 				type instanceof VarArrayType ||

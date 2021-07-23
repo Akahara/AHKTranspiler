@@ -24,7 +24,7 @@ public class UnitParser {
 		Token[] tokens = Tokenizer.tokenize(source, errors);
 		errors.assertNoErrors();
 		
-		Token[][] unitTokens = TokensFactory.splitTokens(tokens);
+		Token[][] unitTokens = TokensFactory.splitTokens(tokens, errors);
 		unitTokens = TokensFactory.finalizeTokens(unitTokens);
 		
 		UnitHeader header = parseHeader(source, unitTokens, errors.subErrrors("Unable to parse unit header"));

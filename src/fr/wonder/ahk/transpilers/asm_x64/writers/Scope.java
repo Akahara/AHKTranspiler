@@ -50,7 +50,6 @@ class Scope {
 			if(var.matchesDeclaration(func.arguments[i]))
 				return new MemAddress(Register.RBP, (i+2)*MemSize.POINTER_SIZE);
 		}
-		// TODO check if #var is accessible
 		// search through global variables
 		return new MemAddress(new LabelAddress(UnitWriter.getRegistry((Prototype<?>) var)));
 	}

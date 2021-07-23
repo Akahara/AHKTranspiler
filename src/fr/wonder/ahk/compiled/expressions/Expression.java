@@ -1,10 +1,10 @@
 package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.ExpressionHolder;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiler.Invalids;
+import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.annotations.NonNull;
 import fr.wonder.commons.exceptions.ErrorWrapper;

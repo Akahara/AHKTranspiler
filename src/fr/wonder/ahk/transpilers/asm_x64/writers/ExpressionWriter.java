@@ -93,7 +93,6 @@ public class ExpressionWriter {
 
 	private void writeDirectAccessExp(DirectAccessExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getStruct(), errors);
-		// TODO check for null instances
 		ConcreteType structType = writer.types.getConcreteType((VarStructType) exp.getStruct().getType());
 		int offset = structType.getOffset(exp.member);
 		writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, offset));
@@ -200,6 +199,8 @@ public class ExpressionWriter {
 		if(actualType instanceof VarStructType) {
 			String nullLabel = UnitWriter.getStructNullRegistry(((VarStructType) actualType).structure);
 			writer.instructions.mov(Register.RAX, nullLabel);
+		} else {
+			throw new UnimplementedException("Unimplemented null: " + actualType);
 		}
 	}
 

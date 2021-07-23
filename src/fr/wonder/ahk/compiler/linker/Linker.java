@@ -2,7 +2,6 @@ package fr.wonder.ahk.compiler.linker;
 
 import static fr.wonder.commons.utils.ArrayOperator.map;
 
-import fr.wonder.ahk.compiled.ExpressionHolder;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.NullExp;
@@ -111,7 +110,7 @@ public class Linker {
 		
 		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(units));
 		for(VariableDeclaration var : unit.variables) {
-			ExpressionLinker.linkExpressions(unit, unitScope, var.getExpressions(), typesTable, errors);
+			ExpressionLinker.linkExpressions(unit, unitScope, var, typesTable, errors);
 			checkAffectationType(var, 0, var.getType(), errors);
 		}
 		
@@ -127,12 +126,12 @@ public class Linker {
 		
 		for(StructSection struct : unit.structures) {
 			for(ConstructorDefaultValue nullField : struct.nullFields) {
-				ExpressionLinker.linkExpressions(unit, unitScope, nullField.getExpressions(), typesTable, errors);
+				ExpressionLinker.linkExpressions(unit, unitScope, nullField, typesTable, errors);
 				VariableDeclaration member = struct.getMember(nullField.name);
 				checkAffectationType(nullField, 0, member.getType(), errors);
 			}
 			for(VariableDeclaration member : struct.members) {
-				ExpressionLinker.linkExpressions(unit, unitScope, member.getExpressions(), typesTable, errors);
+				ExpressionLinker.linkExpressions(unit, unitScope, member, typesTable, errors);
 				checkAffectationType(member, 0, member.getType(), errors);
 			}
 		}
@@ -141,7 +140,25 @@ public class Linker {
 			unit.compilationState = UnitCompilationState.LINKED;
 	}
 	
-	// TODO comment #checkAffectationType
+	/**
+	 * <p>
+	 * Checks if the expression at index {@code valueIndex} of
+	 * {@code valueHolder.getExpressions} can be affected to type {@code validType},
+	 * if an implicit the expression is replaced by a {@link ConversionExp}. If the
+	 * expression cannot be casted an error is reported.
+	 * 
+	 * <p>
+	 * If the expression is a {@link NullExp} its "actual type" is set to
+	 * {@code validType} if possible, otherwise an error is reported (see
+	 * {@link VarNullType#isAcceptableNullType(VarType)}).
+	 * 
+	 * <p>
+	 * The value of {@code valueIndex} depends on the {@link ExpressionHolder}
+	 * implementation, for instance when checking a {@link VariableDeclaration} the
+	 * expression to check is the only one of the statement hence {@code valueIndex}
+	 * must be 0. For function calls this method will be used once for each argument
+	 * with {@code valueIndex} ranging from 0 to the number of arguments -1.
+	 */
 	static void checkAffectationType(ExpressionHolder valueHolder, int valueIndex, VarType validType, ErrorWrapper errors) {
 		Expression value = valueHolder.getExpressions()[valueIndex];
 		if(value instanceof NullExp) {

@@ -66,11 +66,11 @@ class StatementLinker {
 			
 			// handle special statements
 			if(st instanceof ForSt && ((ForSt) st).declaration != null) {
-				ExpressionLinker.linkExpressions(unit, scope, ((ForSt) st).declaration.getExpressions(), typesTable, errors);
+				ExpressionLinker.linkExpressions(unit, scope, ((ForSt) st).declaration, typesTable, errors);
 				declareVariable(((ForSt) st).declaration, scope, errors);
 			}
 			
-			ExpressionLinker.linkExpressions(unit, scope, st.getExpressions(), typesTable, errors);
+			ExpressionLinker.linkExpressions(unit, scope, st, typesTable, errors);
 			linkStatement(unit, func, st, typesTable, errors);
 			
 			if(st instanceof VariableDeclaration)
@@ -84,8 +84,8 @@ class StatementLinker {
 
 	private static void declareVariable(VariableDeclaration decl, Scope scope, ErrorWrapper errors) {
 		VarAccess declaration = scope.getVariable(decl.name);
-		decl.setSignature(new Signature(VarAccess.INNER_UNIT, decl.name, decl.name)); // TODO set variable signatures elsewhere
-		// also change Linker#prelinkUnit, most signatures can be computed earlier
+		decl.setSignature(new Signature(VarAccess.INNER_UNIT, decl.name, decl.name));
+		
 		if(declaration instanceof VariablePrototype) {
 			errors.add("Redeclaration of existing variable " + decl.name + ":" + decl.getErr());
 		} else {
@@ -157,6 +157,9 @@ class StatementLinker {
 					}
 				}
 			}
+			
+		} else if(st instanceof VariableDeclaration) {
+			Linker.checkAffectationType(st, 0, ((VariableDeclaration) st).getType(), errors);
 			
 		} else if(st instanceof ForSt) {
 			// FIX see ForSt fix first

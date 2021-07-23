@@ -54,21 +54,6 @@ public class StructSection extends SourceObject implements ValueDeclaration {
 	@Override
 	public boolean equals(Object other) {
 		throw new UnimplementedException("Unimplemented equality check: cyclic structures problem");
-//		if(!(other instanceof StructSection))
-//			return false;
-//		StructSection o = (StructSection) other;
-//		if(!o.name.equals(name))
-//			return false;
-//		if(members.length != o.members.length)
-//			return false;
-//		for(VariableDeclaration member : members) {
-//			if(!member.equals(o.getMember(member.name)))
-//				return false;
-//		}
-//		// FIX check for constructors in struct equality
-//		if(!modifiers.equals(o.modifiers))
-//			return false;
-//		return true;
 	}
 	
 	@Override

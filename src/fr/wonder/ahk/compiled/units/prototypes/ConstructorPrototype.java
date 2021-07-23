@@ -7,7 +7,7 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.commons.exceptions.UnimplementedException;
 
-public class ConstructorPrototype implements Prototype<StructConstructor> {
+public class ConstructorPrototype implements Prototype<StructConstructor>, CallablePrototype {
 
 	private final Signature signature;
 	public final VarType[] types;
@@ -32,6 +32,11 @@ public class ConstructorPrototype implements Prototype<StructConstructor> {
 	@Override
 	public StructConstructor getAccess(Unit unit) {
 		throw new UnimplementedException();
+	}
+
+	@Override
+	public VarType[] getArgumentTypes() {
+		return types;
 	}
 
 }

@@ -7,8 +7,8 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 
 /**
  * Prototypes are symbolic descriptions of accessible variables, functions
- * and units. They are used to describe data without actually knowing its
- * value. Refer to the child class for a more complete description.
+ * and units. They are used to describe data without actually knowing their
+ * value. Refer to the implementation class for a more complete description.
  */
 public interface Prototype<T extends ValueDeclaration> {
 	

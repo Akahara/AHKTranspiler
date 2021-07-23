@@ -11,3 +11,17 @@ struct Structure {
   /*constructor(int a);*/
   
 }
+
+struct Cyclic1 {
+	
+	Cyclic2 other;
+	int a = 32;
+	
+}
+
+struct Cyclic2 {
+
+	int b = 29;
+	Cyclic1 other;
+
+}
