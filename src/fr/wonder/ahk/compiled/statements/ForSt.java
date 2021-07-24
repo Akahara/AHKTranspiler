@@ -1,38 +1,51 @@
 package fr.wonder.ahk.compiled.statements;
 
-import java.util.Arrays;
-
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.commons.utils.ArrayOperator;
+import fr.wonder.commons.utils.Assertions;
 
 public class ForSt extends LabeledStatement {
 	
-	public final VariableDeclaration declaration; // FIX the ForSt expressions are not in a single array (expression holder)
-	public final Expression condition;
-	public final AffectationSt affectation;
+	public final VarType declarationType;
+	public final String declarationVar, affectationVar;
+	public final boolean hasDeclaration, hasAffectation;
 	
 	public ForSt(UnitSource source, int sourceStart, int sourceStop, boolean singleLine,
-			VariableDeclaration declaration, Expression condition, AffectationSt affectation) {
+			VarType declarationType, String declarationVar, Expression declaration,
+			Expression condition,
+			String affectationVar, Expression affectation) {
 		
-		super(source, sourceStart, sourceStop, singleLine, unwrapExpressions(condition, affectation));
-		this.declaration = declaration;
-		this.condition = condition;
-		this.affectation = affectation;
+		super(source, sourceStart, sourceStop, singleLine, unwrapExpressions(declaration, condition, affectation));
+		this.declarationType = declarationType;
+		this.declarationVar = declarationVar;
+		this.affectationVar = affectationVar;
+		this.hasDeclaration = declarationVar != null;
+		this.hasAffectation = affectationVar != null;
 	}
 	
-	private static Expression[] unwrapExpressions(Expression condition, AffectationSt affectation) {
-		if(affectation == null)
-			return new Expression[] { condition };
-		Expression[] expressions = Arrays.copyOf(affectation.expressions, affectation.expressions.length+1);
-		if(condition != null)
-			expressions[affectation.expressions.length] = condition;
-		return expressions;
+	private static Expression[] unwrapExpressions(Expression declaration, Expression condition, Expression affectation) {
+		return ArrayOperator.removeNull(new Expression[] { condition, declaration, affectation });
+	}
+	
+	public Expression getCondition() {
+		return expressions[0];
+	}
+	
+	public Expression getDeclarationValue() {
+		Assertions.assertTrue(hasDeclaration, "This statement does not have a declaration");
+		return expressions[1];
+	}
+	
+	public Expression getAffectationValue() {
+		
 	}
 	
 	@Override
 	public String toString() {
 		return "for(" + 
-				(declaration == null ? "" : declaration.toString()) + ", " +
+				(hasDeclaration ? "" : declarationType + " " + declarationVar + " = " + getDeclarationValue()) + ", " +
 				condition + ", " +
 				(affectation == null ? "" : affectation) + ")" +
 				(singleLine ? "" : "{");
