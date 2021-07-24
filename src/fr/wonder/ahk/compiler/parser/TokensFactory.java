@@ -64,12 +64,8 @@ public class TokensFactory {
 	}
 
 	/**
-	 * Used to :
-	 * <ul>
-	 * <li>move elses and ifs with single line body to their own line</li>
-	 * <li>replace token patterns 'Unit . varL' by 'varL'</li>
-	 * <li>replace token patterns '- intL' by 'intL' (negative)</li>
-	 * </ul>
+	 * Used to move tokens with single line body to their own line (if, else,
+	 * for...).
 	 */
 	public static Token[][] finalizeTokens(Token[][] tokens) {
 		List<Token[]> lines = Utils.asList(tokens);
@@ -90,26 +86,6 @@ public class TokensFactory {
 					}
 				}
 			}
-		}
-		for(int i = 0; i < lines.size(); i++) {
-			List<Token> line = Utils.asList(lines.get(i));
-			boolean modified = false;
-			for(int j = 0; j < line.size(); j++) {
-				if(	j < line.size()-2 &&
-					line.get(j).base == TokenBase.VAR_UNIT &&
-					line.get(j+1).base == TokenBase.TK_DOT &&
-					line.get(j+2).base == TokenBase.VAR_VARIABLE) {
-					
-					// replace 'Unit . variable' by 'variable'
-					line.set(j, new Token(line.get(j).getSource(), TokenBase.VAR_VARIABLE,
-							line.get(j).text+line.get(j+1).text+line.get(j+2).text, line.get(j).sourceStart));
-					line.remove(j+2);
-					line.remove(j+1);
-					modified = true;
-				}
-			}
-			if(modified)
-				lines.set(i, line.toArray(Token[]::new));
 		}
 		
 		// remove empty lines (<should> be useless)

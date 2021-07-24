@@ -66,8 +66,12 @@ class StatementLinker {
 			
 			// handle special statements
 			if(st instanceof ForSt && ((ForSt) st).declaration != null) {
-				ExpressionLinker.linkExpressions(unit, scope, ((ForSt) st).declaration, typesTable, errors);
-				declareVariable(((ForSt) st).declaration, scope, errors);
+				ForSt forst = (ForSt) st;
+				ExpressionLinker.linkExpressions(unit, scope, forst.declaration, typesTable, errors);
+				linkStatement(unit, func, forst.declaration, typesTable, errors);
+				declareVariable(forst.declaration, scope, errors);
+				ExpressionLinker.linkExpressions(unit, scope, forst.affectation, typesTable, errors);
+				linkStatement(unit, func, forst.affectation, typesTable, errors);
 			}
 			
 			ExpressionLinker.linkExpressions(unit, scope, st, typesTable, errors);
@@ -124,7 +128,7 @@ class StatementLinker {
 				errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 			
 		} else if(st instanceof AffectationSt) {
-			Linker.checkAffectationType(st, 0, ((AffectationSt) st).getVariable().getType(), errors);
+			Linker.checkAffectationType(st, 1, ((AffectationSt) st).getVariable().getType(), errors);
 			
 		} else if(st instanceof MultipleAffectationSt) {
 			MultipleAffectationSt a = (MultipleAffectationSt) st;

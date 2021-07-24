@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -220,10 +221,10 @@ public class FunctionWriter {
 			writeAffectationStatement(st.affectation, errors);
 			writer.instructions.label(label + "_firstpass");
 		}
-		if(st.condition != null) {
-			writer.opWriter.writeJump(st.condition, getLabel(st.sectionEnd), errors);
-		} else {
+		if(st.getCondition() instanceof BoolLiteral && ((BoolLiteral) st.getCondition()).value) {
 			writer.instructions.jmp(label);
+		} else {
+			writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 		}
 	}
 	

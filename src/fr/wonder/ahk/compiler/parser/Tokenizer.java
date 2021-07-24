@@ -151,30 +151,51 @@ public class Tokenizer {
 	}
 	
 	private void finalizeTokens() {
-		// replace <int dot int> by <float>
-		for(int i = 0; i < tokens.size(); i++) {
-			if(tokens.get(i).base == LIT_INT) {
-				int length = 0;
-				if(i+1 < tokens.size() && tokens.get(i+1).base == TK_DOT) {
-					length++;
-					if(i+2 < tokens.size() && tokens.get(i+2).base == LIT_INT)
-						length++;
-				}
-				if(length > 0) {
-					int start = tokens.get(i).sourceStart;
-					int stop = tokens.get(i+length).sourceStop;
-					tokens.set(i, new Token(source, LIT_FLOAT, source.substring(start, stop), start));
-					if(length > 1)
-						tokens.remove(i+2);
-					tokens.remove(i+1);
-				}
-			}
-		}
-		
 		// remove spaces
 		for(int i = tokens.size()-1; i >= 0; i--)
 			if(tokens.get(i).base == TokenBase.TK_SPACE)
 				tokens.remove(i);
+		
+		for(int i = 1; i < tokens.size(); i++) {
+			// previous, current and next tokens
+			Token ptk = tokens.get(i-1);
+			Token tk = tokens.get(i);
+			Token ntk = i+1 < tokens.size() ? tokens.get(i+1) : null;
+			
+			if(tk.base == TK_DOT) {
+				// replace <(int) . int> and <int . (int)> by <float>
+				String floatText = "";
+				int floatStart = tk.sourceStart;
+				boolean isFloat = false;
+				if(ptk.base == LIT_INT) {
+					floatText = ptk.text;
+					tokens.remove(i-1);
+					i--;
+					isFloat = true;
+				}
+				floatText += ".";
+				if(ntk != null && ntk.base == LIT_INT) {
+					floatText += ntk.text;
+					floatStart = ntk.sourceStart;
+					tokens.remove(i+1);
+					isFloat = true;
+				}
+				if(isFloat)
+					tokens.set(i, new Token(source, LIT_FLOAT, floatText, floatStart));
+				
+				// replace <Unit . variable> by <variable>
+				if( ntk != null &&
+					ptk.base == TokenBase.VAR_UNIT &&
+					ntk.base == TokenBase.VAR_VARIABLE) {
+					
+					tokens.set(i, new Token(tk.getSource(), TokenBase.VAR_VARIABLE,
+							ptk.text + tk.text + ntk.text, tk.sourceStart));
+					tokens.remove(i+1);
+					tokens.remove(i-1);
+					i--;
+				}
+			}
+		}
 	}
 
 	public static Token[] tokenize(UnitSource source, ErrorWrapper errors) {

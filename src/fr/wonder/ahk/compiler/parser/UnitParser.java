@@ -154,9 +154,8 @@ public class UnitParser {
 						errors.add("Unfinished function:" + unit.source.getErr(lines[i]));
 					} else {
 						DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
-						ErrorWrapper subErrors = errors.subErrrors("Invalid struct declaration");
 						FunctionSection func = FunctionDeclarationParser.parseFunctionSection(
-								unit, lines, i, functionEnd, mods, subErrors);
+								unit, lines, i, functionEnd, mods, errors);
 						i = functionEnd;
 						functions.add(func);
 						modifiers.clear();

@@ -34,6 +34,9 @@ class ExpressionLinker {
 		for(int i = 0; i < expressions.length; i++) {
 			Expression exp = expressions[i];
 			
+			if(exp == null)
+				continue;
+			
 			linkExpressions(unit, scope, exp, typesTable, errors);
 			
 			if(exp instanceof VarExp) {
