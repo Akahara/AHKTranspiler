@@ -25,11 +25,6 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class AsmX64Transpiler implements Transpiler {
 	
-	/*
-	 * Fixes:
-	 *  - make a type table that knows the size of a data type
-	 */
-	
 	@Override
 	public String getName() {
 		return "AHK_Default//Assembly_x64";
@@ -69,11 +64,6 @@ public class AsmX64Transpiler implements Transpiler {
 			this.manifest = handle.manifest;
 		}
 		
-	}
-	
-	@Override
-	public void exportAPI(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
-		// TODO export as api
 	}
 	
 	private void validateProject(TranspilableHandle handle, ErrorWrapper errors) {

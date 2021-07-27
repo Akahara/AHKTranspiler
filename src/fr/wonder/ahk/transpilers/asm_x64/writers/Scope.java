@@ -10,7 +10,6 @@ import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
-import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 
@@ -33,13 +32,13 @@ class Scope {
 		this.stackSpace = stackSpace;
 	}
 	
-	Address declareVariable(VariableDeclaration var) {
+	MemAddress declareVariable(VariableDeclaration var) {
 		variables.add(var);
 		currentScopeSize++;
 		return new MemAddress(Register.RSP, stackSpace-variables.size()*MemSize.POINTER_SIZE);
 	}
 	
-	Address getVarAddress(VarAccess var) {
+	MemAddress getVarAddress(VarAccess var) {
 		// search through the stack frame
 		for(int i = 0; i < variables.size(); i++) {
 			if(var.matchesDeclaration(variables.get(i)))

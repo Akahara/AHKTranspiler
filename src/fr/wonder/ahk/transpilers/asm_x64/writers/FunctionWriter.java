@@ -23,6 +23,7 @@ import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -33,29 +34,23 @@ public class FunctionWriter {
 	);
 	
 	private final UnitWriter writer;
+	private final FunctionSection func;
 	/** list of labels local to the function (all are starting with a dot) */
 	private final Map<Statement, String> labelsMap = new HashMap<>();
 	
 	private int debugLabelIndex = 0;
 	
-	public FunctionWriter(UnitWriter writer, FunctionSection func) {
+	private FunctionWriter(UnitWriter writer, FunctionSection func) {
 		this.writer = writer;
-		// fill the labels map
-		int l = 0;
-		for(Statement s : func.body) {
-			if(s instanceof LabeledStatement) {
-				String name = s.getClass().getSimpleName();
-				name = name.substring(0, name.length()-2).toLowerCase();
-				String label = "." + name + "_" + (l++);
-				labelsMap.put(s, label);
-			} else if(s instanceof SectionEndSt) {
-				// the label of the closed statement has already been set
-				labelsMap.put(s, ".end_"+labelsMap.get(((SectionEndSt) s).closedStatement).substring(1));
-			}
-		}
+		this.func = func;
+		fillLabelsMap();
 	}
 	
-	public void writeFunction(FunctionSection func, ErrorWrapper errors) {
+	public static void writeFunction(UnitWriter writer, FunctionSection func, ErrorWrapper errors) {
+		new FunctionWriter(writer, func).writeFunction(errors);
+	}
+	
+	private void writeFunction(ErrorWrapper errors) {
 		writer.instructions.createStackFrame();
 		
 		int stackSpace = getMaxStackSize(func.body);
@@ -114,7 +109,7 @@ public class FunctionWriter {
 				
 			} else if(st instanceof AffectationSt) {
 				writeAffectationStatement((AffectationSt) st, errors);
-				
+				// TODO implement MultipleAffectationSt
 			} else {
 				errors.add("Unhandled statement type: " + st.getClass().getSimpleName() + " " + st.getErr());
 			}
@@ -150,7 +145,7 @@ public class FunctionWriter {
 				max = Math.max(current, max);
 				sections.add(current);
 			} else if(s instanceof RangedForSt) {
-				current += MemSize.POINTER_SIZE;
+				current += 3*MemSize.POINTER_SIZE;
 				max = Math.max(current, max);
 				sections.add(current);
 			} else if(SECTION_STATEMENTS.contains(s.getClass())) {
@@ -162,6 +157,21 @@ public class FunctionWriter {
 	
 	public static int getArgumentsSize(FunctionPrototype func) {
 		return func.functionType.arguments.length * MemSize.POINTER_SIZE;
+	}
+	
+	private void fillLabelsMap() {
+		int l = 0;
+		for(Statement s : func.body) {
+			if(s instanceof LabeledStatement) {
+				String name = s.getClass().getSimpleName();
+				name = name.substring(0, name.length()-2).toLowerCase();
+				String label = "." + name + "_" + (l++);
+				labelsMap.put(s, label);
+			} else if(s instanceof SectionEndSt) {
+				// the label of the closed statement has already been set
+				labelsMap.put(s, ".end_"+labelsMap.get(((SectionEndSt) s).closedStatement).substring(1));
+			}
+		}
 	}
 	
 	private String getLabel(Statement st) {
@@ -203,7 +213,25 @@ public class FunctionWriter {
 	}
 	
 	private void writeRangedForStatement(RangedForSt st, ErrorWrapper errors) {
-		writeForStatement(st.toComplexFor(), getLabel(st), errors); // FIX compute step and max beforehand
+		MemAddress varAddress = writer.mem.writeDeclaration(st.getVariableDeclaration(), errors);
+		writer.mem.declareDummyStackVariable("RangedFor.Step");
+		writer.mem.declareDummyStackVariable("RangedFor.Max");
+		MemAddress stepAddress = varAddress.addOffset(-8);
+		MemAddress maxAddress = varAddress.addOffset(-16);
+		writer.mem.writeTo(stepAddress, st.getStep(), errors);
+		writer.mem.writeTo(maxAddress, st.getMax(), errors);
+		String label = getLabel(st);
+		writer.mem.getVarAddress(st.getVariableDeclaration().getPrototype());
+		writer.instructions.mov(Register.RAX, varAddress);
+		writer.instructions.jmp(label + "_firstpass");
+		writer.instructions.label(label);
+		writer.instructions.mov(Register.RAX, varAddress);
+		writer.instructions.add(OpCode.ADD, Register.RAX, stepAddress);
+		writer.instructions.mov(varAddress, Register.RAX);
+		writer.instructions.label(label + "_firstpass");
+		writer.instructions.mov(Register.RBX, maxAddress);
+		writer.instructions.cmp(Register.RAX, Register.RBX);
+		writer.instructions.add(OpCode.JGE, getLabel(st.sectionEnd));
 	}
 	
 	/**

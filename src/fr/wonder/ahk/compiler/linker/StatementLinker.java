@@ -136,38 +136,38 @@ class StatementLinker {
 			Expression[] values = a.getValues();
 			VarType[] valuesTypes;
 			if(a.isUnwrappedFunction()) {
-				if(!(values[0] instanceof FunctionExpression) || !(values[0].getType() instanceof VarCompositeType)) {
-					errors.add("Invalid affectation, the right hand side of the assignement is not a composite type "
-							+ values[0].getErr());
-					valuesTypes = null;
-				} else {
-					valuesTypes = ((VarCompositeType) values[0].getType()).types;
+				if(!(values[0] instanceof FunctionExpression) ||
+					!(values[0].getType() instanceof VarCompositeType)) {
+					errors.add("Invalid affectation, the right hand side of the"
+							+ " assignement is not a composite type " + values[0].getErr());
+					return;
 				}
+				valuesTypes = ((VarCompositeType) values[0].getType()).types;
 			} else {
 				valuesTypes = ArrayOperator.map(values, VarType[]::new, Expression::getType);
 			}
-			if(valuesTypes != null) {
-				if(valuesTypes.length != variables.length) {
-					errors.add("Invalid affectation, " + variables.length + " variables for " 
-							+ valuesTypes.length + " values");
-				} else {
-					for(int i = 0; i < variables.length; i++) {
-//						Linker.checkAffectationType(a, i, null, errors); TODO use Linker#checkAffectationType for multipleAffectationSt
-						VarType from = valuesTypes[i];
-						VarType to = variables[i].getType();
-						if(!ConversionTable.canConvertImplicitely(from, to))
-							errors.add("Invalid affectation, " + from.getName() + " cannot be casted to "
-									+ to.getName() + st.getErr());
-					}
+			
+			if(valuesTypes.length != variables.length) {
+				errors.add("Invalid affectation, " + variables.length + " variables for " 
+						+ valuesTypes.length + " values");
+				return;
+			}
+			
+			if(!a.isUnwrappedFunction()) {
+				for(int i = 0; i < variables.length; i++)
+					Linker.checkAffectationType(a, i, variables[i].getType(), errors);
+			} else {
+				for(int i = 0; i < variables.length; i++) {
+					VarType from = valuesTypes[i], to = variables[i].getType();
+					if(!from.equals(to))
+						errors.add("Type mismatch, " + from + " does not match " + to + " (function"
+								+ " unwrapping cannot not use implicit conversions)" + st.getErr());
 				}
 			}
 			
 		} else if(st instanceof VariableDeclaration) {
 			Linker.checkAffectationType(st, 0, ((VariableDeclaration) st).getType(), errors);
 			
-		} else if(st instanceof ForSt) {
-			// FIX see ForSt fix first
-			// then use Linker#checkAffectationType for initialization and affectation
 		}
 	}
 

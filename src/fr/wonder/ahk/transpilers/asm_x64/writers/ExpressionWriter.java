@@ -130,38 +130,60 @@ public class ExpressionWriter {
 	private void writeIndexingExp(IndexingExp exp, ErrorWrapper errors) {
 		writer.mem.writeTo(Register.RAX, exp.getArray(), errors);
 		for(Expression index : exp.getIndices()) {
-			String specialLabel1 = writer.getSpecialLabel();
-			if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
-				writer.instructions.cmp(new MemAddress(Register.RAX, -4), 0);
-				writer.instructions.jmp(specialLabel1);
-				writer.instructions.mov(Register.RAX, -6); // TODO add specific error code
-				writer.instructions.call(GlobalLabels.SPECIAL_THROW);
-				writer.instructions.label(specialLabel1);
-				writer.instructions.add(OpCode.ADD, Register.RAX, new MemAddress(Register.RAX, -8));
-				writer.instructions.add(OpCode.SUB, Register.RAX, MemSize.POINTER_SIZE);
-				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX)); // mov rax,[rax]
-				throw new UnimplementedException("array[-1] indexing won't work untill the memory system is not changed, see the FIX below");
-			} else {
-				String specialLabel2 = writer.getSpecialLabel();
-				writer.instructions.push(Register.RAX);
-				writer.mem.addStackOffset(MemSize.POINTER_SIZE);
-				writer.mem.writeTo(Register.RAX, index, errors);
-				writer.instructions.pop(Register.RBX); // rbx is the array pointer
-				writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
-				writer.instructions.add(OpCode.SHL, Register.RAX, 3); // shift left by 3 is equivalent to multiply by 8 (the pointer size)
-				// TODO0 check if the scaled index overflows the 64 bits limit
-				writer.instructions.test(Register.RAX);
-				writer.instructions.add(OpCode.JS, specialLabel2); // the index 
-				writer.instructions.cmp(new MemAddress(Register.RBX, -8), Register.RAX);
-				writer.instructions.add(OpCode.JLE, specialLabel2);
-				writer.instructions.jmp(specialLabel1);
-				writer.instructions.label(specialLabel2);
-				writer.instructions.mov(Register.RAX, -5); // TODO add specific error code
-				writer.instructions.call(GlobalLabels.SPECIAL_THROW);
-				writer.instructions.label(specialLabel1);
-				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, Register.RBX, 1)); // mov rax,[rax+rbx]
-			}
+			MemAddress indexed = writeArrayIndex(index, errors);
+			writer.instructions.mov(Register.RAX, indexed);
 		}
+	}
+	
+	/**
+	 * Writes the index of an indexing expression, check for out of bounds errors
+	 * and returns the address of the value at array[index], which can be written to
+	 * or read from.
+	 * 
+	 * <p>
+	 * For this to work the array must be stored in rax, otherwise if index is '-1'
+	 * (as in {@code array[-1]} to get the last element of <i>array</i>) the
+	 * behavior of this method becomes undefined.
+	 */
+	public MemAddress writeArrayIndex(Expression index, ErrorWrapper errors) {
+		if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
+			String errLabel = writer.getSpecialLabel();
+			writer.instructions.mov(Register.RBX, new MemAddress(Register.RAX, -8));
+			writer.instructions.test(Register.RBX);
+			writer.instructions.add(OpCode.JNZ, errLabel);
+			writer.instructions.mov(Register.RAX, -6); // TODO add specific error code
+			writer.instructions.call(GlobalLabels.SPECIAL_THROW);
+			writer.instructions.label(errLabel);
+			return new MemAddress(Register.RAX, Register.RBX, 1, -8);
+		} else {
+			writer.instructions.push(Register.RAX);
+			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
+			writer.mem.writeTo(Register.RBX, index, errors);
+			writer.instructions.pop(Register.RAX);
+			writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
+			writer.instructions.add(OpCode.SHL, Register.RBX, 3); // scale the index (multiply by 9
+			checkOOB();
+			return new MemAddress(Register.RAX, Register.RBX, 1);
+		}
+	}
+	
+	/**
+	 * Checks for index out of bounds errors.
+	 * 
+	 * <p>When called, rax must be the array pointer and rbx the <b>scaled</b> index
+	 * (multiplied by 8).
+	 */
+	public void checkOOB() {
+		String errLabel = writer.getSpecialLabel();
+		String successLabel = writer.getSpecialLabel();
+		writer.instructions.test(Register.RBX);
+		writer.instructions.add(OpCode.JS, errLabel);
+		writer.instructions.cmp(Register.RBX, new MemAddress(Register.RAX, -8));
+		writer.instructions.add(OpCode.JL, successLabel);
+		writer.instructions.label(errLabel);
+		writer.instructions.mov(Register.RAX, -5); // TODO add specific error code (oob)
+		writer.instructions.call(GlobalLabels.SPECIAL_THROW);
+		writer.instructions.label(successLabel);
 	}
 
 	private void writeSizeofExp(SizeofExp exp, ErrorWrapper errors) {

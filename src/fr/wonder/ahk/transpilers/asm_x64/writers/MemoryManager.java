@@ -88,9 +88,14 @@ public class MemoryManager {
 	 * Declares the variable to the current scope and writes its default value to its location.
 	 * If the declaration does not have a default value a {@link NoneExp} is passed to {@link #writeTo(VarLocation, Expression, ErrorWrapper)}
 	 */
-	public void writeDeclaration(VariableDeclaration st, ErrorWrapper errors) {
-		Address loc = currentScope.declareVariable(st);
+	public MemAddress writeDeclaration(VariableDeclaration st, ErrorWrapper errors) {
+		MemAddress loc = currentScope.declareVariable(st);
 		writeTo(loc, st.getDefaultValue(), errors);
+		return loc;
+	}
+	
+	public void declareDummyStackVariable(String name) {
+		currentScope.declareVariable(new DummyVariableDeclaration(name));
 	}
 	
 	public Address getVarAddress(VarAccess declaration) {
@@ -143,8 +148,10 @@ public class MemoryManager {
 			writeTo(((VarExp) variable).declaration, value, errors);
 			
 		} else if(variable instanceof IndexingExp) {
-			// TODO this can be heavily optimized
 			IndexingExp exp = (IndexingExp) variable;
+			writeTo(Register.RCX, value, errors);  // value
+			writer.instructions.push(Register.RCX);
+			addStackOffset(8);
 			Expression[] indices = exp.getIndices();
 			if(indices.length > 1) {
 				IndexingExp subExp = exp.subIndexingExpression();
@@ -152,19 +159,10 @@ public class MemoryManager {
 			} else {
 				writeTo(Register.RAX, exp.getArray(), errors);
 			}
-			writer.instructions.push(Register.RAX);
-			addStackOffset(8);
-			writeTo(Register.RAX, indices[indices.length-1], errors);
-			writer.instructions.push(Register.RAX);
-			addStackOffset(8);
-			writeTo(Register.RCX, value, errors);  // value
-			writer.instructions.pop(Register.RBX); // index
-			writer.instructions.pop(Register.RAX); // array
-			addStackOffset(-16);
-			// TODO check for out of bounds affectations
-			writer.instructions.mov(
-					new MemAddress(Register.RAX, Register.RBX, MemSize.POINTER_SIZE),
-					Register.RCX);
+			MemAddress indexed = writer.expWriter.writeArrayIndex(indices[indices.length-1], errors);
+			writer.instructions.pop(Register.RCX); // value
+			addStackOffset(-8);
+			writer.instructions.mov(indexed, Register.RCX);
 			
 		} else if(variable instanceof DirectAccessExp) {
 			DirectAccessExp exp = (DirectAccessExp) variable;

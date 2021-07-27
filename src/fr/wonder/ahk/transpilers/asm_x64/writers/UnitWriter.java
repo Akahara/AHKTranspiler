@@ -57,7 +57,7 @@ public class UnitWriter {
 		// all other variables (which values can be computed beforehand)
 		List<VariableDeclaration> initializedVariables = new ArrayList<>();
 		
-		// TODO use the compiler to optimize directly computable values
+		// TODO0 use the compiler to optimize directly computable values
 		for(VariableDeclaration var : unit.variables) {
 			if(var.getDefaultValue() instanceof LiteralExp<?>)
 				initializedVariables.add(var);
@@ -321,10 +321,8 @@ public class UnitWriter {
 			if(func.modifiers.hasModifier(Modifier.NATIVE))
 				continue;
 			
-			FunctionWriter funcWriter = new FunctionWriter(this, func);
-			
 			instructions.label(getGlobalRegistry(func.getPrototype()));
-			funcWriter.writeFunction(func, errors);
+			FunctionWriter.writeFunction(this, func, errors);
 			instructions.skip();
 		}
 		

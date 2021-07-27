@@ -12,7 +12,6 @@ public interface Transpiler {
 	
 	public String getName();
 	public ExecutableHandle exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException;
-	public void exportAPI(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException;
 	public Process runProject(ExecutableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException;
 	
 }

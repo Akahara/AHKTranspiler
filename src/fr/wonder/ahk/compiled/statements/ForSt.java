@@ -6,7 +6,7 @@ import fr.wonder.commons.annotations.NonNull;
 
 public class ForSt extends LabeledStatement {
 	
-	public final VariableDeclaration declaration; // FIX the ForSt expressions are not in a single array (expression holder)
+	public final VariableDeclaration declaration;
 	public final AffectationSt affectation;
 	
 	public ForSt(UnitSource source, int sourceStart, int sourceStop, boolean singleLine,
