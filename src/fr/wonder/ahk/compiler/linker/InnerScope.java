@@ -3,15 +3,12 @@ package fr.wonder.ahk.compiler.linker;
 import java.util.ArrayList;
 import java.util.List;
 
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
-import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 
 class InnerScope implements Scope {
 	
 	final Scope parent;
-	final List<ValueDeclaration> variables = new ArrayList<>();
+	final List<VarAccess> variables = new ArrayList<>();
 	
 	InnerScope(Scope parent) {
 		this.parent = parent;
@@ -34,17 +31,15 @@ class InnerScope implements Scope {
 	
 	@Override
 	public VarAccess getVariable(String name) {
-		for(ValueDeclaration var : variables) {
-			if(var.getName().equals(name)) {
-				Signature signature = new Signature(VarAccess.INNER_UNIT, var.getName(), var.getName());
-				return new VariablePrototype(signature, var.getType(), var.getModifiers());
-			}
+		for(VarAccess var : variables) {
+			if(var.getSignature().name.equals(name))
+				return var;
 		}
 		return parent.getVariable(name);
 	}
 	
 	@Override
-	public void registerVariable(ValueDeclaration var) {
+	public void registerVariable(VarAccess var) {
 		variables.add(var);
 	}
 }

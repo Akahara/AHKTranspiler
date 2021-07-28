@@ -8,7 +8,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
+import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.utils.Utils;
 
 public class Modifier {
@@ -68,11 +68,11 @@ public class Modifier {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <T extends ValueDeclaration> boolean validateArgs(T func, BiFunction<T, Modifier, ModifierSyntax> syntax) {
+	public <T extends Prototype<?>> boolean validateArgs(T func, BiFunction<T, Modifier, ModifierSyntax> syntax) {
 		return validateArgs(func, new BiFunction[] { syntax });
 	}
 	
-	public <T extends ValueDeclaration> boolean validateArgs(T func, BiFunction<T, Modifier, ModifierSyntax>[] syntaxes) {
+	public <T extends Prototype<?>> boolean validateArgs(T func, BiFunction<T, Modifier, ModifierSyntax>[] syntaxes) {
 		for(var syntax : syntaxes) {
 			ModifierSyntax s = syntax.apply(func, this);
 			if(s != null) {

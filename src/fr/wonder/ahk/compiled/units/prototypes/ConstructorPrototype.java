@@ -2,12 +2,8 @@ package fr.wonder.ahk.compiled.units.prototypes;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
-import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
-import fr.wonder.ahk.compiled.units.sections.StructConstructor;
-import fr.wonder.commons.exceptions.UnimplementedException;
 
-public class ConstructorPrototype implements Prototype<StructConstructor>, CallablePrototype {
+public class ConstructorPrototype implements Prototype<ConstructorPrototype>, CallablePrototype {
 
 	private final Signature signature;
 	public final VarType[] types;
@@ -20,18 +16,8 @@ public class ConstructorPrototype implements Prototype<StructConstructor>, Calla
 	}
 	
 	@Override
-	public DeclarationModifiers getModifiers() {
-		return DeclarationModifiers.NONE;
-	}
-
-	@Override
 	public Signature getSignature() {
 		return signature;
-	}
-
-	@Override
-	public StructConstructor getAccess(Unit unit) {
-		throw new UnimplementedException();
 	}
 
 	@Override

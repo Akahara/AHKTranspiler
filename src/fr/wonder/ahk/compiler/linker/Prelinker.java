@@ -91,7 +91,7 @@ class Prelinker {
 		
 		for(UnitPrototype u : unit.prototype.filterImportedUnits(units)) {
 			for(StructPrototype s : u.structures) {
-				if(s.getVisibility() == DeclarationVisibility.GLOBAL)
+				if(s.visibility == DeclarationVisibility.GLOBAL)
 					unit.prototype.externalAccesses.add(s);
 			}
 		}

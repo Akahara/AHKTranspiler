@@ -1,6 +1,5 @@
 package fr.wonder.ahk.compiler.linker;
 
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 
 interface Scope {
@@ -11,6 +10,6 @@ interface Scope {
 	VarAccess getVariable(String name);
 	UnitScope getUnitScope();
 	
-	void registerVariable(ValueDeclaration var);
+	void registerVariable(VarAccess var);
 	
 }

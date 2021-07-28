@@ -3,7 +3,6 @@ package fr.wonder.ahk.compiler;
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
@@ -13,7 +12,6 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
@@ -41,29 +39,10 @@ public class Invalids {
 		public boolean equals(Object o) { return this == o; }
 	};
 	
-	public static final ValueDeclaration VALUE = new ValueDeclaration() {
-		public int getSourceStop() { return 0; }
-		public int getSourceStart() { return 0; }
-		public UnitSource getSource() { return SOURCE; }
-		public DeclarationVisibility getVisibility() { return DeclarationVisibility.SECTION; }
-		public VarType getType() { return TYPE; }
-		public String getName() { return STRING; }
-		public Signature getSignature() { return SIGNATURE; }
-		public DeclarationModifiers getModifiers() { return MODIFIERS; }
-	};
-
 	public static final Operation OPERATION = new Operation() {
 		public VarType getResultType() { return TYPE; }
 		public VarType getLOType() { return TYPE; }
 		public VarType getROType() { return TYPE; }
-	};
-
-	public static final VarAccess ACCESS = new VarAccess() {
-		public VarType getType() { return TYPE; }
-		public Signature getSignature() { return SIGNATURE; }
-		public boolean matchesDeclaration(ValueDeclaration decl) {
-			throw new IllegalStateException("An invalid access was used");
-		}
 	};
 
 	public static final Expression EXPRESSION = new Expression(SOURCE, 0, 0) {
@@ -84,13 +63,15 @@ public class Invalids {
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return TYPE; }
 	};
 
-	public static final StructSection STRUCT = new StructSection(SOURCE, 0, 0, STRING, MODIFIERS, new VariableDeclaration[0], new StructConstructor[0], null);
-	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(MODIFIERS, DeclarationVisibility.GLOBAL, new VariablePrototype[0], new ConstructorPrototype[0], SIGNATURE);
+	public static final StructSection STRUCT = new StructSection(SOURCE, 0, 0, STRING, new VariableDeclaration[0], new StructConstructor[0], null);
+	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(DeclarationVisibility.GLOBAL, new VariablePrototype[0], new ConstructorPrototype[0], SIGNATURE);
 	
 	public static final StructConstructor CONSTRUCTOR = new StructConstructor(SOURCE, 0, 0, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], SIGNATURE);
 
 	public static final VarFunctionType FUNCTION_TYPE = new VarFunctionType(TYPE, new VarType[0]);
 	public static final FunctionPrototype FUNCTION_PROTO = new FunctionPrototype(SIGNATURE, FUNCTION_TYPE, MODIFIERS);
+
+	public static final VariablePrototype VARIABLE_PROTO = new VariablePrototype(SIGNATURE, TYPE, MODIFIERS);;
 
 }

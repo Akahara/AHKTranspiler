@@ -1,8 +1,6 @@
 package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
@@ -12,24 +10,22 @@ import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.utils.ArrayOperator;
 
-public class StructSection extends SourceObject implements ValueDeclaration {
+public class StructSection extends SourceObject {
 
 	public final String name;
-	private final DeclarationModifiers modifiers;
 	
 	public final VariableDeclaration[] members;
 	public final StructConstructor[] constructors;
 	public final ConstructorDefaultValue[] nullFields;
+	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL;
 	
 	private StructPrototype prototype;
 	
 	public StructSection(UnitSource source, int sourceStart, int sourceStop,
-			String structName, DeclarationModifiers modifiers,
-			VariableDeclaration[] members, StructConstructor[] constructors,
+			String structName, VariableDeclaration[] members, StructConstructor[] constructors,
 			ConstructorDefaultValue[] nullFields) {
 		super(source, sourceStart, sourceStop);
 		this.name = structName;
-		this.modifiers = modifiers;
 		this.members = members;
 		this.constructors = constructors;
 		this.nullFields = nullFields;
@@ -61,25 +57,13 @@ public class StructSection extends SourceObject implements ValueDeclaration {
 		return "struct " + name;
 	}
 
-	@Override
-	public DeclarationModifiers getModifiers() {
-		return modifiers;
-	}
-
-	@Override
-	public DeclarationVisibility getVisibility() {
-		return DeclarationVisibility.GLOBAL; // TODO read struct visibility
-	}
-
-	@Override
 	public String getName() {
 		return name;
 	}
 	
 	public void setSignature(Signature signature) {
 		this.prototype = new StructPrototype(
-				modifiers,
-				getVisibility(),
+				visibility,
 				ArrayOperator.map(members, VariablePrototype[]::new, VariableDeclaration::getPrototype),
 				ArrayOperator.map(constructors, ConstructorPrototype[]::new, StructConstructor::getPrototype),
 				signature);
@@ -91,14 +75,4 @@ public class StructSection extends SourceObject implements ValueDeclaration {
 		return prototype;
 	}
 
-	@Override
-	public Signature getSignature() {
-		return prototype.getSignature();
-	}
-
-	@Override
-	public VarType getType() {
-		throw new IllegalStateException("Struct sections have no type");
-	}
-	
 }

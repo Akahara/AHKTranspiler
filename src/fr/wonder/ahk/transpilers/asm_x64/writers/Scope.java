@@ -5,7 +5,6 @@ import java.util.List;
 
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -39,18 +38,18 @@ class Scope {
 	}
 	
 	MemAddress getVarAddress(VarAccess var) {
-		// search through the stack frame
-		for(int i = 0; i < variables.size(); i++) {
-			if(var.matchesDeclaration(variables.get(i)))
-				return new MemAddress(Register.RSP, stackSpace-(i+1)*MemSize.POINTER_SIZE+stackOffset);
-		}
 		// search through the function arguments
 		for(int i = 0; i < func.arguments.length; i++) {
-			if(var.matchesDeclaration(func.arguments[i]))
+			if(var == func.arguments[i])
 				return new MemAddress(Register.RBP, (i+2)*MemSize.POINTER_SIZE);
 		}
+		// search through the stack frame
+		for(int i = 0; i < variables.size(); i++) {
+			if(var == variables.get(i).getPrototype())
+				return new MemAddress(Register.RSP, stackSpace-(i+1)*MemSize.POINTER_SIZE+stackOffset);
+		}
 		// search through global variables
-		return new MemAddress(new LabelAddress(UnitWriter.getRegistry((Prototype<?>) var)));
+		return new MemAddress(new LabelAddress(UnitWriter.getRegistry(var)));
 	}
 	
 	void beginScope() {

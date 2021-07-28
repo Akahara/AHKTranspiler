@@ -7,7 +7,6 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
-import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
@@ -20,8 +19,7 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class StructSectionParser {
 
-	public static StructSection parseStruct(Unit unit, Token[][] lines, int begin, int end,
-			DeclarationModifiers modifiers, ErrorWrapper errors) {
+	public static StructSection parseStruct(Unit unit, Token[][] lines, int begin, int end, ErrorWrapper errors) {
 		Token[] declaration = lines[begin];
 		if(declaration.length != 3) {
 			errors.add("Invalid declaration:" + unit.source.getErr(declaration));
@@ -68,7 +66,6 @@ class StructSectionParser {
 				declaration[0].sourceStart,
 				declaration[declaration.length-1].sourceStop,
 				structName,
-				modifiers,
 				members.toArray(VariableDeclaration[]::new),
 				constructors.toArray(StructConstructor[]::new),
 				nullFields);

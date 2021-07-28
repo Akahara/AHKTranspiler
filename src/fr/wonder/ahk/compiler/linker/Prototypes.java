@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Objects;
 
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.commons.utils.ArrayOperator;
 
 public class Prototypes {
 
-	public static List<UnitPrototype> getRecompilableUnits(
+	public static List<UnitPrototype> getRecompilableUnits( // TODO use Prototype#matchesPrototype instead of #equals
 			List<UnitPrototype> units,
 			UnitPrototype previousProto,
 			UnitPrototype newProto) {
@@ -21,7 +21,7 @@ public class Prototypes {
 		if(previousProto == null || previousProto == newProto)
 			return Collections.emptyList();
 		
-		List<VarAccess> affectedAccesses = new ArrayList<>();
+		List<Prototype<?>> affectedAccesses = new ArrayList<>();
 		for(FunctionPrototype func : previousProto.functions) {
 			FunctionPrototype[] functions = newProto.getFunctions(func.getName());
 			if(functions.length == 0) {
@@ -48,7 +48,7 @@ public class Prototypes {
 		for(UnitPrototype unit : units) {
 			if(!ArrayOperator.contains(unit.importations, previousProto.fullBase))
 				continue;
-			for(VarAccess external : unit.externalAccesses) {
+			for(Prototype<?> external : unit.externalAccesses) {
 				if(affectedAccesses.contains(external)) {
 					affectedUnits.add(unit);
 					break;

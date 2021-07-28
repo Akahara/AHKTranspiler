@@ -1,7 +1,6 @@
 package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -11,7 +10,7 @@ import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.utils.ArrayOperator;
 
-public class FunctionSection extends SourceObject implements ValueDeclaration {
+public class FunctionSection extends SourceObject {
 	
 	private final int declarationStop;
 	
@@ -20,6 +19,7 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 	public VarType returnType;
 	public FunctionArgument[] arguments;
 	public DeclarationModifiers modifiers;
+	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL;
 	
 	// set by the unit parser using the statement parser
 	public Statement[] body;
@@ -45,7 +45,7 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 
 	/** Called by the linker after the function argument types where computed */
 	public void setSignature(Signature signature) {
-		this.prototype = new FunctionPrototype(signature, getFunctionType(), getModifiers());
+		this.prototype = new FunctionPrototype(signature, getFunctionType(), modifiers);
 	}
 	
 	/**
@@ -64,24 +64,12 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 		return prototype;
 	}
 	
-	@Override
 	public String getName() {
 		return name;
 	}
 	
-	/** Overrides {@link ValueDeclaration#getType()} */
-	@Override
-	public VarType getType() {
-		return getFunctionType();
-	}
-	
 	public VarType[] getArgumentTypes() {
 		return ArrayOperator.map(arguments, VarType[]::new, arg -> arg.type);
-	}
-	
-	@Override
-	public DeclarationModifiers getModifiers() {
-		return modifiers;
 	}
 	
 	/**
@@ -92,8 +80,4 @@ public class FunctionSection extends SourceObject implements ValueDeclaration {
 		return new VarFunctionType(returnType, getArgumentTypes());
 	}
 
-	@Override
-	public DeclarationVisibility getVisibility() {
-		return DeclarationVisibility.GLOBAL; // TODO read function visibility
-	}
 }

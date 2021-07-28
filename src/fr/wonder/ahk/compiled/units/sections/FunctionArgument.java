@@ -1,13 +1,12 @@
 package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.expressions.ValueDeclaration;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 
-public class FunctionArgument extends SourceObject implements ValueDeclaration {
+public class FunctionArgument extends SourceObject implements VarAccess {
 	
 	public final String name;
 	public final VarType type;
@@ -17,7 +16,7 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration {
 		super(source, sourceStart, sourceStop);
 		this.name = name;
 		this.type = type;
-		this.signature = new Signature(VarAccess.INNER_UNIT, getName(), "arg_" + getName());
+		this.signature = new Signature(VarAccess.INNER_UNIT, name, "arg_" + name);
 	}
 	
 	@Override
@@ -26,23 +25,8 @@ public class FunctionArgument extends SourceObject implements ValueDeclaration {
 	}
 
 	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
 	public VarType getType() {
 		return type;
-	}
-
-	@Override
-	public DeclarationVisibility getVisibility() {
-		return DeclarationVisibility.SECTION;
-	}
-	
-	@Override
-	public DeclarationModifiers getModifiers() {
-		return DeclarationModifiers.NONE;
 	}
 
 	public Signature getSignature() {

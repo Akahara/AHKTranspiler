@@ -1,12 +1,15 @@
 package fr.wonder.ahk.compiled.units;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
+import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.Prototypes;
@@ -18,7 +21,6 @@ public class Unit {
 	
 	public final UnitSource source;
 	
-	public final UnitDeclaration declaration;
 	public final String base;
 	public final String name;
 	public final String fullBase;
@@ -27,6 +29,7 @@ public class Unit {
 	public VariableDeclaration[] variables;
 	public FunctionSection[] functions;
 	public StructSection[] structures;
+	public Map<String, Alias> aliases = new HashMap<>();
 	
 	public UnitCompilationState compilationState = UnitCompilationState.FRESH;
 	
@@ -48,7 +51,6 @@ public class Unit {
 	
 	public Unit(UnitSource source, String base, String name, int declarationStart,
 			int declarationStop, String[] importations) {
-		this.declaration = new UnitDeclaration(source, declarationStart, declarationStop, base);
 		this.source = source;
 		this.base = base;
 		this.name = name;
@@ -69,6 +71,7 @@ public class Unit {
 	public VarStructType getStructType(Token token) {
 		if(token.base != TokenBase.VAR_UNIT)
 			throw new IllegalArgumentException("Not a struct token");
+		
 		for(var knownType : usedStructTypes) {
 			if(knownType.a.name.equals(token.text)) {
 				knownType.c++;

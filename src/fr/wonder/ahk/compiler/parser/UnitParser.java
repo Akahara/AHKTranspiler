@@ -177,9 +177,10 @@ public class UnitParser {
 					if(structEnd == -1) {
 						errors.add("Unfinished struct:" + unit.source.getErr(lines[i]));
 					} else {
-						DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
+						if(!modifiers.isEmpty())
+							errors.add("Struct sections do not take modifiers:" + unit.source.getErr(line));
 						ErrorWrapper subErrors = errors.subErrrors("Cannot parse a struct declaration");
-						StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, mods, subErrors);
+						StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, subErrors);
 						i = structEnd;
 						structures.add(struct);
 						modifiers.clear();
@@ -189,8 +190,7 @@ public class UnitParser {
 			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
 				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, errors);
-				if(var != null)
-					var.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
+				var.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
 				variables.add(var);
 				modifiers.clear();
 				

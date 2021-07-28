@@ -14,6 +14,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiler.Invalids;
@@ -46,9 +47,10 @@ class ExpressionLinker {
 				String varUnit = var == null ? null : var.getSignature().declaringUnit;
 				if(var == null) {
 					errors.add("Usage of undeclared variable " + vexp.variable + vexp.getErr());
-					var = Invalids.ACCESS;
+					var = Invalids.VARIABLE_PROTO;
 				} else if(!varUnit.equals(unit.fullBase) && varUnit != VarAccess.INNER_UNIT) {
-					unit.prototype.externalAccesses.add(var);
+					Prototype<?> proto = (Prototype<?>) var;
+					unit.prototype.externalAccesses.add(proto);
 				}
 				vexp.declaration = var;
 				

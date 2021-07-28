@@ -77,13 +77,13 @@ public class AsmX64Transpiler implements Transpiler {
 	private void validateUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
-				if(!func.modifiers.getModifier(Modifier.NATIVE).validateArgs(func, (f,m) -> NativeModifier.parseModifier(m)))
+				if(!func.modifiers.getModifier(Modifier.NATIVE).validateArgs(func.getPrototype(), (f,m) -> NativeModifier.parseModifier(m)))
 					errors.add("Invalid native modifier syntax" + func.getErr());
 			}
 		}
 		for(VariableDeclaration var : unit.variables) {
 			if(var.modifiers.hasModifier(Modifier.NATIVE)) {
-				if(!var.modifiers.getModifier(Modifier.NATIVE).validateArgs(var, (v,m) -> NativeModifier.parseModifier(m)))
+				if(!var.modifiers.getModifier(Modifier.NATIVE).validateArgs(var.getPrototype(), (v,m) -> NativeModifier.parseModifier(m)))
 					errors.add("Invalid native modifier syntax" + var.getErr());
 			}
 		}
