@@ -13,7 +13,10 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class Prototypes {
 
-	public static List<UnitPrototype> getRecompilableUnits( // TODO use Prototype#matchesPrototype instead of #equals
+	// TODO use Prototype#matchesPrototype instead of #equals
+	// TODO populate Unit#externalAccesses with aliases, Unit and constructor prototypes
+	
+	public static List<UnitPrototype> getRecompilableUnits(
 			List<UnitPrototype> units,
 			UnitPrototype previousProto,
 			UnitPrototype newProto) {

@@ -98,7 +98,7 @@ class Prelinker {
 		
 		// link the structure types instances to their structure prototypes
 		
-		for(Triplet<VarStructType, Token, Integer> composite : unit.usedStructTypes) {
+		for(Triplet<VarStructType, Token, Integer> composite : unit.usedStructTypes.values()) {
 			VarStructType structType = composite.a;
 			structType.structure = searchStructSection(unit, structType.name, declaredStructures, errors);
 			if(structType.structure == Invalids.STRUCT_PROTOTYPE)

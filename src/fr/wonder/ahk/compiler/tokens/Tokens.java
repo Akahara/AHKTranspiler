@@ -31,8 +31,7 @@ public class Tokens {
 			DECL_BASE, DECL_IMPORT, DECL_UNIT,					// declarations
 			KW_VAR, KW_IF, KW_ELSE, KW_FOR, KW_FOREACH,			// keywords
 			KW_WHILE, KW_FUNC, KW_STRUCT, KW_CONSTRUCTOR,
-			KW_RETURN,
-			KW_SIZEOF,
+			KW_RETURN, KW_SIZEOF, KW_ALIAS,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,			// types
 			TYPE_BOOL,
 			VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,				// variable elements (MUST be read last by the tokenizer)
@@ -73,7 +72,7 @@ public class Tokens {
 
 	public static VarType getType(Unit unit, Token token) {
 		if(token.base == VAR_UNIT)
-			return unit.getStructType(token);
+			return unit.getStructOrAliasType(token);
 		return typesMap.getOrDefault(token.base, Invalids.TYPE);
 	}
 	

@@ -6,11 +6,13 @@ import fr.wonder.main.Structs;
 unit Main;
 
 int ii = 3;
-	
+
 int gi = 8;
 str x = "str";
 int[] array = [56, 42, 37];
 Structure structure = null;
+
+alias Afunction = func int(int);
 
 func int gcd(int x, int y) {
 	if(y == 0)

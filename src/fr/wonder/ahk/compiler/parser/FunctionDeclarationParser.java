@@ -80,8 +80,7 @@ class FunctionDeclarationParser {
 			return;
 		}
 		
-		if(declaration[k].base != TokenBase.VAR_VARIABLE)
-			errors.add("Expected function name:" + declaration[k].base);
+		UnitParser.expectToken(declaration[k], TokenBase.VAR_VARIABLE, "function name", errors);
 		func.name = declaration[k].text;
 		
 		k++;
@@ -115,8 +114,7 @@ class FunctionDeclarationParser {
 	static Tuple<List<Argument>, Integer> readArguments(
 			Unit unit, Token[] tokens, int begin, ErrorWrapper errors) {
 		
-		if(tokens[begin].base != TokenBase.TK_PARENTHESIS_OPEN) {
-			errors.add("Expected '(' :" + tokens[begin].getErr());
+		if(!UnitParser.expectToken(tokens[begin], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors)) {
 			return new Tuple<>(Collections.emptyList(), begin);
 		} else if(tokens[begin+1].base == TokenBase.TK_PARENTHESIS_CLOSE) {
 			return new Tuple<>(Collections.emptyList(), begin+2);

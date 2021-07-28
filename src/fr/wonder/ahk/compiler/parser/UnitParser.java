@@ -8,6 +8,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
+import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
@@ -145,47 +146,51 @@ public class UnitParser {
 			Token[] line = lines[i];
 			
 			if(line[0].base == TokenBase.KW_FUNC) {
+				DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
+				modifiers.clear();
 				// parse function section
-				if(line[line.length-1].base != TokenBase.TK_BRACE_OPEN) {
-					errors.add("Expected '{' to begin function" + line[line.length-1].getErr());
-				} else {
-					int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
-					if(functionEnd == -1) {
-						errors.add("Unfinished function:" + unit.source.getErr(lines[i]));
-					} else {
-						DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
-						FunctionSection func = FunctionDeclarationParser.parseFunctionSection(
-								unit, lines, i, functionEnd, mods, errors);
-						i = functionEnd;
-						functions.add(func);
-						modifiers.clear();
-					}
+				if(!expectToken(line[line.length-1], TokenBase.TK_BRACE_OPEN, "'{' to begin function", errors))
+					continue;
+				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
+				if(functionEnd == -1) {
+					errors.add("Unfinished function:" + unit.source.getErr(lines[i]));
+					continue;
 				}
+				FunctionSection func = FunctionDeclarationParser.parseFunctionSection(
+						unit, lines, i, functionEnd, mods, errors);
+				i = functionEnd;
+				functions.add(func);
 				
 			} else if(line[0].base == TokenBase.VAR_MODIFIER) {
 				// parse modifier
 				modifiers.add(parseModifier(line, errors));
 				
 			} else if(line[0].base == TokenBase.KW_STRUCT) {
+				if(!modifiers.isEmpty())
+					errors.add("Struct sections do not take modifiers:" + unit.source.getErr(line));
+				modifiers.clear();
 				// parse struct
 				if(line.length < 3) {
 					errors.add("Invalid struct declaration:" + unit.source.getErr(lines[i]));
-				} else if(line[2].base != TokenBase.TK_BRACE_OPEN) {
-					errors.add("Expected '{' to begin struct:" + line[2].getErr());
-				} else {
-					int structEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
-					if(structEnd == -1) {
-						errors.add("Unfinished struct:" + unit.source.getErr(lines[i]));
-					} else {
-						if(!modifiers.isEmpty())
-							errors.add("Struct sections do not take modifiers:" + unit.source.getErr(line));
-						ErrorWrapper subErrors = errors.subErrrors("Cannot parse a struct declaration");
-						StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, subErrors);
-						i = structEnd;
-						structures.add(struct);
-						modifiers.clear();
-					}
+					continue;
+				} else if(!expectToken(line[2], TokenBase.TK_BRACE_OPEN, "'{' to begin struct", errors)) {
+					continue;
 				}
+				int structEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
+				if(structEnd == -1) {
+					errors.add("Unfinished struct:" + unit.source.getErr(lines[i]));
+					continue;
+				}
+				ErrorWrapper subErrors = errors.subErrrors("Cannot parse a struct declaration");
+				StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, subErrors);
+				i = structEnd;
+				structures.add(struct);
+				
+			} else if(line[0].base == TokenBase.KW_ALIAS) {
+				ErrorWrapper subErrors = errors.subErrrors("Cannot parse an alias declaration");
+				Alias alias = AliasDeclarationParser.parseAliasDeclaration(unit, line, subErrors);
+				if(unit.aliases.put(alias.text, alias) != null)
+					errors.add("Alias declared twice: " + alias.text + alias.getErr());
 				
 			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
@@ -241,6 +246,15 @@ public class UnitParser {
 			}
 		}
 		return new Modifier(line[0].text.substring(1), arguments);
+	}
+	
+	static boolean expectToken(Token token, TokenBase base,
+			String expectation, ErrorWrapper errors) {
+		if(token.base != base) {
+			errors.add("Expected " + expectation + ":" + token.getErr());
+			return false;
+		}
+		return true;
 	}
 	
 }

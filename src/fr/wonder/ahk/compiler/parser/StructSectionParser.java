@@ -24,8 +24,7 @@ class StructSectionParser {
 		if(declaration.length != 3) {
 			errors.add("Invalid declaration:" + unit.source.getErr(declaration));
 			return Invalids.STRUCT;
-		} else if(declaration[1].base != TokenBase.VAR_UNIT) {
-			errors.add("Expected struct name:" + declaration[1].getErr());
+		} else if(!UnitParser.expectToken(declaration[1], TokenBase.VAR_UNIT, "struct name", errors)) {
 			return Invalids.STRUCT;
 		}
 		
@@ -98,11 +97,8 @@ class StructSectionParser {
 		if(line.length < 3) {
 			errors.add("Invalid null declaration:" + unit.source.getErr(line));
 			return null;
-		} else if(line[1].base != TokenBase.TK_PARENTHESIS_OPEN) {
-			errors.add("Expected '(':" + line[2].getErr());
-			return null;
-		} else if(line[line.length-1].base != TokenBase.TK_PARENTHESIS_CLOSE) {
-			errors.add("Expected ')':" + line[line.length-1].getErr());
+		} else if(!UnitParser.expectToken(line[1], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors) ||
+				!UnitParser.expectToken(line[line.length-1], TokenBase.TK_PARENTHESIS_CLOSE, "')'", errors)) {
 			return null;
 		}
 		Section section = ExpressionParser.getVisibleSection(line, 2, line.length-1);
@@ -127,20 +123,18 @@ class StructSectionParser {
 	private static ConstructorDefaultValue readDefaultValue(Unit unit, Token[] line, int prevComa, int i, ErrorWrapper errors) {
 		if(i - prevComa < 3) {
 			errors.add("Invalid default value syntax:" + unit.source.getErr(line, prevComa, i));
-		} else if(line[prevComa].base != TokenBase.VAR_VARIABLE) {
-			errors.add("Expected default value name:" + line[prevComa].getErr());
-		} else if(line[prevComa+1].base != TokenBase.KW_EQUAL) {
-			errors.add("Expected '=':" + line[prevComa+1].getErr());
-		} else {
-			Expression value = ExpressionParser.parseExpression(unit, line, prevComa+2, i, errors);
-			return new ConstructorDefaultValue(
-					unit.source,
-					line[prevComa].sourceStart,
-					line[i-1].sourceStop,
-					line[prevComa].text,
-					value);
+			return null;
+		} else if(!UnitParser.expectToken(line[prevComa], TokenBase.VAR_VARIABLE, "default value name", errors) ||
+				!UnitParser.expectToken(line[prevComa+1], TokenBase.KW_EQUAL, "'='", errors)) {
+			return null;
 		}
-		return null;
+		Expression value = ExpressionParser.parseExpression(unit, line, prevComa+2, i, errors);
+		return new ConstructorDefaultValue(
+				unit.source,
+				line[prevComa].sourceStart,
+				line[i-1].sourceStop,
+				line[prevComa].text,
+				value);
 	}
 
 }
