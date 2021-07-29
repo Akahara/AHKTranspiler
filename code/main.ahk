@@ -97,5 +97,6 @@ func int main() {
 	Kernel.println(aliasedIntArray[1]);
 	ComplexAlias complex = null;
 	Kernel.println(int:(complex));
+	
 	return 5;
 }

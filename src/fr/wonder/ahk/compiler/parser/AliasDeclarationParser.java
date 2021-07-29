@@ -27,44 +27,55 @@ public class AliasDeclarationParser extends AbstractParser {
 			STATUS_RESOLVED = 2;
 	
 	public static void resolveAliases(Unit[] units, Token[][][] unitsTokens, ErrorWrapper errors) throws WrappedException {
-		UnitAliases[] unitAliases = new UnitAliases[units.length];
+		UnitAliases[] unitsAliases = new UnitAliases[units.length];
 		
 		for(int i = 0; i < units.length; i++) {
 			Unit unit = units[i];
 			ErrorWrapper unitErrors = errors.subErrrors("Cannot resolve alias declarations of unit " + unit.fullBase);
 			
 			UnitAliases unitAlias = new UnitAliases(unit, unitErrors);
-			unitAliases[i] = unitAlias;
+			unitsAliases[i] = unitAlias;
 			
 			collectAliasLines(unitAlias, unitsTokens[i]);
 		}
 		
-		for(UnitAliases parser : unitAliases) {
+		for(UnitAliases parser : unitsAliases) {
 			parser.accessibleUnits[0] = parser;
 			for(int i = 1; i < parser.accessibleUnits.length; i++)
-				parser.accessibleUnits[i] = getParser(unitAliases, parser.unit.importations[i-1]);
+				parser.accessibleUnits[i] = getParser(unitsAliases, parser.unit.importations[i-1]);
+		}
+
+		for(UnitAliases unit : unitsAliases)
+			checkDuplicates(unit);
+		errors.assertNoErrors();
+
+		for(UnitAliases unit : unitsAliases) {
+			for(AliasParser alias : unit.aliases)
+				resolveAlias(alias);
 		}
 		
-		errors.assertNoErrors();
-		
-		for(UnitAliases unit : unitAliases) {
+		for(UnitAliases unit : unitsAliases) {
 			int accessibleAliasCount = 0;
 			for(UnitAliases accessible : unit.accessibleUnits)
 				accessibleAliasCount += accessible.aliases.size();
 			unit.unit.accessibleAliases = new Alias[accessibleAliasCount];
-			
 			for(int i = 0; i < unit.aliases.size(); i++) {
 				AliasParser alias = unit.aliases.get(i);
-				unit.unit.accessibleAliases[i] = resolveAlias(alias);
+				unit.unit.accessibleAliases[i] = new Alias(
+						alias.unit.unit.source,
+						alias.line[0].sourceStart,
+						alias.line[alias.line.length-1].sourceStop,
+						alias.name,
+						alias.resolvedType);
 			}
 		}
 		
-		for(UnitAliases unit : unitAliases) {
+		for(UnitAliases unit : unitsAliases) {
 			int aidx = unit.unit.declaredAliasCount;
 			for(int i = 1; i < unit.accessibleUnits.length; i++) {
 				UnitAliases accessible = unit.accessibleUnits[i];
 				for(int j = 0; j < accessible.aliases.size(); j++) {
-					unit.unit.accessibleAliases[aidx++] = accessible.aliases.get(j).resolvedAlias;
+					unit.unit.accessibleAliases[aidx++] = accessible.unit.accessibleAliases[j];
 				}
 			}
 		}
@@ -91,6 +102,22 @@ public class AliasDeclarationParser extends AbstractParser {
 		}
 	}
 	
+	private static void checkDuplicates(UnitAliases unit) {
+		List<AliasParser> accessibleAliases = new ArrayList<>();
+		for(UnitAliases accessibleUnit : unit.accessibleUnits)
+			accessibleAliases.addAll(accessibleUnit.aliases);
+		for(int i = 1; i < accessibleAliases.size(); i++) {
+			AliasParser a1 = accessibleAliases.get(i);
+			for(int j = 0; j < i; j++) {
+				AliasParser a2 = accessibleAliases.get(j);
+				if(a1.name.equals(a2.name))
+					unit.errors.add("Multiple aliases are conflicting: " + a1.name 
+							+ a1.unit.unit.source.getErr(a1.line)
+							+ a2.unit.unit.source.getErr(a2.line));
+			}
+		}
+	}
+	
 	private static UnitAliases getParser(UnitAliases[] unitAliases, String unitFullBase) {
 		for(UnitAliases parser : unitAliases) {
 			if(parser.unit.fullBase.equals(unitFullBase))
@@ -104,6 +131,7 @@ public class AliasDeclarationParser extends AbstractParser {
 		final Unit unit;
 		final List<AliasParser> aliases = new ArrayList<>();
 		final ErrorWrapper errors;
+		/** Contains all imported units <b>and this instance</b> */
 		final UnitAliases[] accessibleUnits;
 		
 		UnitAliases(Unit unit, ErrorWrapper errors) {
@@ -122,7 +150,7 @@ public class AliasDeclarationParser extends AbstractParser {
 		byte parsingStatus;
 		ErrorWrapper errors;
 		
-		Alias resolvedAlias;
+		VarType resolvedType = Invalids.TYPE;
 		
 		AliasParser(UnitAliases unit, Token[] line, String name, ErrorWrapper errors) {
 			this.unit = unit;
@@ -134,12 +162,12 @@ public class AliasDeclarationParser extends AbstractParser {
 		
 	}
 	
-	private static Alias resolveAlias(AliasParser alias) {
+	private static void resolveAlias(AliasParser alias) {
 		if(alias.parsingStatus == STATUS_PARSING) {
 			alias.errors.add("Cyclic definition"); // TODO find a way to print the cycle
-			return Invalids.ALIAS;
+			return;
 		} else if(alias.parsingStatus == STATUS_RESOLVED) {
-			return alias.resolvedAlias;
+			return;
 		}
 		
 		alias.parsingStatus = STATUS_PARSING;
@@ -154,18 +182,10 @@ public class AliasDeclarationParser extends AbstractParser {
 				throw new ParsingException();
 			}
 			
-			alias.resolvedAlias = new Alias(
-					alias.unit.unit.source,
-					alias.line[0].sourceStart,
-					alias.line[alias.line.length-1].sourceStop,
-					alias.name, type);
-		} catch (ParsingException e) {
-			alias.resolvedAlias = Invalids.ALIAS;
-		}
+			alias.resolvedType = type;
+		} catch (ParsingException x) { }
 		
 		alias.parsingStatus = STATUS_RESOLVED;
-		
-		return alias.resolvedAlias;
 	}
 	
 	private static VarType parseType(AliasParser alias, Pointer pointer) throws ParsingException {
@@ -209,8 +229,10 @@ public class AliasDeclarationParser extends AbstractParser {
 	private static VarType resolveStructOrAlias(AliasParser alias, Token token) {
 		for(UnitAliases unit : alias.unit.accessibleUnits) {
 			for(AliasParser a : unit.aliases) {
-				if(a.name.equals(token.text))
-					return resolveAlias(a).resolvedType;
+				if(a.name.equals(token.text)) {
+					resolveAlias(a);
+					return a.resolvedType;
+				}
 			}
 		}
 		return alias.unit.unit.getStructType(token);
