@@ -17,14 +17,14 @@ import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
-class StructSectionParser {
+class StructSectionParser extends AbstractParser {
 
 	public static StructSection parseStruct(Unit unit, Token[][] lines, int begin, int end, ErrorWrapper errors) {
 		Token[] declaration = lines[begin];
 		if(declaration.length != 3) {
 			errors.add("Invalid declaration:" + unit.source.getErr(declaration));
 			return Invalids.STRUCT;
-		} else if(!UnitParser.expectToken(declaration[1], TokenBase.VAR_UNIT, "struct name", errors)) {
+		} else if(!AbstractParser.expectToken(declaration[1], TokenBase.VAR_UNIT, "struct name", errors)) {
 			return Invalids.STRUCT;
 		}
 		
@@ -77,28 +77,31 @@ class StructSectionParser {
 			return Invalids.CONSTRUCTOR;
 		}
 		
-		var composite = FunctionDeclarationParser.readArguments(unit, line, 1, errors);
-		if(composite.b != line.length) {
-			errors.add("Unexpected tokens:" + unit.source.getErr(line, composite.b, line.length));
+		Pointer pointer = new Pointer(1);
+		
+		try {
+			ArgumentList args = readArguments(unit, line, pointer, true, errors);
+			FunctionArgument[] arguments = args.toArray(FunctionArgument[]::new);
+			
+			assertNoRemainingTokens(line, pointer, errors);
+			
+			return new StructConstructor(
+					unit.source,
+					line[0].sourceStart,
+					line[line.length-1].sourceStop,
+					arguments);
+			
+		} catch (ParsingException e) {
 			return Invalids.CONSTRUCTOR;
 		}
-		
-		FunctionArgument[] arguments = new FunctionArgument[composite.a.size()];
-		for(int i = 0; i < arguments.length; i++)
-			arguments[i] = composite.a.get(i).asFunctionArgument(unit.source);
-		return new StructConstructor(
-				unit.source,
-				line[0].sourceStart,
-				line[line.length-1].sourceStop,
-				arguments);
 	}
 	
 	private static ConstructorDefaultValue[] parseNull(Unit unit, Token[] line, ErrorWrapper errors) {
 		if(line.length < 3) {
 			errors.add("Invalid null declaration:" + unit.source.getErr(line));
 			return null;
-		} else if(!UnitParser.expectToken(line[1], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors) ||
-				!UnitParser.expectToken(line[line.length-1], TokenBase.TK_PARENTHESIS_CLOSE, "')'", errors)) {
+		} else if(!AbstractParser.expectToken(line[1], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors) ||
+				!AbstractParser.expectToken(line[line.length-1], TokenBase.TK_PARENTHESIS_CLOSE, "')'", errors)) {
 			return null;
 		}
 		Section section = ExpressionParser.getVisibleSection(line, 2, line.length-1);
@@ -124,8 +127,8 @@ class StructSectionParser {
 		if(i - prevComa < 3) {
 			errors.add("Invalid default value syntax:" + unit.source.getErr(line, prevComa, i));
 			return null;
-		} else if(!UnitParser.expectToken(line[prevComa], TokenBase.VAR_VARIABLE, "default value name", errors) ||
-				!UnitParser.expectToken(line[prevComa+1], TokenBase.KW_EQUAL, "'='", errors)) {
+		} else if(!AbstractParser.expectToken(line[prevComa], TokenBase.VAR_VARIABLE, "default value name", errors) ||
+				!AbstractParser.expectToken(line[prevComa+1], TokenBase.KW_EQUAL, "'='", errors)) {
 			return null;
 		}
 		Expression value = ExpressionParser.parseExpression(unit, line, prevComa+2, i, errors);

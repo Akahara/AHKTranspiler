@@ -8,8 +8,8 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionExp;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
-import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
+import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
@@ -221,6 +221,8 @@ public class ExpressionWriter {
 		if(actualType instanceof VarStructType) {
 			String nullLabel = UnitWriter.getStructNullRegistry(((VarStructType) actualType).structure);
 			writer.instructions.mov(Register.RAX, nullLabel);
+		} else if(actualType instanceof VarArrayType) {
+			writer.instructions.mov(Register.RAX, GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK);
 		} else {
 			throw new UnimplementedException("Unimplemented null: " + actualType);
 		}

@@ -25,7 +25,6 @@ import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.handles.TranspilableHandle;
-import fr.wonder.ahk.transpilers.asm_x64.natives.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
@@ -201,6 +200,7 @@ public class UnitWriter {
 		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_ALLOC));
 		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_THROW));
 		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_VAL_FSIGNBIT));
+		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		
 		for(Prototype<?> i : unit.prototype.externalAccesses) {
 			String globalLabel;

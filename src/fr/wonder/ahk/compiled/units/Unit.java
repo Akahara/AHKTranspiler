@@ -28,7 +28,9 @@ public class Unit {
 	public VariableDeclaration[] variables;
 	public FunctionSection[] functions;
 	public StructSection[] structures;
-	public Map<String, Alias> aliases = new HashMap<>();
+	
+	public Alias[] accessibleAliases;
+	public final int declaredAliasCount;
 	
 	public UnitCompilationState compilationState = UnitCompilationState.FRESH;
 	
@@ -48,13 +50,13 @@ public class Unit {
 	/** Set by {@link Prototypes#buildPrototype(Unit)} */
 	public UnitPrototype prototype;
 	
-	public Unit(UnitSource source, String base, String name, int declarationStart,
-			int declarationStop, String[] importations) {
+	public Unit(UnitSource source, String base, String name, String[] importations, int declaredAliasCount) {
 		this.source = source;
 		this.base = base;
 		this.name = name;
 		this.fullBase = base+'.'+name;
 		this.importations = importations;
+		this.declaredAliasCount = declaredAliasCount;
 	}
 	
 	@Override
@@ -71,9 +73,10 @@ public class Unit {
 		if(token.base != TokenBase.VAR_UNIT)
 			throw new IllegalArgumentException("Not a struct token");
 		
-		Alias knownAlias = aliases.get(token.text);
-		if(knownAlias != null)
-			return knownAlias.functionType;
+		for(Alias alias : accessibleAliases) {
+			if(alias.text.equals(token.text))
+				return alias.resolvedType;
+		}
 		
 		return getStructType(token);
 	}

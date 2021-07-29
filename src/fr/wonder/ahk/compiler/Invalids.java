@@ -17,6 +17,7 @@ import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
+import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
@@ -77,4 +78,6 @@ public class Invalids {
 
 	public static final Alias ALIAS = new Alias(SOURCE, 0, 0, STRING, FUNCTION_TYPE);
 
+	public static final FunctionSection FUNCTION = new FunctionSection(SOURCE, 0, 0, 0, MODIFIERS);
+	
 }

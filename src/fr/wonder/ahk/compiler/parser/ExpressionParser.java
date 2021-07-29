@@ -32,7 +32,9 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Tuple;
 
-public class ExpressionParser {
+public class ExpressionParser extends AbstractParser {
+	
+	// TODO refactor the Expression Parser with Pointers
 	
 	static class Section {
 		
@@ -175,7 +177,7 @@ public class ExpressionParser {
 				errors.add("Cannot cast to a struct type:" + typeToken.getErr());
 				type = Invalids.TYPE;
 			} else {
-				type = Tokens.getType(null, typeToken);
+				type = parseType(unit, line, new Pointer(section.start), errors);
 			}
 			if(type != null) {
 				Expression casted = parseExpression(unit, line, lastSection.start, lastSection.stop, errors);

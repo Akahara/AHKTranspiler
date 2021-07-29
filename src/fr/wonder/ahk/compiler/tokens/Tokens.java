@@ -10,8 +10,6 @@ import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiler.Invalids;
 
 public class Tokens {
 	
@@ -70,13 +68,7 @@ public class Tokens {
 		return base == VAR_UNIT || typesMap.containsKey(base);
 	}
 
-	public static VarType getType(Unit unit, Token token) {
-		if(token.base == VAR_UNIT)
-			return unit.getStructOrAliasType(token);
-		return typesMap.getOrDefault(token.base, Invalids.TYPE);
-	}
-	
-	private static final Map<TokenBase, VarType> typesMap = Map.of(
+	public static final Map<TokenBase, VarType> typesMap = Map.of(
 			TYPE_INT,	VarType.INT,
 			TYPE_FLOAT,	VarType.FLOAT,
 			TYPE_STR,	VarType.STR,

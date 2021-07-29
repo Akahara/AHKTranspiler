@@ -38,7 +38,7 @@ import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnreachableException;
 
-public class StatementParser {
+public class StatementParser extends AbstractParser {
 
 	public static Statement parseStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		
@@ -75,7 +75,7 @@ public class StatementParser {
 			return parseMultipleAffectationStatement(unit, line, affectationTokenPos, errors);
 		if(affectationTokenPos != -1)
 			return parseAffectationStatement(unit, line, affectationTokenPos, errors);
-		if(isFunctionStatement(line))
+		if(canBeFunctionStatement(line))
 			return parseFunctionStatement(unit, line, errors);
 		
 		errors.add("Unknown statement:" + unit.source.getErr(line));
@@ -83,19 +83,6 @@ public class StatementParser {
 	}
 	
 	
-	private static boolean assertParentheses(Token[] line, int begin, int end, ErrorWrapper errors) {
-		boolean success = true;
-		if(begin != -1 && line[begin].base != TokenBase.TK_PARENTHESIS_OPEN) {
-			errors.add("Expected ')' :" + line[begin].getErr());
-			success = false;
-		}
-		if(end != -1 && line[end].base != TokenBase.TK_PARENTHESIS_CLOSE) {
-			errors.add("Expected ')' :" + line[end].getErr());
-			success = false;
-		}
-		return success;
-	}
-
 	private static AffectationSt parseDirectAffectationStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		ErrorWrapper subErrors = errors.subErrrors("Unable to parse variable affectation");
 		Expression leftOperand = ExpressionParser.parseExpression(unit, line, 0, line.length-1, subErrors);
@@ -109,53 +96,30 @@ public class StatementParser {
 	}
 
 	// TODO parse var declaration modifiers (visibility, constants...)
-	/** Assumes that the first line token base is a var type */
 	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line, ErrorWrapper errors) {
-		ErrorWrapper subErrors = errors.subErrrors("Unable to parse variable declaration");
-		
-		if(line.length < 2) {
-			subErrors.add("Invalid variable declaration:" + line[0].getErr());
+		try {
+			Pointer pointer = new Pointer();
+			
+			assertHasNext(line, pointer, "Invalid variable declaration", errors);
+			
+			VarType type = parseType(unit, line, pointer, errors);
+			
+			expectToken(line[pointer.position], TokenBase.VAR_VARIABLE, "variable name", errors);
+			String varName = line[pointer.position++].text;
+			
+			Expression defaultValue;
+			if(line.length == pointer.position) {
+				defaultValue = getDefaultValue(type, unit.source, line[line.length-1].sourceStop);
+			} else {
+				assertHasNext(line, pointer, "Expected affectation value", errors, 2);
+				expectToken(line[pointer.position++], TokenBase.KW_EQUAL, "affectation value", errors);
+				defaultValue = ExpressionParser.parseExpression(unit, line, pointer.position, line.length, errors);
+			}
+			
+			return new VariableDeclaration(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, varName, type, defaultValue);
+		} catch (ParsingException e) {
 			return Invalids.VARIABLE_DECLARATION;
 		}
-		
-		int arrayDimensions = 0;
-		int t = 1;
-		while(t < line.length-2 && line[t].base == TokenBase.TK_BRACKET_OPEN) {
-			t++;
-			arrayDimensions++;
-			if(line[t].base == TokenBase.TK_BRACKET_CLOSE)
-				t++;
-		}
-		
-		if(line[t].base != TokenBase.VAR_VARIABLE) {
-			subErrors.add("Expected variable name:" + line[t].getErr());
-			return Invalids.VARIABLE_DECLARATION;
-		}
-		
-		if(line.length > t+1 && (line[t+1].base != TokenBase.KW_EQUAL || line.length == t+2)) {
-			subErrors.add("Expected affectation value:" + line[t+1].getErr());
-			return Invalids.VARIABLE_DECLARATION;
-		}
-		
-		String varName = line[t].text;
-		VarType varType = Tokens.getType(unit, line[0]);
-		
-		if(varType == null) {
-			subErrors.add("Unknown value type:" + line[0].getErr());
-			varType = Invalids.TYPE;
-		}
-		
-		for(int i = 0; i < arrayDimensions; i++)
-			varType = new VarArrayType(varType);
-		
-		Expression defaultValue;
-		if(line.length == t+1) {
-			defaultValue = getDefaultValue(varType, unit.source, line[t].sourceStop);
-		} else {
-			defaultValue = ExpressionParser.parseExpression(unit, line, t+2, line.length, subErrors);
-		}
-		
-		return new VariableDeclaration(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, varName, varType, defaultValue);
 	}
 	
 	public static Expression getDefaultValue(VarType type, UnitSource source, int sourceLoc) {
@@ -183,7 +147,7 @@ public class StatementParser {
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!assertParentheses(line, 1, conditionEnd, errors)) {
+		if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors)) {
 			return Invalids.STATEMENT;
 		} else {
 			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
@@ -205,7 +169,7 @@ public class StatementParser {
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!assertParentheses(line, 1, conditionEnd, errors)) {
+		if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors)) {
 			return Invalids.STATEMENT;
 		} else {
 			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
@@ -221,7 +185,7 @@ public class StatementParser {
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!assertParentheses(line, 1, conditionEnd, errors))
+		if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors))
 			return Invalids.STATEMENT;
 		
 		int simpleRangeMarker = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, 2);
@@ -306,27 +270,29 @@ public class StatementParser {
 
 	/** Assumes that the first token is KW_FOREACH */
 	private static Statement parseForeachStatement(Unit unit, Token[] line, ErrorWrapper errors) {
-		if(line.length < 5) {
-			errors.add("Incomplete foreach statement" + unit.source.getErr(line));
+		try {
+			Pointer pointer = new Pointer();
+			assertHasNext(line, pointer, "Incomplete foreach statement", errors, 5);
+			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
+			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
+			if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors))
+				return Invalids.STATEMENT;
+			if(!Tokens.isVarType(line[2].base) || line[3].base != TokenBase.VAR_VARIABLE) {
+				errors.add("Expected variable declaration " + unit.source.getErr(line, 2, 3));
+				return Invalids.STATEMENT;
+			}
+			pointer.position = 2;
+			VarType type = parseType(unit, line, pointer, errors);
+			assertHasNext(line, pointer, "Incomplete foreach statement", errors);
+			expectToken(line[pointer.position], TokenBase.TK_COLUMN, "':'", errors);
+			VariableDeclaration var = new VariableDeclaration(unit.source, line[2].sourceStart,
+					line[pointer.position-1].sourceStop, line[3].text, type, null);
+			Expression iterable = ExpressionParser.parseExpression(unit, line, pointer.position, conditionEnd, errors);
+			
+			return new ForEachSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine, var, iterable);
+		} catch (ParsingException e) {
 			return Invalids.STATEMENT;
 		}
-		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
-		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!assertParentheses(line, 1, conditionEnd, errors))
-			return Invalids.STATEMENT;
-		if(!Tokens.isVarType(line[2].base) || line[3].base != TokenBase.VAR_VARIABLE) {
-			errors.add("Expected variable declaration " + unit.source.getErr(line, 2, 3));
-			return Invalids.STATEMENT;
-		}
-		if(line[4].base != TokenBase.TK_COLUMN) {
-			errors.add("Expected ':' at" + line[4].getErr());
-			return Invalids.STATEMENT;
-		}
-		VariableDeclaration var = new VariableDeclaration(unit.source, line[2].sourceStart, line[3].sourceStop,
-				line[3].text, Tokens.getType(unit, line[2]), null);
-		Expression iterable = ExpressionParser.parseExpression(unit, line, 5, conditionEnd, errors);
-		
-		return new ForEachSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine, var, iterable);
 	}
 	
 	/** Assumes that the first token is KW_RETURN */
@@ -413,7 +379,7 @@ public class StatementParser {
 				line[opPos-1].sourceStop, variables, values);
 	}
 	
-	private static boolean isFunctionStatement(Token[] line) {
+	private static boolean canBeFunctionStatement(Token[] line) {
 		return line[line.length-1].base == TokenBase.TK_PARENTHESIS_CLOSE;
 	}
 	

@@ -3,9 +3,9 @@ package fr.wonder.ahk.compiled.units;
 public enum UnitCompilationState {
 	
 	/**
-	 * The unit' source was tokenized but nothing was parsed yet. The unit does not
-	 * properly-said exist yet, you should never see this state as the parser
-	 * immediately changes it to PARSED(WITH_ERRORS)
+	 * The unit' source was tokenized and aliases were parsed, there is no
+	 * "FRESH_WITH_ERRORS" as the unit parser will throw an exception if something
+	 * goes wrong at this point.
 	 */
 	FRESH (0),
 	

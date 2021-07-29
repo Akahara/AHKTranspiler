@@ -1,10 +1,5 @@
 package fr.wonder.ahk.compiler.parser;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -16,11 +11,9 @@ import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
-import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.types.Tuple;
 
-class FunctionDeclarationParser {
+class FunctionDeclarationParser extends AbstractParser {
 
 	/** Assumes that the first line token is KW_FUNC and the last TK_BRACE_OPEN */
 	static FunctionSection parseFunctionSection(Unit unit, Token[][] lines,
@@ -34,7 +27,12 @@ class FunctionDeclarationParser {
 				declaration[declaration.length-1].sourceStop, // declaration stop
 				modifiers);
 		
-		readFunctionDeclaration(unit, function, declaration, errors.subErrrors("Invalid function declaration"));
+		try {
+			ErrorWrapper subErrors = errors.subErrrors("Invalid function declaration");
+			readFunctionDeclaration(unit, function, declaration, subErrors);
+		} catch (ParsingException e) {
+			return Invalids.FUNCTION;
+		}
 		
 		function.body = new Statement[stop-start-1];
 		ErrorWrapper functionErrors = errors.subErrrors("Unable to parse function");
@@ -45,108 +43,36 @@ class FunctionDeclarationParser {
 		return function;
 	}
 
-	private static void readFunctionDeclaration(Unit unit, FunctionSection func, Token[] declaration, ErrorWrapper errors) {
+	private static void readFunctionDeclaration(Unit unit, FunctionSection func, Token[] declaration, ErrorWrapper errors) throws ParsingException {
 		if(declaration.length < 6) {
 			errors.add("Incomplete function declaration" + func.getErr());
 			return;
 		}
 		
-		int k;
-		if(declaration[1].base == TokenBase.TK_PARENTHESIS_OPEN) {
-			Tuple<List<Argument>, Integer> composite = readArguments(unit, declaration, 1, errors);
-			k = composite.b;
-			String[] names = new String[composite.a.size()];
-			VarType[] types = new VarType[composite.a.size()];
-			for(int i = 0; i < composite.a.size(); i++) {
-				Argument arg = composite.a.get(i);
-				names[i] = arg.name;
-				types[i] = arg.type;
-			}
-			func.returnType = new VarCompositeType(names, types);
-		} else if(declaration[1].base == TokenBase.TYPE_VOID) {
+		Pointer pointer = new Pointer(1);
+		
+		if(declaration[pointer.position].base == TokenBase.TK_PARENTHESIS_OPEN) {
+			ArgumentList args = AbstractParser.readArguments(unit, declaration, pointer, true, errors);
+			func.returnType = new VarCompositeType(args.getNames(), args.getTypes());
+		} else if(declaration[pointer.position].base == TokenBase.TYPE_VOID) {
 			func.returnType = VarType.VOID;
-			k = 2;
+			pointer.position++;
 		} else {
-			if(!Tokens.isVarType(declaration[1].base))
-				errors.add("Expected return type" + declaration[1].getErr());
-			func.returnType = Tokens.getType(unit, declaration[1]);
-			k = 2;
+			func.returnType = parseType(unit, declaration, pointer, errors);
 		}
 		
-		if(declaration.length - k < 3) {
-			errors.add("Incomplete function declaration" + func.getErr());
-			func.name = Invalids.STRING;
-			func.arguments = new FunctionArgument[0];
-			return;
-		}
+		assertHasNext(declaration, pointer, "Incomplete function declaration", errors, 3);
 		
-		UnitParser.expectToken(declaration[k], TokenBase.VAR_VARIABLE, "function name", errors);
-		func.name = declaration[k].text;
+		AbstractParser.expectToken(declaration[pointer.position], TokenBase.VAR_VARIABLE, "function name", errors);
+		func.name = declaration[pointer.position++].text;
 		
-		k++;
+		ArgumentList arguments = AbstractParser.readArguments(unit, declaration, pointer, true, errors);
 		
-		Tuple<List<Argument>, Integer> composite = readArguments(unit, declaration, k, errors);
-		List<Argument> arguments = composite.a;
-		k = composite.b;
-		
-		func.arguments = new FunctionArgument[arguments.size()];
-		for(int i = 0; i < arguments.size(); i++) {
-			Argument arg = arguments.get(i);
-			func.arguments[i] = arg.asFunctionArgument(unit.source);
-		}
-		
-		if(k != declaration.length-1)
-			errors.add("Unexpected tokens" + unit.source.getErr(declaration, k, declaration.length-1));
-	}
-	
-	static class Argument {
-		
-		String name;
-		VarType type;
-		int sourceStart, sourceStop;
-		
-		FunctionArgument asFunctionArgument(UnitSource source) {
-			return new FunctionArgument(source, sourceStart, sourceStop, name, type);
-		}
-		
-	}
-	
-	static Tuple<List<Argument>, Integer> readArguments(
-			Unit unit, Token[] tokens, int begin, ErrorWrapper errors) {
-		
-		if(!UnitParser.expectToken(tokens[begin], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors)) {
-			return new Tuple<>(Collections.emptyList(), begin);
-		} else if(tokens[begin+1].base == TokenBase.TK_PARENTHESIS_CLOSE) {
-			return new Tuple<>(Collections.emptyList(), begin+2);
-		}
-		
-		List<Argument> arguments = new ArrayList<>();
-		int k = begin+1;
-		while(true) {
-			if(tokens.length < k+3) {
-				errors.add("Incomplete composite:" + tokens[tokens.length-1].getErr());
-				return new Tuple<>(arguments, tokens.length-1);
-			}
-			Argument arg = new Argument();
-			Token type = tokens[k];
-			Token name = tokens[k+1];
-			if(!Tokens.isVarType(type.base))
-				errors.add("Expected type" + type.getErr());
-			arg.type = Tokens.getType(unit, type);
-			arg.sourceStart = type.sourceStart;
-			if(name.base != TokenBase.VAR_VARIABLE)
-				errors.add("Expected name" + name.getErr());
-			arg.name = name.text;
-			arg.sourceStop = name.sourceStop;
-			arguments.add(arg);
-			if(tokens[k+2].base == TokenBase.TK_PARENTHESIS_CLOSE) {
-				return new Tuple<>(arguments, k+3);
-			} else if(tokens[k+2].base != TokenBase.TK_COMMA) {
-				errors.add("Expected ',' :" + tokens[k+2].getErr());
-				return new Tuple<>(arguments, k+1);
-			}
-			k += 3;
-		}
+		func.arguments = arguments.toArray(FunctionArgument[]::new);
+
+		if(pointer.position != declaration.length-1)
+			errors.add("Unexpected tokens" + unit.source.getErr(declaration,
+					pointer.position, declaration.length-1));
 	}
 
 }

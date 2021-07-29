@@ -5,14 +5,17 @@ import fr.wonder.main.Structs;
 
 unit Main;
 
+alias Afunction = func int(int);
+alias IntAlias = int;
+alias IntArray = IntAlias[];
+alias ComplexAlias = func Afunction(int, IntArray)[];
+
 int ii = 3;
 
 int gi = 8;
 str x = "str";
 int[] array = [56, 42, 37];
 Structure structure = null;
-
-alias Afunction = func int(int);
 
 func int gcd(int x, int y) {
 	if(y == 0)
@@ -88,5 +91,11 @@ func int main() {
 	cyclic1.a = 2;
 	Kernel.println(cyclic1.other.other.a);
 	Kernel.println(array[-1]);
+	IntAlias aliasedInt = 5;
+	Kernel.println(aliasedInt);
+	IntArray aliasedIntArray = [0, 1, 2];
+	Kernel.println(aliasedIntArray[1]);
+	ComplexAlias complex = null;
+	Kernel.println(int:(complex));
 	return 5;
 }

@@ -18,7 +18,7 @@ public class VarFunctionType extends VarType {
 
 	@Override
 	public String getName() {
-		return "(" + Utils.toString(arguments) + ")->" + returnType;
+		return "(func " + returnType + "(" + Utils.toString(arguments) + "))";
 	}
 	
 	@Override

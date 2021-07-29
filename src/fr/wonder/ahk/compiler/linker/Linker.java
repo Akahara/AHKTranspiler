@@ -1,7 +1,5 @@
 package fr.wonder.ahk.compiler.linker;
 
-import static fr.wonder.commons.utils.ArrayOperator.map;
-
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.NullExp;
@@ -48,7 +46,7 @@ public class Linker {
 		return new LinkedHandle(handle.units, typesTable);
 	}
 	
-	private static void assertNoDuplicates(Unit[] units, ErrorWrapper errors) throws WrappedException {
+	public static void assertNoDuplicates(Unit[] units, ErrorWrapper errors) throws WrappedException {
 		// check unit duplicates
 		for(int u = 0; u < units.length; u++) {
 			Unit unit = units[u];
@@ -60,8 +58,8 @@ public class Linker {
 		errors.assertNoErrors();
 	}
 	
-	private static void assertNoMissingImportation(Unit[] units, ErrorWrapper errors) throws WrappedException {
-		Object[] bases = map(units, u->u.fullBase);
+	public static void assertNoMissingImportation(Unit[] units, ErrorWrapper errors) throws WrappedException {
+		Object[] bases = ArrayOperator.map(units, u->u.fullBase);
 		for(int i = 0; i < units.length; i++) {
 			Unit unit = units[i];
 			for(int j = 0; j < unit.importations.length; j++) {

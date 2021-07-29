@@ -8,7 +8,6 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
-import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
@@ -21,51 +20,24 @@ import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
 public class UnitParser {
 	
-	public static Unit parseUnit(UnitSource source, ErrorWrapper errors) throws WrappedException {
-		Token[] tokens = Tokenizer.tokenize(source, errors);
-		errors.assertNoErrors();
-		
-		Token[][] unitTokens = TokensFactory.splitTokens(tokens, errors);
-		unitTokens = TokensFactory.finalizeTokens(unitTokens);
-		
-		UnitHeader header = parseHeader(source, unitTokens, errors.subErrrors("Unable to parse unit header"));
-		errors.assertNoErrors();
-		
-		Unit unit = new Unit(source,
-				header.base,
-				header.name,
-				header.unitDeclarationStart,
-				header.unitDeclarationStop,
-				header.importations);
-		
+	public static void parseUnit(Unit unit, Token[][] tokens, ErrorWrapper errors) throws WrappedException {
 		unit.compilationState = UnitCompilationState.PARSED_WITH_ERRORS;
 		
-		parseSections(unit, unitTokens, header.declarationEnd, errors.subErrrors("Unable to parse unit body"));
+		int declarationEnd = unit.importations.length + unit.declaredAliasCount + 2;
+		parseSections(unit, tokens, declarationEnd, errors.subErrrors("Unable to parse unit body"));
 		errors.assertNoErrors();
 		
 		unit.compilationState = UnitCompilationState.PARSED;
-		
-		return unit;
 	}
 	
-	private static class UnitHeader {
-		
-		String base;
-		String name;
+	public static Unit preparseUnit(UnitSource source, Token[][] lines, ErrorWrapper errors) throws WrappedException {
+		String base = null;
 		String[] importations;
-		
-		int unitDeclarationStart, unitDeclarationStop;
-		
-		int declarationEnd;
-		
-	}
-	
-	private static UnitHeader parseHeader(UnitSource source, Token[][] lines, ErrorWrapper errors) {
-		UnitHeader header = new UnitHeader();
+		String name = null;
 		
 		if(lines.length < 2) {
 			errors.add("Incomplete ahk file:" + source.getErr(0));
-			return null;
+			errors.assertNoErrors();
 		}
 		
 		// parse unit base
@@ -75,12 +47,12 @@ public class UnitParser {
 		if(baseLine.length < 2 || baseLine[0].base != TokenBase.DECL_BASE) {
 			errors.add("Missing header declaration!" + baseLine[0].getErr());
 		} else {
-			header.base = "";
+			base = "";
 			for(int i = 1; i < baseLine.length; i++) {
 				if((i%2 == 0 && baseLine[i].base != TokenBase.TK_DOT) ||
 					(i%2 == 1 && baseLine[i].base != TokenBase.VAR_VARIABLE))
 					errors.add("Invalid base declaration:" + baseLine[i].getErr());
-				header.base += baseLine[i].text;
+				base += baseLine[i].text;
 			}
 		}
 		
@@ -91,7 +63,7 @@ public class UnitParser {
 			importationCount++;
 		importationCount--;
 		
-		header.importations = new String[importationCount];
+		importations = new String[importationCount];
 		for(int i = 0; i < importationCount; i++) {
 			Token[] line = lines[i+1];
 			if(line.length < 2) {
@@ -107,17 +79,24 @@ public class UnitParser {
 					importation += line[j].text;
 				}
 				importation += line[line.length-1].text;
-				header.importations[i] = importation;
+				importations[i] = importation;
 			}
 		}
 		
-		header.declarationEnd = 2+importationCount;
+		// parse aliases
 		
-		// parse unit name
+		int aliasCount = 2+importationCount;
+		while(aliasCount < lines.length && lines[aliasCount][0].base == TokenBase.KW_ALIAS)
+			aliasCount++;
+		aliasCount -= 2+importationCount;
 		
-		if(lines.length == 1+importationCount) {
+		int declarationEnd = 1+aliasCount+importationCount;
+		
+		// TODO check if the declaration end is right
+		
+		if(lines.length == declarationEnd) {
 			errors.add("Incomplete source file:" + source.getErr(source.length()-1));
-			return null;
+			errors.assertNoErrors();
 		}
 		
 		Token[] unitLine = lines[1+importationCount];
@@ -126,12 +105,16 @@ public class UnitParser {
 		} else if(unitLine[1].base != TokenBase.VAR_UNIT) {
 			errors.add("Invalid unit declaration:" + unitLine[1].getErr());
 		} else {
-			header.name = unitLine[1].text;
-			header.unitDeclarationStart = unitLine[0].sourceStart;
-			header.unitDeclarationStop = unitLine[1].sourceStop;
+			name = unitLine[1].text;
 		}
+		errors.assertNoErrors();
 		
-		return header;
+		return new Unit(
+				source,
+				base,
+				name,
+				importations,
+				aliasCount);
 	}
 	
 	/** Assumes no line is empty */
@@ -149,7 +132,7 @@ public class UnitParser {
 				DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
 				modifiers.clear();
 				// parse function section
-				if(!expectToken(line[line.length-1], TokenBase.TK_BRACE_OPEN, "'{' to begin function", errors))
+				if(!AbstractParser.expectToken(line[line.length-1], TokenBase.TK_BRACE_OPEN, "'{' to begin function", errors))
 					continue;
 				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
 				if(functionEnd == -1) {
@@ -173,7 +156,7 @@ public class UnitParser {
 				if(line.length < 3) {
 					errors.add("Invalid struct declaration:" + unit.source.getErr(lines[i]));
 					continue;
-				} else if(!expectToken(line[2], TokenBase.TK_BRACE_OPEN, "'{' to begin struct", errors)) {
+				} else if(!AbstractParser.expectToken(line[2], TokenBase.TK_BRACE_OPEN, "'{' to begin struct", errors)) {
 					continue;
 				}
 				int structEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
@@ -185,12 +168,6 @@ public class UnitParser {
 				StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, subErrors);
 				i = structEnd;
 				structures.add(struct);
-				
-			} else if(line[0].base == TokenBase.KW_ALIAS) {
-				ErrorWrapper subErrors = errors.subErrrors("Cannot parse an alias declaration");
-				Alias alias = AliasDeclarationParser.parseAliasDeclaration(unit, line, subErrors);
-				if(unit.aliases.put(alias.text, alias) != null)
-					errors.add("Alias declared twice: " + alias.text + alias.getErr());
 				
 			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
@@ -246,15 +223,6 @@ public class UnitParser {
 			}
 		}
 		return new Modifier(line[0].text.substring(1), arguments);
-	}
-	
-	static boolean expectToken(Token token, TokenBase base,
-			String expectation, ErrorWrapper errors) {
-		if(token.base != base) {
-			errors.add("Expected " + expectation + ":" + token.getErr());
-			return false;
-		}
-		return true;
 	}
 	
 }

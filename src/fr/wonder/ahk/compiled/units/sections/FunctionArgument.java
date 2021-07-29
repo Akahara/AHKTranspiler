@@ -12,7 +12,8 @@ public class FunctionArgument extends SourceObject implements VarAccess {
 	public final VarType type;
 	public final Signature signature;
 	
-	public FunctionArgument(UnitSource source, int sourceStart, int sourceStop, String name, VarType type) {
+	public FunctionArgument(UnitSource source, int sourceStart,
+			int sourceStop, String name, VarType type) {
 		super(source, sourceStart, sourceStop);
 		this.name = name;
 		this.type = type;

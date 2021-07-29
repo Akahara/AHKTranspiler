@@ -1,4 +1,4 @@
-package fr.wonder.ahk.transpilers.asm_x64.natives.operations;
+package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import static fr.wonder.ahk.compiled.expressions.Operator.*;
 import static fr.wonder.ahk.compiled.expressions.Operator.DIVIDE;
@@ -22,7 +22,6 @@ import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
-import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
