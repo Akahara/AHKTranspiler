@@ -25,15 +25,21 @@ public class FunctionCallExp extends FunctionExpression {
 	public VarFunctionType functionType;
 	
 	public FunctionCallExp(UnitSource source, int sourceStart, int sourceEnd, Expression function, Expression[] arguments) {
-		super(source, sourceStart, sourceEnd, function, arguments);
+		super(source, sourceStart, sourceEnd, ArrayOperator.add(arguments, function));
 	}
 	
 	public Expression getFunction() {
-		return expressions[0];
+		return expressions[expressions.length-1];
+	}
+
+	@Override
+	public int argumentCount() {
+		return expressions.length-1;
 	}
 	
+	@Override
 	public Expression[] getArguments() {
-		return Arrays.copyOfRange(expressions, 1, expressions.length);
+		return Arrays.copyOfRange(expressions, 0, expressions.length-1);
 	}
 	
 	@Override
@@ -43,11 +49,7 @@ public class FunctionCallExp extends FunctionExpression {
 
 	@Override
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return functionType;
-	}
-
-	public VarType[] getArgumentsTypes() {
-		return ArrayOperator.map(getArguments(), VarType[]::new, Expression::getType);
+		return functionType.returnType;
 	}
 	
 }

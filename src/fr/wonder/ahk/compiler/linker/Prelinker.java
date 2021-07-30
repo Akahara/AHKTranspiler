@@ -128,20 +128,21 @@ class Prelinker {
 							var.name + func.getErr() + var.getErr());
 			}
 			
-			// check signatures duplicates
-			String funcSig = func.getSignature().computedSignature;
+			// check function duplicates
 			for(int j = 0; j < i; j++) {
-				if(unit.functions[j].getSignature().computedSignature.equals(funcSig)) {
-					errors.add("Two functions have the same signature: " + funcSig +
-							unit.functions[j].getErr() + unit.functions[i].getErr());
+				if(unit.functions[j].name.equals(func.name)) {
+					errors.add("Two functions have the same name: " + func.name+
+							func.getErr() + unit.functions[j].getErr());
 				}
 			}
 			
 			// check duplicate names in arguments
 			for(int j = 1; j < func.arguments.length; j++) {
+				FunctionArgument arg1 = func.arguments[j];
 				for(int k = 0; k < j; k++) {
-					if(func.arguments[j].name.equals(func.arguments[k].name))
-						errors.add("Two arguments have the same name:" + func.getErr());
+					FunctionArgument arg2 = func.arguments[k];
+					if(arg1.name.equals(arg2.name))
+						errors.add("Two arguments have the same name:" + arg1.getErr() + arg2.getErr());
 				}
 			}
 		}

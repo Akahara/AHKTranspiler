@@ -2,14 +2,15 @@ package fr.wonder.ahk.compiler.linker;
 
 import fr.wonder.ahk.compiled.expressions.ArrayExp;
 import fr.wonder.ahk.compiled.expressions.ConstructorExp;
-import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.FunctionExp;
+import fr.wonder.ahk.compiled.expressions.FunctionExpression;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
@@ -23,7 +24,6 @@ import fr.wonder.ahk.compiler.types.FunctionArguments;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.utils.ArrayOperator;
 
 class ExpressionLinker {
@@ -92,29 +92,7 @@ class ExpressionLinker {
 				}
 				
 			} else if(exp instanceof FunctionCallExp) {
-				FunctionCallExp fexp = (FunctionCallExp) exp;
-				// TODO implement functions as variables
-				if(fexp.getFunction() instanceof VarExp) {
-					// replace the FunctionCallExp by a FunctionExp
-					FunctionPrototype function = searchMatchingFunction(scope.getUnitScope(), fexp, typesTable, errors);
-					if(function != Invalids.FUNCTION_PROTO) {
-						if(!function.getSignature().declaringUnit.equals(unit.fullBase))
-							unit.prototype.externalAccesses.add(function);
-						FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
-						exp = expressions[i] = functionExpression;
-						for(int j = 0; j < fexp.getArguments().length; j++) {
-							Expression argument = functionExpression.getArguments()[j];
-							if(function.functionType.arguments[j] != argument.getType()) {
-								VarType converted = function.functionType.arguments[j];
-								ConversionExp conv = new ConversionExp(argument, converted);
-								functionExpression.expressions[j] = conv;
-							}
-						}
-					}
-				} else {
-					// TODO implement functions as expressions
-					throw new UnimplementedException("Unimplemented function call " + fexp.getErr());
-				}
+				exp = linkFunctionExpression(unit, expressions, i, errors);
 				
 			} else if(exp instanceof OperationExp) {
 				OperationExp oexp = (OperationExp) exp;
@@ -141,14 +119,39 @@ class ExpressionLinker {
 		}
 	}
 
-	private static FunctionPrototype searchMatchingFunction(UnitScope unitScope, FunctionCallExp fexp,
-			TypesTable typesTable, ErrorWrapper errors) {
-		String funcName = ((VarExp) fexp.getFunction()).variable;
-		VarType[] args = fexp.getArgumentsTypes();
-		FunctionPrototype[] functions = unitScope.getFunctions(funcName);
+	private static Expression linkFunctionExpression(Unit unit, Expression[] expressions, int expressionIndex, ErrorWrapper errors) {
+		FunctionCallExp fexp = (FunctionCallExp) expressions[expressionIndex];
+		VarFunctionType calledType;
+		// if possible, replace the FunctionCallExp by a FunctionExp
+		if(fexp.getFunction() instanceof VarExp && ((VarExp) fexp.getFunction()).declaration instanceof FunctionPrototype) {
+			FunctionPrototype function = (FunctionPrototype) ((VarExp) fexp.getFunction()).declaration;
+			FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
+			expressions[expressionIndex] = functionExpression;
+			calledType = function.functionType;
+		} else {
+			if(!(fexp.getFunction().getType() instanceof VarFunctionType)) {
+				errors.add("Type " + fexp.getFunction().getType() + " is not callable:" + fexp.getErr());
+				calledType = Invalids.FUNCTION_TYPE;
+			} else {
+				calledType = (VarFunctionType) fexp.getFunction().getType();
+			}
+			fexp.functionType = calledType;
+		}
+		FunctionExpression functionExpression = (FunctionExpression) expressions[expressionIndex];
+		VarFunctionType functionType = (VarFunctionType) calledType;
+		if(functionExpression.argumentCount() != functionType.arguments.length) {
+			errors.add("Invalid number of arguments: function takes " 
+					+ functionType.arguments.length + " but " 
+					+ functionExpression.argumentCount() 
+					+ " are given:" + functionExpression.getErr());
+		} else {
+			for(int j = 0; j < functionType.arguments.length; j++) {
+				Linker.checkAffectationType(functionExpression,
+						j, functionType.arguments[j], errors);
+			}
+		}
 		
-		FunctionPrototype foundProto = FunctionArguments.searchMatchingCallable(functions, args, fexp, errors);
-		return foundProto == null ? Invalids.FUNCTION_PROTO : foundProto;
+		return functionExpression;
 	}
 
 }

@@ -5,7 +5,9 @@ import fr.wonder.ahk.compiled.expressions.ConstructorExp;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.DirectAccessExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.FunctionExp;
+import fr.wonder.ahk.compiled.expressions.FunctionExpression;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
@@ -18,7 +20,6 @@ import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -42,7 +43,9 @@ public class ExpressionWriter {
 		if(exp instanceof LiteralExp)
 			writer.mem.writeTo(Register.RAX, exp, errors);
 		else if(exp instanceof FunctionExp)
-			writeFunctionExp((FunctionExp) exp, errors);
+			writeFunctionExp((FunctionExpression) exp, errors);
+		else if(exp instanceof FunctionCallExp)
+			writeFunctionExp((FunctionExpression) exp, errors);
 		else if(exp instanceof VarExp)
 			writer.mem.writeTo(Register.RAX, exp, errors);
 		else if(exp instanceof DirectAccessExp)
@@ -65,25 +68,31 @@ public class ExpressionWriter {
 			throw new UnreachableException("Unknown expression type " + exp.getClass());
 	}
 
-	private void writeFunctionExp(FunctionExp exp, ErrorWrapper errors) {
-		writeFunctionExp(exp.function, exp.getArguments(), errors);
-	}
-	
-	private void writeFunctionExp(FunctionPrototype function, Expression[] arguments,  ErrorWrapper errors) {
+	private void writeFunctionExp(FunctionExpression function,  ErrorWrapper errors) {
 		switch(writer.project.manifest.callingConvention) {
 		case __stdcall: {
 			
-			if(function.functionType.arguments.length != 0) {
-				int argsSpace = FunctionWriter.getArgumentsSize(function);
+			Expression[] arguments = function.getArguments();
+			int argsSpace = FunctionWriter.getArgumentsSize(arguments.length);
+			if(argsSpace != 0) {
 				writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
 				writer.mem.addStackOffset(argsSpace);
 				for(int i = 0; i < arguments.length; i++) {
 					Expression arg = arguments[i];
 					writer.mem.writeTo(new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE), arg, errors);
 				}
-				writer.mem.addStackOffset(-argsSpace);
 			}
-			writer.instructions.call(UnitWriter.getRegistry(function));
+			
+			if(function instanceof FunctionExp) {
+				writer.instructions.call(UnitWriter.getRegistry(((FunctionExp) function).function));
+			} else if(function instanceof FunctionCallExp) {
+				writeExpression(((FunctionCallExp) function).getFunction(), errors);
+				writer.instructions.call(Register.RAX.name);
+			} else {
+				throw new UnreachableException("Invalid function type " + function.getClass());
+			}
+			
+			writer.mem.addStackOffset(-argsSpace);
 			break;
 			
 		}

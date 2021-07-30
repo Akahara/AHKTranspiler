@@ -3,7 +3,6 @@ package fr.wonder.ahk.compiler.linker;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
@@ -13,8 +12,8 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class Prototypes {
 
-	// TODO use Prototype#matchesPrototype instead of #equals
 	// TODO populate Unit#externalAccesses with aliases, Unit and constructor prototypes
+	// TODO check affected structures
 	
 	public static List<UnitPrototype> getRecompilableUnits(
 			List<UnitPrototype> units,
@@ -26,23 +25,13 @@ public class Prototypes {
 		
 		List<Prototype<?>> affectedAccesses = new ArrayList<>();
 		for(FunctionPrototype func : previousProto.functions) {
-			FunctionPrototype[] functions = newProto.getFunctions(func.getName());
-			if(functions.length == 0) {
+			FunctionPrototype other = newProto.getFunction(func.getName());
+			if(other == null || !func.matchesPrototype(other))
 				affectedAccesses.add(func);
-			} else {
-				boolean exists = false;
-				for(FunctionPrototype fp : functions) {
-					if(func.equals(fp)) {
-						exists = true;
-						break;
-					}
-				}
-				if(!exists)
-					affectedAccesses.add(func);
-			}
 		}
 		for(VariablePrototype var : previousProto.variables) {
-			if(!Objects.equals(var, newProto.getVariable(var.getName())))
+			VariablePrototype other = newProto.getVariable(var.getName());
+			if(other == null || !var.matchesPrototype(other))
 				affectedAccesses.add(var);
 		}
 		if(affectedAccesses.isEmpty())

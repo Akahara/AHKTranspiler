@@ -68,14 +68,18 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	
 	public VariablePrototype getVariable(String name) {
 		for(VariablePrototype var : variables) {
-			if(var.signature.name.equals(name))
+			if(var.getName().equals(name))
 				return var;
 		}
 		return null;
 	}
 	
-	public FunctionPrototype[] getFunctions(String name) {
-		return ArrayOperator.filter(functions, f -> f.getName().equals(name));
+	public FunctionPrototype getFunction(String name) {
+		for(FunctionPrototype func : functions) {
+			if(func.getName().equals(name))
+				return func;
+		}
+		return null;
 	}
 
 	@Override

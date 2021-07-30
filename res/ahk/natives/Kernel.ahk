@@ -6,25 +6,25 @@ unit Kernel;
 str[] argv;
 
 @native("ahk_Kernel_print_dec");
-func void print(int i) {}
+func void printi(int i) {}
 @native("ahk_Kernel_print_hex");
-func void print(float f) {}
+func void printf(float f) {}
 @native("ahk_Kernel_print_str");
 func void print(str s) {}
 @native("ahk_Kernel_print_strlen");
-func void print(str s, int len) {}
+func void prints(str s, int len) {}
 @native("ahk_Kernel_print_bool");
-func void print(bool b) {}
+func void printb(bool b) {}
 @native("ahk_Kernel_print_ln");
 func void println() {}
 
-func void println(int i) {
-	print(i);
+func void printlni(int i) {
+	printi(i);
 	println();
 }
 
-func void println(float f) {
-	print(f);
+func void printlnf(float f) {
+	printf(f);
 	println();
 }
 
@@ -33,8 +33,8 @@ func void println(str s) {
 	println();
 }
 
-func void println(bool b) {
-	print(b);
+func void printlnb(bool b) {
+	printb(b);
 	println();
 }
 

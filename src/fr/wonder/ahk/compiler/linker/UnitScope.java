@@ -1,6 +1,5 @@
 package fr.wonder.ahk.compiler.linker;
 
-import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.commons.types.Tuple;
@@ -58,26 +57,13 @@ class UnitScope implements Scope {
 		VarAccess varProto = unit.getVariable(name);
 		if(varProto != null)
 			return varProto;
-		// also the linker will do the job of searching for the right function, no need to do that here
-		// it only requires a function to be found to begin its work TODO this is a bit funky
-		FunctionPrototype[] functions = unit.getFunctions(name);
-		if(functions.length != 0)
-			return functions[0];
-		return null;
+		// and no two functions can have the same name either
+		return unit.getFunction(name);
 	}
 
 	@Override
 	public void registerVariable(VarAccess var) {
 		throw new IllegalStateException("Invalid scope state");
-	}
-	
-	FunctionPrototype[] getFunctions(String name) {
-		Tuple<UnitPrototype, String> tuple = getUnitFromVarName(name);
-		UnitPrototype unit = tuple.a;
-		name = tuple.b;
-		if(unit == null)
-			return null;
-		return unit.getFunctions(name);
 	}
 	
 }

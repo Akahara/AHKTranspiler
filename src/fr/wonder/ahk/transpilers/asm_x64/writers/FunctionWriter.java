@@ -156,7 +156,11 @@ public class FunctionWriter {
 	}
 	
 	public static int getArgumentsSize(FunctionPrototype func) {
-		return func.functionType.arguments.length * MemSize.POINTER_SIZE;
+		return getArgumentsSize(func.functionType.arguments.length);
+	}
+	
+	public static int getArgumentsSize(int argCount) {
+		return argCount * MemSize.POINTER_SIZE;
 	}
 	
 	private void fillLabelsMap() {

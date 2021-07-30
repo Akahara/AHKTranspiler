@@ -26,6 +26,12 @@ public class FunctionExp extends FunctionExpression {
 		this.function = function;
 	}
 	
+	@Override
+	public int argumentCount() {
+		return getArguments().length;
+	}
+	
+	@Override
 	public Expression[] getArguments() {
 		return expressions;
 	}
@@ -40,4 +46,5 @@ public class FunctionExp extends FunctionExpression {
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
 		return function.functionType.returnType;
 	}
+
 }
