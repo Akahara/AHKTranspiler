@@ -6,6 +6,8 @@ import fr.wonder.ahk.utils.Utils;
 
 public class VarFunctionType extends VarType {
 	
+	public static final int MAX_LAMBDA_ARGUMENT_COUNT = 8;
+	
 	public final VarType returnType;
 	public final VarType[] arguments;
 	

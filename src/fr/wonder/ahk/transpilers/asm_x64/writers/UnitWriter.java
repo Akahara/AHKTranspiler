@@ -9,6 +9,11 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
+import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
+import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
@@ -44,6 +49,8 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
 import fr.wonder.ahk.transpilers.common_x64.macros.StringDefinition;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnimplementedException;
+import fr.wonder.commons.exceptions.UnreachableException;
 
 public class UnitWriter {
 	
@@ -131,6 +138,30 @@ public class UnitWriter {
 		return getUnitRegistry(struct.getSignature().declaringUnit) + "@" + struct.getSignature().name + "_null";
 	}
 	
+	public static String getFunctionNullRegistry(StructPrototype resultType, int argsCount) {
+		return getUnitRegistry(resultType.getSignature().declaringUnit) + "@" 
+				+ resultType.getSignature().name + "_nulllambda_" + argsCount;
+	}
+	
+	public static String getFunctionNullRegistry(VarFunctionType function) {
+		return getFunctionNullRegistry(function.returnType, function.arguments.length);
+	}
+	
+	public static String getFunctionNullRegistry(VarType resultType, int argsCount) {
+		if(resultType == VarType.VOID) {
+			throw new UnimplementedException();
+		} else if(resultType instanceof VarArrayType || resultType == VarType.STR) {
+			throw new UnimplementedException();
+		} else if(resultType instanceof VarNativeType) {
+			throw new UnimplementedException();
+		} else if(resultType instanceof VarStructType) {
+			StructPrototype struct = ((VarStructType) resultType).structure;
+			return getFunctionNullRegistry(struct, argsCount);
+		} else {
+			throw new UnreachableException(resultType.getName());
+		}
+	}
+		
 	public String getLabel(StrLiteral lit) {
 		// beware! strConstants.indexOf cannot be used because the #equals method of StrLiteral
 		// will return true if two literals hold equal strings.
@@ -190,8 +221,13 @@ public class UnitWriter {
 		if(unit.functions.length != 0)
 			instructions.skip();
 		for(StructSection s : unit.structures) {
-			if(s.visibility == DeclarationVisibility.GLOBAL)
-				instructions.add(new GlobalDeclaration(getStructNullRegistry(s.getPrototype())));
+			if(s.visibility != DeclarationVisibility.GLOBAL)
+				continue;
+			instructions.add(new GlobalDeclaration(getStructNullRegistry(s.getPrototype())));
+			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
+				String label = getFunctionNullRegistry(s.getPrototype(), i);
+				instructions.add(new GlobalDeclaration(label));
+			}
 		}
 		if(unit.structures.length != 0)
 			instructions.skip();
@@ -203,17 +239,19 @@ public class UnitWriter {
 		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		
 		for(Prototype<?> i : unit.prototype.externalAccesses) {
-			String globalLabel;
 			if(i instanceof StructPrototype) {
 				// global structure prototype
-				globalLabel = getStructNullRegistry((StructPrototype) i);
+				StructPrototype s = (StructPrototype) i;
+				instructions.add(new ExternDeclaration(getStructNullRegistry(s)));
+				
+				for(int argCount = 0; argCount < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; argCount++)
+					instructions.add(new ExternDeclaration(getFunctionNullRegistry(s, argCount)));
 			} else if(i instanceof VarAccess) {
 				// extern variable or function
-				globalLabel = getGlobalRegistry((VarAccess) i);
+				instructions.add(new ExternDeclaration(getGlobalRegistry((VarAccess) i)));
 			} else {
 				continue;
 			}
-			instructions.add(new ExternDeclaration(globalLabel));
 		}
 		if(unit.importations.length != 0)
 			instructions.skip();
@@ -316,6 +354,18 @@ public class UnitWriter {
 		instructions.endStackFrame();
 		instructions.ret();
 		instructions.skip();
+		
+		for(StructSection structure : unit.structures) {
+			String nullLabel = getStructNullRegistry(structure.getPrototype());
+			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
+				String label = getFunctionNullRegistry(structure.getPrototype(), i);
+				instructions.label(label);
+				instructions.mov(Register.RAX, nullLabel);
+				instructions.ret(i*MemSize.POINTER_SIZE);
+			}
+		}
+		if(unit.structures.length != 0)
+			instructions.skip(2);
 		
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE))

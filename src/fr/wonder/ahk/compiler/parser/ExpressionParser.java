@@ -34,8 +34,6 @@ import fr.wonder.commons.types.Tuple;
 
 public class ExpressionParser extends AbstractParser {
 	
-	// TODO refactor the Expression Parser with Pointers
-	
 	static class Section {
 		
 		SectionToken type;

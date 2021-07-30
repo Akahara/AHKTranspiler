@@ -28,7 +28,8 @@ public class VarNullType extends VarType {
 	 */
 	public static boolean isAcceptableNullType(VarType type) {
 		return type instanceof VarStructType ||
-				type instanceof VarArrayType;
+				type instanceof VarArrayType ||
+				type instanceof VarFunctionType;
 	}
 	
 	

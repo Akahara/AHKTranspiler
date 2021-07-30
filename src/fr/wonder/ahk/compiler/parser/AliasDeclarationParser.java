@@ -246,6 +246,10 @@ public class AliasDeclarationParser extends AbstractParser {
 		VarType returnType = parseType(alias, pointer);
 		
 		VarType[] arguments = readArguments(alias, pointer, false).a;
+		if(arguments.length > VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT) {
+			alias.errors.add("Function types cannot exceed " + VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT + " arguments");
+			throw new ParsingException();
+		}
 		
 		return new VarFunctionType(returnType, arguments);
 	}

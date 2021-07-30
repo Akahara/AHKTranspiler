@@ -5,7 +5,7 @@ import fr.wonder.main.Structs;
 
 unit Main;
 
-alias Afunction = func int(int);
+alias Afunction = func Structure(int);
 alias IntAlias = int;
 alias IntArray = IntAlias[];
 alias ComplexAlias = func Afunction(int, IntArray)[];
@@ -95,8 +95,9 @@ func int main() {
 	Kernel.println(aliasedInt);
 	IntArray aliasedIntArray = [0, 1, 2];
 	Kernel.println(aliasedIntArray[1]);
-	ComplexAlias complex = null;
-	Kernel.println(int:(complex));
-	
+	/*ComplexAlias complex = null;
+	Kernel.println(int:(complex));*/
+	Afunction function = null;
+	Kernel.println(function(0));
 	return 5;
 }

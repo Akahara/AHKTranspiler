@@ -21,6 +21,7 @@ public class StructSection extends SourceObject {
 	
 	private StructPrototype prototype;
 	
+	
 	public StructSection(UnitSource source, int sourceStart, int sourceStop,
 			String structName, VariableDeclaration[] members, StructConstructor[] constructors,
 			ConstructorDefaultValue[] nullFields) {

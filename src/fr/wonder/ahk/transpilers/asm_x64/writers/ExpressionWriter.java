@@ -14,6 +14,7 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
@@ -223,8 +224,11 @@ public class ExpressionWriter {
 			writer.instructions.mov(Register.RAX, nullLabel);
 		} else if(actualType instanceof VarArrayType) {
 			writer.instructions.mov(Register.RAX, GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK);
+		} else if(actualType instanceof VarFunctionType) {
+			String nullLabel = UnitWriter.getFunctionNullRegistry((VarFunctionType) actualType);
+			writer.instructions.mov(Register.RAX, nullLabel);
 		} else {
-			throw new UnimplementedException("Unimplemented null: " + actualType);
+			throw new UnreachableException("Unimplemented null: " + actualType);
 		}
 	}
 
