@@ -1,6 +1,9 @@
 package fr.wonder.ahk.compiler.parser;
 
-import static fr.wonder.ahk.compiler.tokens.TokenBase.*;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_FLOAT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_INT;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.LIT_STR;
+import static fr.wonder.ahk.compiler.tokens.TokenBase.TK_DOT;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +31,7 @@ public class Tokenizer {
 	
 	private void tokenize() {
 		TokenBase quoteEnd = null;
-		boolean quoteIgnored = false;
+		boolean quoteIsComment = false;
 		int quoteBeginPosition = -1;
 		
 		TokenBase latestOpenedSection = null;
@@ -44,7 +47,7 @@ public class Tokenizer {
 					i += 2;
 				} else {
 					if(source.matchesRaw(quoteEnd.syntax, i)) {
-						if(!quoteIgnored)
+						if(!quoteIsComment)
 							tokens.add(new Token(source, LIT_STR, source.substring(quoteBeginPosition, i), quoteBeginPosition));
 						i += quoteEnd.syntax.length();
 						quoteEnd = null;
@@ -86,7 +89,7 @@ public class Tokenizer {
 				if(del.quote) {
 					quoteEnd = del.stop;
 					quoteBeginPosition = stop;
-					quoteIgnored = del == SectionToken.SEC_COMMENTS;
+					quoteIsComment = del == SectionToken.SEC_COMMENTS || del == SectionToken.SEC_LINE_COMMENT;
 				} else {
 					Token t = new Token(source, del.start, source.substring(i, stop), i);
 					tokens.add(t);
@@ -152,9 +155,7 @@ public class Tokenizer {
 	
 	private void finalizeTokens() {
 		// remove spaces
-		for(int i = tokens.size()-1; i >= 0; i--)
-			if(tokens.get(i).base == TokenBase.TK_SPACE)
-				tokens.remove(i);
+		tokens.removeIf(t -> t.base == TokenBase.TK_SPACE || t.base == TokenBase.TK_NL);
 		
 		for(int i = 1; i < tokens.size(); i++) {
 			// previous, current and next tokens

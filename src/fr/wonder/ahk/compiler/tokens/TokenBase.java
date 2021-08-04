@@ -49,8 +49,11 @@ public enum TokenBase {
 	KW_EQUAL_DIV("/="),
 	KW_EQUAL_MOD("%="),
 	
-	TK_SPACE(" "),
+	/** line break ';', stripped by the Tokenizer to split individual lines */
 	TK_LINE_BREAK(";"),
+	/** new line '\n', stripped by the Tokenizer, they are completely ignored during code generation */
+	TK_NL("\n"),
+	TK_SPACE(" "),
 	TK_DOUBLE_DOT(".."),
 	TK_DOT("."),
 	TK_COMMA(","),
@@ -59,6 +62,7 @@ public enum TokenBase {
 	TK_BRACKET_OPEN("["), TK_BRACKET_CLOSE("]"),
 	TK_PARENTHESIS_OPEN("("), TK_PARENTHESIS_CLOSE(")"),
 	TK_COMMENT_OPEN("/*"), TK_COMMENT_CLOSE("*/"),
+	TK_LINE_COMMENT("//"),
 	TK_DOUBLE_QUOTE("\""),
 	TK_APOSTROPHE("'"),
 	TK_BACK_APOSTROPHE("`"),

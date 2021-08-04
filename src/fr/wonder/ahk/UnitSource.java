@@ -9,7 +9,6 @@ public class UnitSource {
 	
 	public final String name;
 	
-	public final String rawSource;
 	public final String source;
 	
 	private final int[] linebreaks;
@@ -21,8 +20,7 @@ public class UnitSource {
 	public UnitSource(String name, String rawSource) {
 		this.name = name;
 		rawSource = rawSource.replaceAll("\t", " ");
-		this.rawSource = rawSource;
-		this.source = rawSource.replaceAll("\n", " ");
+		this.source = rawSource;
 		this.linebreaks = new int[Utils.countChar(rawSource, '\n')];
 		int lastBreak = -1;
 		for(int i = 0; i < linebreaks.length; i++)
@@ -51,7 +49,7 @@ public class UnitSource {
 	
 	private int getLineIdx(int chrIdx) {
 		for(int i = 0; i < linebreaks.length; i++) {
-			if(chrIdx < linebreaks[i])
+			if(chrIdx <= linebreaks[i])
 				return i;
 		}
 		return linebreaks.length;
@@ -93,15 +91,24 @@ public class UnitSource {
 	}
 	
 	public String getErr(int chrBegin, int chrEnd) {
-		int l = getLineIdx(chrBegin);
-		String line = getLine(l);
-		int llen = line.length();
-		line = line.stripLeading();
-		int spacing = chrBegin-(l>0?linebreaks[l-1]:0)+line.length()-llen;
-		return  "\n  At " + name + " - " + (l+1) + ":" + (chrBegin-(l>0?linebreaks[l-1]:0)) +
-				"\n    " + line +
-//				"\n    " + " ".repeat(spacing) + "^" + "~".repeat(Math.max(0, Math.min(j-i, llen-spacing)-1));
-				"\n    " + " ".repeat(spacing) + "~".repeat(Math.max(0, Math.min(chrEnd-chrBegin, llen-spacing)));
+		int beginLineIndex = getLineIdx(chrBegin);
+		int endLineIndex = getLineIdx(chrEnd);
+		int firstLineStart = beginLineIndex > 0 ? linebreaks[beginLineIndex-1] : 0;
+		String error = "\n  At " + name + " - " + (beginLineIndex+1) + ":" + (chrBegin-firstLineStart);
+		
+		for(int l = beginLineIndex; l <= endLineIndex; l++) {
+			int lineBegin = l > 0 ? linebreaks[l-1] : 0;
+			int lineEnd = l < linebreaks.length ? linebreaks[l] : source.length();
+			String line = source.substring(lineBegin, lineEnd);
+			int llen = line.length();
+			line = line.stripLeading();
+			int stripped = llen - line.length();
+			int printBegin = Math.max(0, chrBegin - lineBegin - stripped);
+			int printEnd = Math.min(line.length(), chrEnd - lineBegin - stripped);
+			error += "\n    " + line +
+					 "\n    " + " ".repeat(printBegin) + "~".repeat(printEnd-printBegin);
+		}
+		return error;
 	}
 	
 	public String getErr(SourceElement s) {
