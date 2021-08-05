@@ -104,7 +104,7 @@ public class StatementParser extends AbstractParser {
 			
 			VarType type = parseType(unit, line, pointer, errors);
 			
-			expectToken(line[pointer.position], TokenBase.VAR_VARIABLE, "variable name", errors);
+			expectToken(line[pointer.position], TokenBase.VAR_VARIABLE, "Expected variable name", errors);
 			String varName = line[pointer.position++].text;
 			
 			Expression defaultValue;
@@ -112,7 +112,7 @@ public class StatementParser extends AbstractParser {
 				defaultValue = getDefaultValue(type, unit.source, line[line.length-1].sourceStop);
 			} else {
 				assertHasNext(line, pointer, "Expected affectation value", errors, 2);
-				expectToken(line[pointer.position++], TokenBase.KW_EQUAL, "affectation value", errors);
+				expectToken(line[pointer.position++], TokenBase.KW_EQUAL, "Expected affectation value", errors);
 				defaultValue = ExpressionParser.parseExpression(unit, line, pointer.position, line.length, errors);
 			}
 			
@@ -147,7 +147,7 @@ public class StatementParser extends AbstractParser {
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors)) {
+		if(!assertParentheses(line, 1, conditionEnd, errors)) {
 			return Invalids.STATEMENT;
 		} else {
 			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
@@ -169,7 +169,7 @@ public class StatementParser extends AbstractParser {
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors)) {
+		if(!assertParentheses(line, 1, conditionEnd, errors)) {
 			return Invalids.STATEMENT;
 		} else {
 			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
@@ -185,7 +185,7 @@ public class StatementParser extends AbstractParser {
 		}
 		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors))
+		if(!assertParentheses(line, 1, conditionEnd, errors))
 			return Invalids.STATEMENT;
 		
 		int simpleRangeMarker = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, 2);
@@ -275,7 +275,7 @@ public class StatementParser extends AbstractParser {
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors, 5);
 			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-			if(!AbstractParser.assertParentheses(line, 1, conditionEnd, errors))
+			if(!assertParentheses(line, 1, conditionEnd, errors))
 				return Invalids.STATEMENT;
 			if(!Tokens.isVarType(line[2].base) || line[3].base != TokenBase.VAR_VARIABLE) {
 				errors.add("Expected variable declaration " + unit.source.getErr(line, 2, 3));
@@ -284,7 +284,7 @@ public class StatementParser extends AbstractParser {
 			pointer.position = 2;
 			VarType type = parseType(unit, line, pointer, errors);
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors);
-			expectToken(line[pointer.position], TokenBase.TK_COLUMN, "':'", errors);
+			expectToken(line[pointer.position], TokenBase.TK_COLUMN, "Expected ':'", errors);
 			VariableDeclaration var = new VariableDeclaration(unit, line[2].sourceStart,
 					line[pointer.position-1].sourceStop, line[3].text, type, null);
 			Expression iterable = ExpressionParser.parseExpression(unit, line, pointer.position, conditionEnd, errors);

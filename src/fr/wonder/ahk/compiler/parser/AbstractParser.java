@@ -94,9 +94,9 @@ class AbstractParser {
 	}
 
 	public static boolean expectToken(Token token, TokenBase base,
-			String expectation, ErrorWrapper errors) {
+			String error, ErrorWrapper errors) {
 		if(token.base != base) {
-			errors.add("Expected " + expectation + ":" + token.getErr());
+			errors.add(error + ':' + token.getErr());
 			return false;
 		}
 		return true;
@@ -109,7 +109,7 @@ class AbstractParser {
 		
 		ArgumentList arguments = new ArgumentList();
 		
-		if(!expectToken(line[pointer.position], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors))
+		if(!expectToken(line[pointer.position], TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", errors))
 			throw new ParsingException();
 		pointer.position++; // skip '('
 		if(line[pointer.position].base == TokenBase.TK_PARENTHESIS_CLOSE) {
@@ -138,7 +138,7 @@ class AbstractParser {
 			
 			if(nextTk.base == TokenBase.TK_PARENTHESIS_CLOSE) {
 				return arguments;
-			} else if(!expectToken(nextTk, TokenBase.TK_COMMA, ",", errors)) {
+			} else if(!expectToken(nextTk, TokenBase.TK_COMMA, "Expected ','", errors)) {
 				throw new ParsingException();
 			}
 		}
@@ -146,9 +146,9 @@ class AbstractParser {
 
 	public static boolean assertParentheses(Token[] line, int begin, int end, ErrorWrapper errors) {
 		boolean success = true;
-		if(!expectToken(line[begin], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors))
+		if(!expectToken(line[begin], TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", errors))
 			success = false;
-		if(!expectToken(line[end], TokenBase.TK_PARENTHESIS_CLOSE, "')'", errors))
+		if(!expectToken(line[end], TokenBase.TK_PARENTHESIS_CLOSE, "Exppected ')'", errors))
 			success = false;
 		return success;
 	}

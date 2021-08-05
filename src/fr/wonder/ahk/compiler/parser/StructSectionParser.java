@@ -24,7 +24,7 @@ class StructSectionParser extends AbstractParser {
 		if(declaration.length != 3) {
 			errors.add("Invalid declaration:" + unit.source.getErr(declaration));
 			return Invalids.STRUCTURE;
-		} else if(!AbstractParser.expectToken(declaration[1], TokenBase.VAR_UNIT, "struct name", errors)) {
+		} else if(!expectToken(declaration[1], TokenBase.VAR_UNIT, "Expected structure name", errors)) {
 			return Invalids.STRUCTURE;
 		}
 
@@ -103,8 +103,7 @@ class StructSectionParser extends AbstractParser {
 		if(line.length < 3) {
 			errors.add("Invalid null declaration:" + unit.source.getErr(line));
 			return null;
-		} else if(!AbstractParser.expectToken(line[1], TokenBase.TK_PARENTHESIS_OPEN, "'('", errors) ||
-				!AbstractParser.expectToken(line[line.length-1], TokenBase.TK_PARENTHESIS_CLOSE, "')'", errors)) {
+		} else if(!assertParentheses(line, 1, line.length-1, errors)) {
 			return null;
 		}
 		Section section = ExpressionParser.getVisibleSection(line, 2, line.length-1);
@@ -130,8 +129,8 @@ class StructSectionParser extends AbstractParser {
 		if(i - prevComa < 3) {
 			errors.add("Invalid default value syntax:" + unit.source.getErr(line, prevComa, i));
 			return null;
-		} else if(!AbstractParser.expectToken(line[prevComa], TokenBase.VAR_VARIABLE, "default value name", errors) ||
-				!AbstractParser.expectToken(line[prevComa+1], TokenBase.KW_EQUAL, "'='", errors)) {
+		} else if(!expectToken(line[prevComa], TokenBase.VAR_VARIABLE, "Expected default value name", errors) ||
+				!expectToken(line[prevComa+1], TokenBase.KW_EQUAL, "Expected '='", errors)) {
 			return null;
 		}
 		Expression value = ExpressionParser.parseExpression(unit, line, prevComa+2, i, errors);

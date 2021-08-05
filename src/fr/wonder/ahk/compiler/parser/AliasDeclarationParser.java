@@ -92,8 +92,8 @@ public class AliasDeclarationParser extends AbstractParser {
 			
 			if(line.length < 3) {
 				unitAliases.errors.add("Invalid alias declaration:" + unit.source.getErr(line));
-			} else if(AbstractParser.expectToken(line[1], TokenBase.VAR_UNIT, "alias name", unitAliases.errors) &&
-				AbstractParser.expectToken(line[2], TokenBase.KW_EQUAL, "'='", unitAliases.errors)) {
+			} else if(expectToken(line[1], TokenBase.VAR_UNIT, "Expected alias name", unitAliases.errors) &&
+					expectToken(line[2], TokenBase.KW_EQUAL, "Expected '='", unitAliases.errors)) {
 				
 				String aliasName = line[1].text;
 				ErrorWrapper aliasErrors = unitAliases.errors.subErrrors("Cannot resolve alias " + aliasName);
@@ -263,7 +263,7 @@ public class AliasDeclarationParser extends AbstractParser {
 		Token[] line = alias.line;
 		assertHasNext(alias, pointer, 2);
 		
-		if(!AbstractParser.expectToken(line[pointer.position], TokenBase.TK_PARENTHESIS_OPEN, "'('", alias.errors))
+		if(!expectToken(line[pointer.position], TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", alias.errors))
 			throw new ParsingException();
 		pointer.position++; // skip '('
 		if(line[pointer.position].base == TokenBase.TK_PARENTHESIS_CLOSE) {
@@ -291,7 +291,7 @@ public class AliasDeclarationParser extends AbstractParser {
 				VarType[] argsArr = arguments.toArray(VarType[]::new);
 				String[] namesArr = names.toArray(String[]::new);
 				return new Tuple<>(argsArr, namesArr);
-			} else if(!AbstractParser.expectToken(nextTk, TokenBase.TK_COMMA, ",", alias.errors)) {
+			} else if(!expectToken(nextTk, TokenBase.TK_COMMA, "Expected ','", alias.errors)) {
 				throw new ParsingException();
 			}
 		}

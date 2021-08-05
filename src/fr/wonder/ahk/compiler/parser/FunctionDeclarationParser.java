@@ -52,7 +52,7 @@ class FunctionDeclarationParser extends AbstractParser {
 		Pointer pointer = new Pointer(1);
 		
 		if(declaration[pointer.position].base == TokenBase.TK_PARENTHESIS_OPEN) {
-			ArgumentList args = AbstractParser.readArguments(unit, declaration, pointer, true, errors);
+			ArgumentList args = readArguments(unit, declaration, pointer, true, errors);
 			func.returnType = new VarCompositeType(args.getNames(), args.getTypes());
 		} else if(declaration[pointer.position].base == TokenBase.TYPE_VOID) {
 			func.returnType = VarType.VOID;
@@ -63,10 +63,10 @@ class FunctionDeclarationParser extends AbstractParser {
 		
 		assertHasNext(declaration, pointer, "Incomplete function declaration", errors, 3);
 		
-		AbstractParser.expectToken(declaration[pointer.position], TokenBase.VAR_VARIABLE, "function name", errors);
+		expectToken(declaration[pointer.position], TokenBase.VAR_VARIABLE, "Expected function name", errors);
 		func.name = declaration[pointer.position++].text;
 		
-		ArgumentList arguments = AbstractParser.readArguments(unit, declaration, pointer, true, errors);
+		ArgumentList arguments = readArguments(unit, declaration, pointer, true, errors);
 		
 		func.arguments = arguments.toArray(FunctionArgument[]::new);
 

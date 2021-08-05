@@ -18,7 +18,7 @@ import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
-public class UnitParser {
+public class UnitParser extends AbstractParser {
 	
 	public static void parseUnit(Unit unit, Token[][] tokens, ErrorWrapper errors) throws WrappedException {
 		unit.compilationState = UnitCompilationState.PARSED_WITH_ERRORS;
@@ -132,7 +132,7 @@ public class UnitParser {
 				DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
 				modifiers.clear();
 				// parse function section
-				if(!AbstractParser.expectToken(line[line.length-1], TokenBase.TK_BRACE_OPEN, "'{' to begin function", errors))
+				if(!expectToken(line[line.length-1], TokenBase.TK_BRACE_OPEN, "Expected '{' to begin function", errors))
 					continue;
 				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
 				if(functionEnd == -1) {
@@ -156,7 +156,7 @@ public class UnitParser {
 				if(line.length < 3) {
 					errors.add("Invalid struct declaration:" + unit.source.getErr(lines[i]));
 					continue;
-				} else if(!AbstractParser.expectToken(line[2], TokenBase.TK_BRACE_OPEN, "'{' to begin struct", errors)) {
+				} else if(!expectToken(line[2], TokenBase.TK_BRACE_OPEN, "Expected '{' to begin structure", errors)) {
 					continue;
 				}
 				int structEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
