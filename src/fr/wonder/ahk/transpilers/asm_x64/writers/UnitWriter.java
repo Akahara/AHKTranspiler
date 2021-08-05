@@ -1,7 +1,10 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
@@ -39,11 +42,13 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
+import fr.wonder.ahk.transpilers.common_x64.declarations.EmptyLine;
 import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarReservation;
 import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
+import fr.wonder.ahk.transpilers.common_x64.instructions.Instruction;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
@@ -75,6 +80,7 @@ public class UnitWriter {
 		uw.writeDataSegment(initializedVariables, errors);
 		uw.writeBSSSegment(errors);
 		uw.writeTextSegment(initializableVariables, errors);
+		uw.insertExternDeclarations();
 		
 		return uw.instructions;
 	}
@@ -91,6 +97,9 @@ public class UnitWriter {
 	private final List<StrLiteral> strConstants = new ArrayList<>();
 	
 	private int specialCallCount = 0;
+	
+	private final Set<String> requiredExternDeclarations = new HashSet<>();
+	private int externDeclarationsIndex;
 	
 	private UnitWriter(TranspilableHandle handle, Unit unit, ConcreteTypesTable types) {
 		this.project = handle;
@@ -134,20 +143,23 @@ public class UnitWriter {
 		throw new IllegalArgumentException("Unimplemented registry " + var.getClass());
 	}
 	
-	public static String getStructNullRegistry(StructPrototype struct) {
-		return getUnitRegistry(struct.getSignature().declaringUnit) + "@" + struct.getSignature().name + "_null";
+	public String getStructNullRegistry(StructPrototype struct) {
+		String registry = getUnitRegistry(struct.getSignature().declaringUnit) + "@" 
+				+ struct.getSignature().name + "_null";
+		if(!struct.getSignature().declaringUnit.equals(this.unit.fullBase))
+			requireExternLabel(registry);
+		return registry;
 	}
 	
-	public static String getFunctionNullRegistry(StructPrototype resultType, int argsCount) {
-		return getUnitRegistry(resultType.getSignature().declaringUnit) + "@" 
+	public String getFunctionNullRegistry(StructPrototype resultType, int argsCount) {
+		String registry = getUnitRegistry(resultType.getSignature().declaringUnit) + "@" 
 				+ resultType.getSignature().name + "_nulllambda_" + argsCount;
+		if(!resultType.getSignature().declaringUnit.equals(this.unit.fullBase))
+			requireExternLabel(registry);
+		return registry;
 	}
 	
-	public static String getFunctionNullRegistry(VarFunctionType function) {
-		return getFunctionNullRegistry(function.returnType, function.arguments.length);
-	}
-	
-	public static String getFunctionNullRegistry(VarType resultType, int argsCount) {
+	public String getFunctionNullRegistry(VarType resultType, int argsCount) {
 		if(resultType == VarType.VOID) {
 			throw new UnimplementedException();
 		} else if(resultType instanceof VarArrayType || resultType == VarType.STR) {
@@ -193,7 +205,17 @@ public class UnitWriter {
 		else
 			throw new IllegalStateException("Unhandled literal type " + exp.getClass());
 	}
+	
+	public String requireExternLabel(String label) {
+		requiredExternDeclarations.add(label);
+		return label;
+	}
 
+	public MemAddress requireExternLabel(MemAddress address) {
+		requiredExternDeclarations.add(((LabelAddress) address.base).label);
+		return address;
+	}
+	
 	// ------------------------------ segments -----------------------------
 	
 	private void writeSpecialSegment(ErrorWrapper errors) {
@@ -232,23 +254,19 @@ public class UnitWriter {
 		if(unit.structures.length != 0)
 			instructions.skip();
 		
-		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_FLOATST));
-		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_ALLOC));
-		instructions.add(new ExternDeclaration(GlobalLabels.SPECIAL_THROW));
-		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_VAL_FSIGNBIT));
-		instructions.add(new ExternDeclaration(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
+		externDeclarationsIndex = instructions.instructions.size();
 		
 		for(Prototype<?> i : unit.prototype.externalAccesses) {
 			if(i instanceof StructPrototype) {
 				// global structure prototype
-				StructPrototype s = (StructPrototype) i;
-				instructions.add(new ExternDeclaration(getStructNullRegistry(s)));
-				
-				for(int argCount = 0; argCount < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; argCount++)
-					instructions.add(new ExternDeclaration(getFunctionNullRegistry(s, argCount)));
+//				StructPrototype s = (StructPrototype) i;
+//				instructions.add(new ExternDeclaration(getStructNullRegistry(s)));
+//				
+//				for(int argCount = 0; argCount < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; argCount++)
+//					instructions.add(new ExternDeclaration(getFunctionNullRegistry(s, argCount)));
 			} else if(i instanceof VarAccess) {
 				// extern variable or function
-				instructions.add(new ExternDeclaration(getGlobalRegistry((VarAccess) i)));
+				requireExternLabel(getGlobalRegistry((VarAccess) i));
 			} else {
 				continue;
 			}
@@ -285,6 +303,19 @@ public class UnitWriter {
 		}
 		
 		instructions.skip(2);
+	}
+	
+	private void insertExternDeclarations() {
+		if(requiredExternDeclarations.isEmpty())
+			return;
+		
+		List<Instruction> externDeclarations =
+				requiredExternDeclarations.stream()
+				.sorted()
+				.map(ExternDeclaration::new)
+				.collect(Collectors.toList());
+		externDeclarations.add(new EmptyLine());
+		instructions.addAll(externDeclarationsIndex, externDeclarations);
 	}
 	
 	private static void collectStrConstants(List<StrLiteral> csts, ExpressionHolder[] vars) {
@@ -389,7 +420,7 @@ public class UnitWriter {
 		String label = getSpecialLabel();
 		instructions.test(Register.RAX, Register.RAX);
 		instructions.add(OpCode.JNZ, new LabelAddress(label));
-		instructions.call(GlobalLabels.SPECIAL_THROW);
+		instructions.call(requireExternLabel(GlobalLabels.SPECIAL_THROW));
 		instructions.label(label);
 	}
 	
@@ -399,7 +430,7 @@ public class UnitWriter {
 	
 	public void callAlloc(OperationParameter size) {
 		instructions.push(size);
-		instructions.call(GlobalLabels.SPECIAL_ALLOC);
+		instructions.call(requireExternLabel(GlobalLabels.SPECIAL_ALLOC));
 		// TODO0 implement other calling conventions (__stdcall currently)
 		testThrowError();
 	}

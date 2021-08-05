@@ -156,13 +156,14 @@ public class AsmOperationWriter {
 	
 	private void simpleFPUOperation(Expression e1, Expression e2, boolean commutativeOperation, OpCode opCode, ErrorWrapper errors) {
 		OperationParameter ro = prepareRAXRBX(e1, e2, commutativeOperation, errors);
-		writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
-		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		writer.mem.moveData(GlobalLabels.ADDRESS_FLOATST, ro, MemSize.QWORD);
-		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+		MemAddress floatst = writer.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		writer.instructions.mov(floatst, Register.RAX);
+		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+		writer.mem.moveData(floatst, ro, MemSize.QWORD);
+		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
 		writer.instructions.add(opCode);
-		writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+		writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
+		writer.instructions.mov(Register.RAX, floatst);
 	}
 	
 	private static void op_universalEquality(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -269,7 +270,7 @@ public class AsmOperationWriter {
 	
 	private static void op_nullSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
-		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, GlobalLabels.ADDRESS_VAL_FSIGNBIT);
+		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, asmWriter.writer.requireExternLabel(GlobalLabels.ADDRESS_FSIGNBIT));
 	}
 	
 	private static void op_floatMULfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -368,17 +369,19 @@ public class AsmOperationWriter {
 	}
 	
 	private static void conv_intTOfloat(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
-		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+		MemAddress floatst = asmWriter.writer.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.mov(floatst, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, floatst);
+		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
+		asmWriter.writer.instructions.mov(Register.RAX, floatst);
 	}
 	
 	private static void conv_floatTOint(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, Register.RAX);
-		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		asmWriter.writer.instructions.addCasted(OpCode.FISTP, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-		asmWriter.writer.instructions.mov(Register.RAX, GlobalLabels.ADDRESS_FLOATST);
+		MemAddress floatst = asmWriter.writer.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.mov(floatst, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+		asmWriter.writer.instructions.addCasted(OpCode.FISTP, MemSize.QWORD, floatst);
+		asmWriter.writer.instructions.mov(Register.RAX, floatst);
 	}
 	
 }

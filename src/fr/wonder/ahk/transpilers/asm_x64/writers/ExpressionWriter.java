@@ -162,7 +162,7 @@ public class ExpressionWriter {
 			writer.instructions.test(Register.RBX);
 			writer.instructions.add(OpCode.JNZ, errLabel);
 			writer.instructions.mov(Register.RAX, -6); // TODO add specific error code
-			writer.instructions.call(GlobalLabels.SPECIAL_THROW);
+			writer.instructions.call(writer.requireExternLabel(GlobalLabels.SPECIAL_THROW));
 			writer.instructions.label(errLabel);
 			return new MemAddress(Register.RAX, Register.RBX, 1, -8);
 		} else {
@@ -192,7 +192,7 @@ public class ExpressionWriter {
 		writer.instructions.add(OpCode.JL, successLabel);
 		writer.instructions.label(errLabel);
 		writer.instructions.mov(Register.RAX, -5); // TODO add specific error code (oob)
-		writer.instructions.call(GlobalLabels.SPECIAL_THROW);
+		writer.instructions.call(writer.requireExternLabel(GlobalLabels.SPECIAL_THROW));
 		writer.instructions.label(successLabel);
 	}
 
@@ -229,12 +229,13 @@ public class ExpressionWriter {
 	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
 		VarType actualType = exp.getType();
 		if(actualType instanceof VarStructType) {
-			String nullLabel = UnitWriter.getStructNullRegistry(((VarStructType) actualType).structure);
+			String nullLabel = writer.getStructNullRegistry(((VarStructType) actualType).structure);
 			writer.instructions.mov(Register.RAX, nullLabel);
 		} else if(actualType instanceof VarArrayType) {
-			writer.instructions.mov(Register.RAX, GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK);
+			writer.instructions.mov(Register.RAX, writer.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(actualType instanceof VarFunctionType) {
-			String nullLabel = UnitWriter.getFunctionNullRegistry((VarFunctionType) actualType);
+			VarFunctionType funcType = (VarFunctionType) actualType;
+			String nullLabel = writer.getFunctionNullRegistry(funcType.returnType, funcType.arguments.length);
 			writer.instructions.mov(Register.RAX, nullLabel);
 		} else {
 			throw new UnreachableException("Unimplemented null: " + actualType);

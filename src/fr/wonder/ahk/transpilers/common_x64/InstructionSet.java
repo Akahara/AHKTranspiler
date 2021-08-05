@@ -3,6 +3,7 @@ package fr.wonder.ahk.transpilers.common_x64;
 import static fr.wonder.ahk.transpilers.common_x64.instructions.OpCode.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
@@ -121,6 +122,10 @@ public class InstructionSet {
 			sb.append('\n');
 		}
 		return sb.toString();
+	}
+
+	public void addAll(int index, Collection<Instruction> instructions) {
+		this.instructions.addAll(index, instructions);
 	}
 	
 }
