@@ -1,6 +1,5 @@
 package fr.wonder.ahk.compiled.units.sections;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
@@ -11,13 +10,16 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class StructConstructor extends SourceObject {
 	
+	public final StructSection struct;
 	public final FunctionArgument[] arguments;
-	private ConstructorPrototype prototype;
 	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL;
 	
-	public StructConstructor(UnitSource source, int sourceStart, int sourceStop,
+	private ConstructorPrototype prototype;
+	
+	public StructConstructor(StructSection struct, int sourceStart, int sourceStop,
 			FunctionArgument[] arguments) {
-		super(source, sourceStart, sourceStop);
+		super(struct.unit.source, sourceStart, sourceStop);
+		this.struct = struct;
 		this.arguments = arguments;
 	}
 	

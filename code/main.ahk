@@ -69,7 +69,7 @@ func int main() {
 		Kernel.printi(i%5);
 		Kernel.printnl();
 	}
-	Kernel.println("------ Expected -1 3 -2 -3 63 12 12 10 2 1");
+	Kernel.println("------ Expected -1 3 -2 -3 63 12 12 10 2");
 	Kernel.printlni(-2/2);
 	Kernel.printlni(int:(3.8));
 	Kernel.printlni(int:(2+(-3.5)));
@@ -86,7 +86,7 @@ func int main() {
 	Kernel.println("------ Expected composed strings:");
 	Kernel.println("a composed " + "string");
 	Kernel.println("");
-	Kernel.println("------ Expected 2 37");
+	Kernel.println("------ Expected 2 37 5 1 65");
 	Cyclic1 cyclic1 = null;
 	cyclic1.a = 2;
 	Kernel.printlni(cyclic1.other.other.a);

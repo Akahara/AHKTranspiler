@@ -23,10 +23,17 @@ class StructSectionParser extends AbstractParser {
 		Token[] declaration = lines[begin];
 		if(declaration.length != 3) {
 			errors.add("Invalid declaration:" + unit.source.getErr(declaration));
-			return Invalids.STRUCT;
+			return Invalids.STRUCTURE;
 		} else if(!AbstractParser.expectToken(declaration[1], TokenBase.VAR_UNIT, "struct name", errors)) {
-			return Invalids.STRUCT;
+			return Invalids.STRUCTURE;
 		}
+
+		String structName = declaration[1].text;
+		StructSection structure = new StructSection(
+				unit,
+				declaration[0].sourceStart,
+				declaration[declaration.length-1].sourceStop,
+				structName);
 		
 		List<VariableDeclaration> members = new ArrayList<>();
 		List<StructConstructor> constructors = new ArrayList<>();
@@ -38,7 +45,7 @@ class StructSectionParser extends AbstractParser {
 			if(Tokens.isVarType(line[0].base)) {
 				members.add(StatementParser.parseVariableDeclaration(unit, line, errors));
 			} else if(line[0].base == TokenBase.KW_CONSTRUCTOR) {
-				constructors.add(parseConstructor(unit, line, errors));
+				constructors.add(parseConstructor(structure, line, errors));
 			} else if(line[0].base == TokenBase.LIT_NULL) {
 				if(nullFields != null)
 					errors.add("Null defined twice:" + unit.source.getErr(line));
@@ -50,7 +57,7 @@ class StructSectionParser extends AbstractParser {
 		
 		if(constructors.isEmpty()) {
 			constructors.add(new StructConstructor(
-					unit.source,
+					structure,
 					declaration[0].sourceStart,
 					declaration[declaration.length-1].sourceStop,
 					new FunctionArgument[0]));
@@ -58,35 +65,31 @@ class StructSectionParser extends AbstractParser {
 		
 		if(nullFields == null)
 			nullFields = new ConstructorDefaultValue[0];
+
+		structure.members = members.toArray(VariableDeclaration[]::new);
+		structure.constructors = constructors.toArray(StructConstructor[]::new);
+		structure.nullFields = nullFields;
 		
-		String structName = declaration[1].text;
-		return new StructSection(
-				unit.source,
-				declaration[0].sourceStart,
-				declaration[declaration.length-1].sourceStop,
-				structName,
-				members.toArray(VariableDeclaration[]::new),
-				constructors.toArray(StructConstructor[]::new),
-				nullFields);
+		return structure;
 	}
 	
 	/** assumes that the line starts with the 'constructor' keyword */
-	private static StructConstructor parseConstructor(Unit unit, Token[] line, ErrorWrapper errors) {
+	private static StructConstructor parseConstructor(StructSection structure, Token[] line, ErrorWrapper errors) {
 		if(line.length < 3 || line[line.length-1].base != TokenBase.TK_PARENTHESIS_CLOSE) {
-			errors.add("Invalid constructor declaration:" + unit.source.getErr(line));
+			errors.add("Invalid constructor declaration:" + structure.unit.source.getErr(line));
 			return Invalids.CONSTRUCTOR;
 		}
 		
 		Pointer pointer = new Pointer(1);
 		
 		try {
-			ArgumentList args = readArguments(unit, line, pointer, true, errors);
+			ArgumentList args = readArguments(structure.unit, line, pointer, true, errors);
 			FunctionArgument[] arguments = args.toArray(FunctionArgument[]::new);
 			
 			assertNoRemainingTokens(line, pointer, errors);
 			
 			return new StructConstructor(
-					unit.source,
+					structure,
 					line[0].sourceStart,
 					line[line.length-1].sourceStop,
 					arguments);

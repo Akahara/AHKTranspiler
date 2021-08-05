@@ -1,11 +1,11 @@
 package fr.wonder.ahk.compiled.statements;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 
 /**
@@ -20,10 +20,10 @@ public class RangedForSt extends LabeledStatement {
 
 	private final VariableDeclaration variable;
 	
-	public RangedForSt(UnitSource source, int sourceStart, int sourceStop, boolean singleLine,
+	public RangedForSt(Unit unit, int sourceStart, int sourceStop, boolean singleLine,
 			String varName, Expression min, Expression max, Expression step) {
-		super(source, sourceStart, sourceStop, singleLine, min, max, step);
-		this.variable = new VariableDeclaration(getSource(), sourceStart, sourceStop, varName, VarType.INT, getMin());
+		super(unit.source, sourceStart, sourceStop, singleLine, min, max, step);
+		this.variable = new VariableDeclaration(unit, sourceStart, sourceStop, varName, VarType.INT, getMin());
 	}
 
 	public VariableDeclaration getVariableDeclaration() {

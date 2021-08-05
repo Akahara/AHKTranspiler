@@ -5,6 +5,7 @@ import java.util.Set;
 
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
+import fr.wonder.ahk.compiler.linker.Signatures;
 import fr.wonder.commons.utils.ArrayOperator;
 
 public class UnitPrototype implements Prototype<UnitPrototype> {
@@ -36,7 +37,7 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 		this.functions = functions;
 		this.variables = variables;
 		this.structures = structures;
-		this.signature = new Signature(fullBase, base, fullBase);
+		this.signature = Signatures.of(this);
 	}
 	
 	@Override

@@ -8,7 +8,6 @@ import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
@@ -30,37 +29,16 @@ import fr.wonder.commons.utils.ArrayOperator;
 class Prelinker {
 
 	static void computeSignaturesAndPrototypes(Unit unit) {
-		for(FunctionSection func : unit.functions) {
-			func.setSignature(new Signature(
-					unit.fullBase,
-					func.name,
-					func.name + "_" + func.getFunctionType().getSignature()));
-		}
-		
-		for(VariableDeclaration var : unit.variables) {
-			var.setSignature(new Signature(
-					unit.fullBase,
-					var.name,
-					var.name));
-		}
-		
+		for(FunctionSection func : unit.functions)
+			func.setSignature(Signatures.of(func));
+		for(VariableDeclaration var : unit.variables)
+			var.setSignature(Signatures.of(var));
 		for(StructSection struct : unit.structures) {
-			for(VariableDeclaration mem : struct.members) {
-				mem.setSignature(new Signature(
-						unit.fullBase + "@" + struct.name,
-						mem.name,
-						mem.name));
-			}
-			for(StructConstructor con : struct.constructors) {
-				con.setSignature(new Signature(
-						unit.fullBase + "@" + struct.name,
-						"constructor",
-						"constructor_" + con.getConstructorSignature()));
-			}
-			struct.setSignature(new Signature(
-					unit.fullBase,
-					struct.name,
-					struct.name));
+			for(VariableDeclaration mem : struct.members)
+				mem.setSignature(Signatures.of(mem, struct));
+			for(StructConstructor con : struct.constructors)
+				con.setSignature(Signatures.of(con));
+			struct.setSignature(Signatures.of(struct));
 		}
 		
 		FunctionPrototype[] functions = ArrayOperator.map(

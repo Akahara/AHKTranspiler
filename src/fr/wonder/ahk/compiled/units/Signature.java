@@ -15,10 +15,10 @@ public class Signature {
 	public final String computedSignature;
 	
 	public Signature(String declaringUnit, String name, String computedSignature) {
-		this.declaringUnit = declaringUnit;
+		this.declaringUnit = Objects.requireNonNull(declaringUnit);
 		this.declaringUnitName = declaringUnit.substring(declaringUnit.lastIndexOf('.')+1);
-		this.name = name;
-		this.computedSignature = computedSignature;
+		this.name = Objects.requireNonNull(name);
+		this.computedSignature = Objects.requireNonNull(computedSignature);
 	}
 	
 	/**

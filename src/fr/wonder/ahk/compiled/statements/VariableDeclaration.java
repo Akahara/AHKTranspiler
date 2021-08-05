@@ -1,15 +1,16 @@
 package fr.wonder.ahk.compiled.statements;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 
 public class VariableDeclaration extends Statement {
 	
+	public final Unit unit;
 	public final String name;
 	private final VarType type;
 	public DeclarationModifiers modifiers = DeclarationModifiers.NONE;
@@ -17,9 +18,10 @@ public class VariableDeclaration extends Statement {
 	
 	private VariablePrototype prototype;
 	
-	public VariableDeclaration(UnitSource source, int sourceStart, int sourceStop,
+	public VariableDeclaration(Unit unit, int sourceStart, int sourceStop,
 			String name, VarType type, Expression defaultValue) {
-		super(source, sourceStart, sourceStop, defaultValue);
+		super(unit.source, sourceStart, sourceStop, defaultValue);
+		this.unit = unit;
 		this.name = name;
 		this.type = type;
 	}

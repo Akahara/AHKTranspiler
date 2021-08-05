@@ -1,11 +1,11 @@
 package fr.wonder.ahk.compiled.units.sections;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.utils.ArrayOperator;
@@ -13,6 +13,7 @@ import fr.wonder.commons.utils.ArrayOperator;
 public class FunctionSection extends SourceObject {
 	
 	private final int declarationStop;
+	public final Unit unit;
 	
 	// set by the unit parser
 	public String name;
@@ -27,8 +28,9 @@ public class FunctionSection extends SourceObject {
 	// set by the linker using #makeSignature
 	private FunctionPrototype prototype;
 	
-	public FunctionSection(UnitSource source, int sourceStart, int sourceStop, int declarationStop, DeclarationModifiers modifiers) {
-		super(source, sourceStart, sourceStop);
+	public FunctionSection(Unit unit, int sourceStart, int sourceStop, int declarationStop, DeclarationModifiers modifiers) {
+		super(unit.source, sourceStart, sourceStop);
+		this.unit = unit;
 		this.declarationStop = declarationStop;
 		this.modifiers = modifiers;
 	}

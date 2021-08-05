@@ -352,7 +352,7 @@ public class UnitWriter {
 		instructions.section(SectionDeclaration.TEXT);
 		instructions.skip();
 		
-		FunctionSection initFunction = new FunctionSection(Invalids.SOURCE, 0, 0, 0, DeclarationModifiers.NONE);
+		FunctionSection initFunction = new FunctionSection(Invalids.UNIT, 0, 0, 0, DeclarationModifiers.NONE);
 		
 		// write the initialization function
 		instructions.label(getUnitRegistry(unit) + "_init");

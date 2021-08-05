@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.units.prototypes;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiler.linker.Signatures;
 
 public class AliasPrototype implements Prototype<AliasPrototype> {
 
@@ -11,8 +12,8 @@ public class AliasPrototype implements Prototype<AliasPrototype> {
 	
 	public AliasPrototype(String unitFullBase, String text, VarType resolvedType) {
 		this.text = text;
-		this.signature = new Signature(unitFullBase, text, "alias_"+text+"_"+resolvedType.getSignature()); // TODO rework all signatures
 		this.resolvedType = resolvedType;
+		this.signature = Signatures.of(this, unitFullBase);
 	}
 	
 

@@ -9,11 +9,13 @@ import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
+import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
@@ -30,6 +32,13 @@ public class Invalids {
 	public static final String STRING = "INVALID";
 	
 	public static final UnitSource SOURCE = new UnitSource(STRING, "");
+	public static final Unit UNIT = new Unit(SOURCE, STRING, STRING, new String[0], 0);
+	
+	static {
+		UNIT.variables = new VariableDeclaration[0];
+		UNIT.functions = new FunctionSection[0];
+		UNIT.structures = new StructSection[0];
+	}
 	
 	public static final DeclarationModifiers MODIFIERS = new DeclarationModifiers(new Modifier[0]);
 
@@ -56,7 +65,7 @@ public class Invalids {
 		public String toString() { return STRING; }
 	};
 
-	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(SOURCE, 0, 0,
+	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(UNIT, 0, 0,
 			STRING, TYPE, EXPRESSION);
 	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(SOURCE, 0, 0,
 			EXPRESSION, EXPRESSION);
@@ -65,10 +74,17 @@ public class Invalids {
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return TYPE; }
 	};
 
-	public static final StructSection STRUCT = new StructSection(SOURCE, 0, 0, STRING, new VariableDeclaration[0], new StructConstructor[0], null);
+	public static final StructSection STRUCTURE = new StructSection(UNIT, 0, 0, STRING);
+	
+	static {
+		STRUCTURE.members = new VariableDeclaration[0];
+		STRUCTURE.constructors = new StructConstructor[0];
+		STRUCTURE.nullFields = new ConstructorDefaultValue[0];
+	}
+	
 	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(DeclarationVisibility.GLOBAL, new VariablePrototype[0], new ConstructorPrototype[0], SIGNATURE);
 	
-	public static final StructConstructor CONSTRUCTOR = new StructConstructor(SOURCE, 0, 0, new FunctionArgument[0]);
+	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, 0, 0, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], SIGNATURE);
 
 	public static final VarFunctionType FUNCTION_TYPE = new VarFunctionType(TYPE, new VarType[0]);
@@ -78,6 +94,6 @@ public class Invalids {
 
 	public static final Alias ALIAS = new Alias(SOURCE, 0, 0, STRING, FUNCTION_TYPE);
 
-	public static final FunctionSection FUNCTION = new FunctionSection(SOURCE, 0, 0, 0, MODIFIERS);
+	public static final FunctionSection FUNCTION = new FunctionSection(UNIT, 0, 0, 0, MODIFIERS);
 	
 }

@@ -5,6 +5,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiler.linker.Signatures;
 
 public class FunctionArgument extends SourceObject implements VarAccess {
 	
@@ -17,7 +18,7 @@ public class FunctionArgument extends SourceObject implements VarAccess {
 		super(source, sourceStart, sourceStop);
 		this.name = name;
 		this.type = type;
-		this.signature = new Signature(VarAccess.INNER_UNIT, name, "arg_" + name);
+		this.signature = Signatures.of(this);
 	}
 	
 	@Override

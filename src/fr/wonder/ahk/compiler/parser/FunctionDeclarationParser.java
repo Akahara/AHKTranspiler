@@ -21,7 +21,7 @@ class FunctionDeclarationParser extends AbstractParser {
 		
 		Token[] declaration = lines[start];
 		FunctionSection function = new FunctionSection(
-				unit.source,
+				unit,
 				declaration[0].sourceStart, // source start
 				lines[stop-1][lines[stop-1].length-1].sourceStop, // source stop
 				declaration[declaration.length-1].sourceStop, // declaration stop

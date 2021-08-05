@@ -116,7 +116,7 @@ public class StatementParser extends AbstractParser {
 				defaultValue = ExpressionParser.parseExpression(unit, line, pointer.position, line.length, errors);
 			}
 			
-			return new VariableDeclaration(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, varName, type, defaultValue);
+			return new VariableDeclaration(unit, line[0].sourceStart, line[line.length-1].sourceStop, varName, type, defaultValue);
 		} catch (ParsingException e) {
 			return Invalids.VARIABLE_DECLARATION;
 		}
@@ -264,7 +264,7 @@ public class StatementParser extends AbstractParser {
 			increment = ExpressionParser.parseExpression(unit, line, simpleRangeSecond+1, conditionEnd, errors);
 		else
 			increment = new IntLiteral(unit.source, line[conditionEnd].sourceStart, line[conditionEnd].sourceStart, 1);
-		return new RangedForSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop,
+		return new RangedForSt(unit, line[0].sourceStart, line[line.length-1].sourceStop,
 				singleLine, declaration.name, declaration.getDefaultValue(), maximum, increment);
 	}
 
@@ -285,7 +285,7 @@ public class StatementParser extends AbstractParser {
 			VarType type = parseType(unit, line, pointer, errors);
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors);
 			expectToken(line[pointer.position], TokenBase.TK_COLUMN, "':'", errors);
-			VariableDeclaration var = new VariableDeclaration(unit.source, line[2].sourceStart,
+			VariableDeclaration var = new VariableDeclaration(unit, line[2].sourceStart,
 					line[pointer.position-1].sourceStop, line[3].text, type, null);
 			Expression iterable = ExpressionParser.parseExpression(unit, line, pointer.position, conditionEnd, errors);
 			

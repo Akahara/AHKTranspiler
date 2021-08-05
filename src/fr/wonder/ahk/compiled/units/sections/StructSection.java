@@ -1,9 +1,9 @@
 package fr.wonder.ahk.compiled.units.sections;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
@@ -13,23 +13,21 @@ import fr.wonder.commons.utils.ArrayOperator;
 public class StructSection extends SourceObject {
 
 	public final String name;
+	public final Unit unit;
 	
-	public final VariableDeclaration[] members;
-	public final StructConstructor[] constructors;
-	public final ConstructorDefaultValue[] nullFields;
+	public VariableDeclaration[] members;
+	public StructConstructor[] constructors;
+	public ConstructorDefaultValue[] nullFields;
 	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL;
 	
 	private StructPrototype prototype;
 	
 	
-	public StructSection(UnitSource source, int sourceStart, int sourceStop,
-			String structName, VariableDeclaration[] members, StructConstructor[] constructors,
-			ConstructorDefaultValue[] nullFields) {
-		super(source, sourceStart, sourceStop);
+	public StructSection(Unit unit, int sourceStart, int sourceStop,
+			String structName) {
+		super(unit.source, sourceStart, sourceStop);
 		this.name = structName;
-		this.members = members;
-		this.constructors = constructors;
-		this.nullFields = nullFields;
+		this.unit = unit;
 	}
 	
 	public VariableDeclaration getMember(String name) {
@@ -62,6 +60,10 @@ public class StructSection extends SourceObject {
 		return name;
 	}
 	
+	/**
+	 * Must be called <b>after</b> the {@code setSignature} method of all members
+	 * and constructors of this structure.
+	 */
 	public void setSignature(Signature signature) {
 		this.prototype = new StructPrototype(
 				visibility,
