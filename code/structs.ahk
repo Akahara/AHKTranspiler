@@ -2,7 +2,7 @@ base fr.wonder.main;
 
 unit Structs;
 
-struct Structure {
+global struct Structure {
   
   null (a=65);
   
@@ -12,7 +12,7 @@ struct Structure {
   
 }
 
-struct Cyclic1 {
+global struct Cyclic1 {
 	
 	Cyclic2 other;
 	int a = 32;

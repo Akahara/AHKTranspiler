@@ -11,8 +11,8 @@ public class Token extends SourceObject {
 	
 	public Token sectionPair;
 	
-	public Token(UnitSource source, TokenBase base, String text, int sourceStart) {
-		super(source, sourceStart, sourceStart+text.length());
+	public Token(UnitSource source, TokenBase base, String text, int sourceStart, int sourceStop) {
+		super(source, sourceStart, sourceStop);
 		this.base = base;
 		this.text = text;
 	}

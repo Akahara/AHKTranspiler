@@ -1,7 +1,10 @@
 package fr.wonder.ahk.compiler.linker;
 
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.commons.types.Tuple;
 
 class UnitScope implements Scope {
@@ -54,11 +57,15 @@ class UnitScope implements Scope {
 		if(unit == null)
 			return null;
 		// note that no function and variable can have the same name
-		VarAccess varProto = unit.getVariable(name);
-		if(varProto != null)
+		VariablePrototype varProto = unit.getVariable(name);
+		if(varProto != null && (unit.fullBase.equals(this.unit.fullBase) || varProto.modifiers.visibility == DeclarationVisibility.GLOBAL))
 			return varProto;
 		// and no two functions can have the same name either
-		return unit.getFunction(name);
+		FunctionPrototype func = unit.getFunction(name);
+		if(func == null || func.signature.declaringUnit.equals(this.unit.fullBase) || func.modifiers.visibility == DeclarationVisibility.GLOBAL)
+			return func;
+		
+		return null;
 	}
 
 	@Override

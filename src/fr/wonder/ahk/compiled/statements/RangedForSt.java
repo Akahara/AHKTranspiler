@@ -6,6 +6,7 @@ import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 
 /**
@@ -23,7 +24,8 @@ public class RangedForSt extends LabeledStatement {
 	public RangedForSt(Unit unit, int sourceStart, int sourceStop, boolean singleLine,
 			String varName, Expression min, Expression max, Expression step) {
 		super(unit.source, sourceStart, sourceStop, singleLine, min, max, step);
-		this.variable = new VariableDeclaration(unit, sourceStart, sourceStop, varName, VarType.INT, getMin());
+		this.variable = new VariableDeclaration(unit, sourceStart, sourceStop,
+				varName, VarType.INT, DeclarationModifiers.NONE, getMin());
 	}
 
 	public VariableDeclaration getVariableDeclaration() {

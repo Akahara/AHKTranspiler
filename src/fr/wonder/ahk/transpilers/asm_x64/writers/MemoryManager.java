@@ -28,7 +28,7 @@ public class MemoryManager {
 	}
 	
 	public void enterFunction(FunctionSection func, int stackSpace) {
-		currentScope = new Scope(writer.unit, func, stackSpace);
+		currentScope = new Scope(writer, func, stackSpace);
 	}
 	
 	public void updateScope(Statement st) {

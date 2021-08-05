@@ -47,8 +47,11 @@ public class Tokenizer {
 					i += 2;
 				} else {
 					if(source.matchesRaw(quoteEnd.syntax, i)) {
-						if(!quoteIsComment)
-							tokens.add(new Token(source, LIT_STR, source.substring(quoteBeginPosition, i), quoteBeginPosition));
+						if(!quoteIsComment) {
+							int ss = quoteBeginPosition;
+							int st = i;
+							tokens.add(new Token(source, LIT_STR, source.substring(ss, st), ss, st));
+						}
 						i += quoteEnd.syntax.length();
 						quoteEnd = null;
 						currentTokenBegin = i;
@@ -64,7 +67,9 @@ public class Tokenizer {
 			if(latestOpenedSection != null && source.matchesRaw(latestOpenedSection.syntax, i)) {
 				readNonSectionToken(currentTokenBegin, i);
 				
-				Token t = new Token(source, latestOpenedSection, source.substring(i, i+latestOpenedSection.syntax.length()), i);
+				int ss = i;
+				int st = i+latestOpenedSection.syntax.length();
+				Token t = new Token(source, latestOpenedSection, source.substring(ss, st), ss, st);
 				t.linkSectionPair(openedSectionTokens.getLast());
 				tokens.add(t);
 				openedSections.removeLast();
@@ -91,7 +96,7 @@ public class Tokenizer {
 					quoteBeginPosition = stop;
 					quoteIsComment = del == SectionToken.SEC_COMMENTS || del == SectionToken.SEC_LINE_COMMENT;
 				} else {
-					Token t = new Token(source, del.start, source.substring(i, stop), i);
+					Token t = new Token(source, del.start, source.substring(i, stop), i, stop);
 					tokens.add(t);
 					if(del.stop != null) {
 						openedSections.add(del);
@@ -139,11 +144,12 @@ public class Tokenizer {
 	private void readNonSectionToken(int begin, int end) {
 		if(begin == end)
 			return;
-		TokenBase b = getBase(source.substring(begin, end));
+		String text = source.substring(begin, end);
+		TokenBase b = getBase(text);
 		if(b == null)
 			errors.add("Unresolved token:" + source.getErr(begin, end));
 		else
-			tokens.add(new Token(source, b, source.substring(begin, end), begin));
+			tokens.add(new Token(source, b, text, begin, end));
 	}
 	
 	private static TokenBase getBase(String split) {
@@ -167,9 +173,11 @@ public class Tokenizer {
 				// replace <(int) . int> and <int . (int)> by <float>
 				String floatText = "";
 				int floatStart = tk.sourceStart;
+				int floatStop = tk.sourceStop;
 				boolean isFloat = false;
 				if(ptk.base == LIT_INT) {
 					floatText = ptk.text;
+					floatStart = ptk.sourceStart;
 					tokens.remove(i-1);
 					i--;
 					isFloat = true;
@@ -177,12 +185,12 @@ public class Tokenizer {
 				floatText += ".";
 				if(ntk != null && ntk.base == LIT_INT) {
 					floatText += ntk.text;
-					floatStart = ntk.sourceStart;
+					floatStop = ntk.sourceStop;
 					tokens.remove(i+1);
 					isFloat = true;
 				}
 				if(isFloat)
-					tokens.set(i, new Token(source, LIT_FLOAT, floatText, floatStart));
+					tokens.set(i, new Token(source, LIT_FLOAT, floatText, floatStart, floatStop));
 				
 				// replace <Unit . variable> by <variable>
 				if( ntk != null &&
@@ -190,7 +198,7 @@ public class Tokenizer {
 					ntk.base == TokenBase.VAR_VARIABLE) {
 					
 					tokens.set(i, new Token(tk.getSource(), TokenBase.VAR_VARIABLE,
-							ptk.text + tk.text + ntk.text, tk.sourceStart));
+							ptk.text + tk.text + ntk.text, ptk.sourceStart, ntk.sourceStop));
 					tokens.remove(i+1);
 					tokens.remove(i-1);
 					i--;
@@ -203,7 +211,7 @@ public class Tokenizer {
 		Tokenizer instance = new Tokenizer(source, errors);
 		instance.tokenize();
 		instance.finalizeTokens();
-		return source.tokens = instance.tokens.toArray(Token[]::new);
+		return instance.tokens.toArray(Token[]::new);
 	}
 	
 }

@@ -36,7 +36,7 @@ func Structure structGen(int i) {
 	return Structure(i);
 }
 
-func int main() {
+global func int main() {
 	Kernel.println("------ Expected: argc argv[1]");
 	Kernel.printlni(sizeof(Kernel.argv));
 	Kernel.println(Kernel.argv[1]);

@@ -102,7 +102,7 @@ public class ProcessFiles {
 		}
 		
 		String source = formatNative("asm/natives/entry_point.fasm",
-				"&entry_point", UnitWriter.getRegistry(handle.manifest.entryPointFunction.getPrototype()),
+				"&entry_point", UnitWriter.getGlobalRegistry(handle.manifest.entryPointFunction.getPrototype()),
 				"&units_initialization_externs", initializationFunctionsExterns,
 				"&units_initialization_calls", initializationFunctionsCalls);
 		return writeFile(dir, source, "natives/entry_point.asm");

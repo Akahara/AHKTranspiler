@@ -9,6 +9,7 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
+import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
@@ -123,15 +124,14 @@ public class UnitParser extends AbstractParser {
 		List<VariableDeclaration> variables = new ArrayList<>();
 		List<StructSection> structures = new ArrayList<>();
 		
-		List<Modifier> modifiers = new ArrayList<>();
+		ModifiersHolder modifiers = new ModifiersHolder();
 		
 		for(int i = headerEnd; i < lines.length; i++) {
 			Token[] line = lines[i];
 			
 			if(line[0].base == TokenBase.KW_FUNC) {
-				DeclarationModifiers mods = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
-				modifiers.clear();
 				// parse function section
+				DeclarationModifiers mods = modifiers.getModifiers();
 				if(!expectToken(line[line.length-1], TokenBase.TK_BRACE_OPEN, "Expected '{' to begin function", errors))
 					continue;
 				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
@@ -149,10 +149,8 @@ public class UnitParser extends AbstractParser {
 				modifiers.add(parseModifier(line, errors));
 				
 			} else if(line[0].base == TokenBase.KW_STRUCT) {
-				if(!modifiers.isEmpty())
-					errors.add("Struct sections do not take modifiers:" + unit.source.getErr(line));
-				modifiers.clear();
 				// parse struct
+				DeclarationModifiers mods = modifiers.getModifiers();
 				if(line.length < 3) {
 					errors.add("Invalid struct declaration:" + unit.source.getErr(lines[i]));
 					continue;
@@ -165,16 +163,19 @@ public class UnitParser extends AbstractParser {
 					continue;
 				}
 				ErrorWrapper subErrors = errors.subErrrors("Cannot parse a struct declaration");
-				StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, subErrors);
+				StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, mods, subErrors);
 				i = structEnd;
 				structures.add(struct);
 				
 			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
-				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, errors);
-				var.modifiers = new DeclarationModifiers(modifiers.toArray(Modifier[]::new));
+				DeclarationModifiers mods = modifiers.getModifiers();
+				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, mods, errors);
 				variables.add(var);
-				modifiers.clear();
+				
+			} else if(Tokens.isDeclarationVisibility(line[0].base)) {
+				// parse visibility
+				modifiers.setVisibility(line[0], errors);
 				
 			} else {
 				errors.add("Unexpected line begin token:" + unit.source.getErr(line));
@@ -192,6 +193,32 @@ public class UnitParser extends AbstractParser {
 				return i;
 		}
 		return -1;
+	}
+	
+	private static class ModifiersHolder {
+		
+		private final List<Modifier> modifiers = new ArrayList<>();
+		private DeclarationVisibility visibility;
+		
+		private DeclarationModifiers getModifiers() {
+			if(visibility == null)
+				visibility = DeclarationVisibility.LOCAL;
+			DeclarationModifiers dm = new DeclarationModifiers(visibility, modifiers.toArray(Modifier[]::new));
+			modifiers.clear();
+			visibility = null;
+			return dm;
+		}
+		
+		public void add(Modifier modifier) {
+			this.modifiers.add(modifier);
+		}
+
+		private void setVisibility(Token tk, ErrorWrapper errors) {
+			if(this.visibility != null)
+				errors.add("Declaration visibility already specified:" + tk.getErr());
+			this.visibility = Tokens.getDeclarationVisibility(tk.base);
+		}
+		
 	}
 	
 	/** Assumes that the first line token base is VAR_MODIFIER */

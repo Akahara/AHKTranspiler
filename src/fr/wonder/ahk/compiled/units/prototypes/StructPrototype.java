@@ -1,23 +1,24 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
 import fr.wonder.ahk.compiled.units.Signature;
-import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 
 public class StructPrototype implements Prototype<StructPrototype> {
 
 	public final Signature signature;
-	public final VariablePrototype[] members;
+	public final VariablePrototype[] members; // TODO read visibility of structure members
 	public final ConstructorPrototype[] constructors;
-	public final DeclarationVisibility visibility;
+	public final DeclarationModifiers modifiers;
 	
-	public StructPrototype(DeclarationVisibility visibility,
+	public StructPrototype(
 			VariablePrototype[] members,
 			ConstructorPrototype[] constructors,
+			DeclarationModifiers modifiers,
 			Signature signature) {
-		this.signature = signature;
 		this.members = members;
 		this.constructors = constructors;
-		this.visibility = visibility;
+		this.modifiers = modifiers;
+		this.signature = signature;
 	}
 	
 	public VariablePrototype getMember(String name) {

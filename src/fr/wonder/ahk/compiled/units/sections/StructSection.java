@@ -14,20 +14,21 @@ public class StructSection extends SourceObject {
 
 	public final String name;
 	public final Unit unit;
+	public final DeclarationModifiers modifiers;
 	
+	// set by the struct section parser
 	public VariableDeclaration[] members;
 	public StructConstructor[] constructors;
 	public ConstructorDefaultValue[] nullFields;
-	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL;
 	
 	private StructPrototype prototype;
 	
-	
 	public StructSection(Unit unit, int sourceStart, int sourceStop,
-			String structName) {
+			String structName, DeclarationModifiers modifiers) {
 		super(unit.source, sourceStart, sourceStop);
 		this.name = structName;
 		this.unit = unit;
+		this.modifiers = modifiers;
 	}
 	
 	public VariableDeclaration getMember(String name) {
@@ -66,9 +67,9 @@ public class StructSection extends SourceObject {
 	 */
 	public void setSignature(Signature signature) {
 		this.prototype = new StructPrototype(
-				visibility,
 				ArrayOperator.map(members, VariablePrototype[]::new, VariableDeclaration::getPrototype),
 				ArrayOperator.map(constructors, ConstructorPrototype[]::new, StructConstructor::getPrototype),
+				modifiers,
 				signature);
 	}
 	

@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.types.FunctionArguments;
@@ -41,6 +42,8 @@ public class AHKManifest {
 							errors.add("The main function must return an integer" + f.getErr());
 						if (!FunctionArguments.matchNoConversions(f.getArgumentTypes(), new VarType[] {}))
 							errors.add("The main function has an invalid signature, expecting int:main(void)" + f.getErr());
+						if (f.modifiers.visibility != DeclarationVisibility.GLOBAL)
+							errors.add("The main function must be global" + f.getErr());
 						break;
 					}
 				}

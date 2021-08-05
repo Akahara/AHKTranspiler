@@ -40,7 +40,7 @@ public class Invalids {
 		UNIT.structures = new StructSection[0];
 	}
 	
-	public static final DeclarationModifiers MODIFIERS = new DeclarationModifiers(new Modifier[0]);
+	public static final DeclarationModifiers MODIFIERS = new DeclarationModifiers(DeclarationVisibility.LOCAL, new Modifier[0]);
 
 	public static final Signature SIGNATURE = new Signature(STRING, "INVALID SIGNATURE", STRING);
 	
@@ -66,7 +66,7 @@ public class Invalids {
 	};
 
 	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(UNIT, 0, 0,
-			STRING, TYPE, EXPRESSION);
+			STRING, TYPE, MODIFIERS, EXPRESSION);
 	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(SOURCE, 0, 0,
 			EXPRESSION, EXPRESSION);
 
@@ -74,7 +74,7 @@ public class Invalids {
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return TYPE; }
 	};
 
-	public static final StructSection STRUCTURE = new StructSection(UNIT, 0, 0, STRING);
+	public static final StructSection STRUCTURE = new StructSection(UNIT, 0, 0, STRING, MODIFIERS);
 	
 	static {
 		STRUCTURE.members = new VariableDeclaration[0];
@@ -82,7 +82,7 @@ public class Invalids {
 		STRUCTURE.nullFields = new ConstructorDefaultValue[0];
 	}
 	
-	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(DeclarationVisibility.GLOBAL, new VariablePrototype[0], new ConstructorPrototype[0], SIGNATURE);
+	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(new VariablePrototype[0], new ConstructorPrototype[0], MODIFIERS, SIGNATURE);
 	
 	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, 0, 0, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], SIGNATURE);

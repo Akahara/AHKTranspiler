@@ -6,24 +6,23 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
-import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 
 public class VariableDeclaration extends Statement {
 	
 	public final Unit unit;
 	public final String name;
 	private final VarType type;
-	public DeclarationModifiers modifiers = DeclarationModifiers.NONE;
-	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL; // TODO read variable declaration visibility
+	public final DeclarationModifiers modifiers;
 	
 	private VariablePrototype prototype;
 	
 	public VariableDeclaration(Unit unit, int sourceStart, int sourceStop,
-			String name, VarType type, Expression defaultValue) {
+			String name, VarType type, DeclarationModifiers modifiers, Expression defaultValue) {
 		super(unit.source, sourceStart, sourceStop, defaultValue);
 		this.unit = unit;
 		this.name = name;
 		this.type = type;
+		this.modifiers = modifiers;
 	}
 
 	/** Called by the linker after types where computed */
@@ -59,7 +58,7 @@ public class VariableDeclaration extends Statement {
 		if(!(other instanceof VariableDeclaration))
 			return false;
 		VariableDeclaration o = (VariableDeclaration) other;
-		return o.name.equals(name) && o.type.equals(type) && o.visibility == visibility;
+		return o.name.equals(name) && o.type.equals(type) && o.modifiers.visibility == modifiers.visibility;
 	}
 	
 }

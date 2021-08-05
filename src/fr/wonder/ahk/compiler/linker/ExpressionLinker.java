@@ -44,11 +44,10 @@ class ExpressionLinker {
 				// search for the variable/function declaration
 				VarExp vexp = (VarExp) exp;
 				VarAccess var = scope.getVariable(vexp.variable);
-				String varUnit = var == null ? null : var.getSignature().declaringUnit;
 				if(var == null) {
 					errors.add("Usage of undeclared variable " + vexp.variable + vexp.getErr());
 					var = Invalids.VARIABLE_PROTO;
-				} else if(!varUnit.equals(unit.fullBase) && varUnit != VarAccess.INNER_UNIT) {
+				} else if(!var.getSignature().declaringUnit.equals(unit.fullBase) && var.getSignature().declaringUnit != VarAccess.INNER_UNIT) {
 					Prototype<?> proto = (Prototype<?>) var;
 					unit.prototype.externalAccesses.add(proto);
 				}
@@ -121,24 +120,25 @@ class ExpressionLinker {
 
 	private static Expression linkFunctionExpression(Unit unit, Expression[] expressions, int expressionIndex, ErrorWrapper errors) {
 		FunctionCallExp fexp = (FunctionCallExp) expressions[expressionIndex];
-		VarFunctionType calledType;
+		VarFunctionType functionType;
 		// if possible, replace the FunctionCallExp by a FunctionExp
 		if(fexp.getFunction() instanceof VarExp && ((VarExp) fexp.getFunction()).declaration instanceof FunctionPrototype) {
 			FunctionPrototype function = (FunctionPrototype) ((VarExp) fexp.getFunction()).declaration;
 			FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
 			expressions[expressionIndex] = functionExpression;
-			calledType = function.functionType;
+			functionType = function.functionType;
 		} else {
 			if(!(fexp.getFunction().getType() instanceof VarFunctionType)) {
-				errors.add("Type " + fexp.getFunction().getType() + " is not callable:" + fexp.getErr());
-				calledType = Invalids.FUNCTION_TYPE;
+				// if invalid, an error was already reported, do not add another
+				if(fexp.getFunction().getType() != Invalids.TYPE)
+					errors.add("Type " + fexp.getFunction().getType() + " is not callable:" + fexp.getErr());
+				fexp.functionType = Invalids.FUNCTION_TYPE;
+				return fexp;
 			} else {
-				calledType = (VarFunctionType) fexp.getFunction().getType();
+				fexp.functionType = functionType = (VarFunctionType) fexp.getFunction().getType();
 			}
-			fexp.functionType = calledType;
 		}
 		FunctionExpression functionExpression = (FunctionExpression) expressions[expressionIndex];
-		VarFunctionType functionType = (VarFunctionType) calledType;
 		if(functionExpression.argumentCount() != functionType.arguments.length) {
 			errors.add("Invalid number of arguments: function takes " 
 					+ functionType.arguments.length + " but " 

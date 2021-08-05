@@ -84,7 +84,7 @@ public class ExpressionWriter {
 			}
 			
 			if(function instanceof FunctionExp) {
-				writer.instructions.call(UnitWriter.getRegistry(((FunctionExp) function).function));
+				writer.instructions.call(writer.getRegistry(((FunctionExp) function).function));
 			} else if(function instanceof FunctionCallExp) {
 				writeExpression(((FunctionCallExp) function).getFunction(), errors);
 				writer.instructions.call(Register.RAX.name);

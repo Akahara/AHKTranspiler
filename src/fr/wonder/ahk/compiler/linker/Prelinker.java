@@ -69,7 +69,7 @@ class Prelinker {
 		
 		for(UnitPrototype u : unit.prototype.filterImportedUnits(units)) {
 			for(StructPrototype s : u.structures) {
-				if(s.visibility == DeclarationVisibility.GLOBAL)
+				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
 					unit.prototype.externalAccesses.add(s);
 			}
 		}
@@ -209,7 +209,9 @@ class Prelinker {
 		for(String imported : unit.importations) {
 			StructPrototype[] structures = declaredStructures.get(imported);
 			for(StructPrototype structure : structures) {
-				if(structure.getName().equals(name))
+				if(structure.getName().equals(name) && (
+						structure.signature.declaringUnit.equals(unit.fullBase) ||
+						structure.modifiers.visibility == DeclarationVisibility.GLOBAL))
 					return structure;
 			}
 		}

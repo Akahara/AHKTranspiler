@@ -20,7 +20,6 @@ public class FunctionSection extends SourceObject {
 	public VarType returnType;
 	public FunctionArgument[] arguments;
 	public DeclarationModifiers modifiers;
-	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL;
 	
 	// set by the unit parser using the statement parser
 	public Statement[] body;

@@ -113,8 +113,13 @@ public class UnitWriter {
 	// ------------------------ registries & labels ------------------------
 	
 	/** Returns the registry (the label) of the variable or function denoted by #var */
-	public static String getRegistry(VarAccess var) {
-		return getGlobalRegistry(var);
+	public String getRegistry(VarAccess var) {
+		if(var.getSignature().declaringUnit == VarAccess.INNER_UNIT)
+			throw new IllegalStateException("Cannot globally access a scoped variable");
+		if(var instanceof FunctionPrototype || !var.getSignature().declaringUnit.equals(unit.fullBase))
+			return getGlobalRegistry(var);
+		else
+			return getLocalRegistry(var);
 	}
 	
 	public static String getUnitRegistry(Unit unit) {
@@ -125,7 +130,7 @@ public class UnitWriter {
 		return unitFullBase.replaceAll("\\.", "_");
 	}
 	
-	private static String getGlobalRegistry(VarAccess var) {
+	public static String getGlobalRegistry(VarAccess var) {
 		if(var instanceof FunctionPrototype && ((FunctionPrototype) var).getModifiers().hasModifier(Modifier.NATIVE))
 			return ((FunctionPrototype) var).getModifiers().getModifier(NativeModifier.class).nativeRef;
 		
@@ -231,19 +236,19 @@ public class UnitWriter {
 		
 		instructions.add(new GlobalDeclaration(getUnitRegistry(unit) + "_init"));
 		for(VariableDeclaration v : unit.variables) {
-			if(v.visibility == DeclarationVisibility.GLOBAL && !v.modifiers.hasModifier(Modifier.NATIVE))
+			if(v.modifiers.visibility == DeclarationVisibility.GLOBAL && !v.modifiers.hasModifier(Modifier.NATIVE))
 				instructions.add(new GlobalDeclaration(getGlobalRegistry(v.getPrototype())));
 		}
 		if(unit.variables.length != 0)
 			instructions.skip();
 		for(FunctionSection f : unit.functions) {
-			if(f.visibility == DeclarationVisibility.GLOBAL && !f.modifiers.hasModifier(Modifier.NATIVE))
+			if(f.modifiers.visibility == DeclarationVisibility.GLOBAL && !f.modifiers.hasModifier(Modifier.NATIVE))
 				instructions.add(new GlobalDeclaration(getGlobalRegistry(f.getPrototype())));
 		}
 		if(unit.functions.length != 0)
 			instructions.skip();
 		for(StructSection s : unit.structures) {
-			if(s.visibility != DeclarationVisibility.GLOBAL)
+			if(s.modifiers.visibility != DeclarationVisibility.GLOBAL)
 				continue;
 			instructions.add(new GlobalDeclaration(getStructNullRegistry(s.getPrototype())));
 			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
@@ -257,19 +262,9 @@ public class UnitWriter {
 		externDeclarationsIndex = instructions.instructions.size();
 		
 		for(Prototype<?> i : unit.prototype.externalAccesses) {
-			if(i instanceof StructPrototype) {
-				// global structure prototype
-//				StructPrototype s = (StructPrototype) i;
-//				instructions.add(new ExternDeclaration(getStructNullRegistry(s)));
-//				
-//				for(int argCount = 0; argCount < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; argCount++)
-//					instructions.add(new ExternDeclaration(getFunctionNullRegistry(s, argCount)));
-			} else if(i instanceof VarAccess) {
-				// extern variable or function
+			// extern variable or function
+			if(i instanceof VarAccess)
 				requireExternLabel(getGlobalRegistry((VarAccess) i));
-			} else {
-				continue;
-			}
 		}
 		if(unit.importations.length != 0)
 			instructions.skip();
@@ -292,7 +287,7 @@ public class UnitWriter {
 			instructions.skip();
 		
 		for(VariableDeclaration var : unit.variables) {
-			if(var.visibility == DeclarationVisibility.GLOBAL)
+			if(var.modifiers.visibility == DeclarationVisibility.GLOBAL)
 				instructions.label(getGlobalRegistry(var.getPrototype()));
 			String value;
 			if(initializedVariables.contains(var))

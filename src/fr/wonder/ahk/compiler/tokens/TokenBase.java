@@ -32,6 +32,8 @@ public enum TokenBase {
 	KW_RETURN("return"),
 	KW_SIZEOF("sizeof"),
 	KW_ALIAS("alias"),
+	KW_GLOBAL("global"),
+	KW_LOCAL("local"),
 	
 	TYPE_VOID("void"),
 	TYPE_INT("int"),

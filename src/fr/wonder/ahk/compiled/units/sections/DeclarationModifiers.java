@@ -6,13 +6,15 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class DeclarationModifiers {
 	
-	public static final DeclarationModifiers NONE = new DeclarationModifiers(new Modifier[0]);
+	public static final DeclarationModifiers NONE = new DeclarationModifiers(DeclarationVisibility.LOCAL, new Modifier[0]);
 	
 	private final Modifier[] modifiers;
-	
 	private boolean validSyntaxes = false;
 	
-	public DeclarationModifiers(Modifier[] modifiers) {
+	public final DeclarationVisibility visibility;
+	
+	public DeclarationModifiers(DeclarationVisibility visibility, Modifier[] modifiers) {
+		this.visibility = visibility;
 		this.modifiers = modifiers;
 	}
 	

@@ -10,6 +10,7 @@ import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 
 public class Tokens {
 	
@@ -29,7 +30,8 @@ public class Tokens {
 			DECL_BASE, DECL_IMPORT, DECL_UNIT,					// declarations
 			KW_VAR, KW_IF, KW_ELSE, KW_FOR, KW_FOREACH,			// keywords
 			KW_WHILE, KW_FUNC, KW_STRUCT, KW_CONSTRUCTOR,
-			KW_RETURN, KW_SIZEOF, KW_ALIAS,
+			KW_RETURN, KW_SIZEOF, KW_ALIAS, KW_GLOBAL,
+			KW_LOCAL,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,			// types
 			TYPE_BOOL,
 			VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,				// variable elements (MUST be read last by the tokenizer)
@@ -39,10 +41,6 @@ public class Tokens {
 			TK_LINE_BREAK,
 			TK_BRACE_OPEN,
 			TK_BRACE_CLOSE
-	};
-	
-	public static final TokenBase[] SPLIT_LOSSES = {
-			TK_SPACE
 	};
 	
 	/** Keywords that can be used with/without a parenthesis header and have a body of a single line or multiple enclosed with braces */
@@ -73,6 +71,21 @@ public class Tokens {
 			TYPE_FLOAT,	VarType.FLOAT,
 			TYPE_STR,	VarType.STR,
 			TYPE_BOOL,	VarType.BOOL
+	);
+	
+	/* ----------------------------- Type Tokens ---------------------------- */
+	
+	public static boolean isDeclarationVisibility(TokenBase base) {
+		return visibilitiesMap.containsKey(base);
+	}
+	
+	public static DeclarationVisibility getDeclarationVisibility(TokenBase base) {
+		return visibilitiesMap.get(base);
+	}
+	
+	private static final Map<TokenBase, DeclarationVisibility> visibilitiesMap = Map.of(
+			KW_LOCAL, DeclarationVisibility.LOCAL,
+			KW_GLOBAL, DeclarationVisibility.GLOBAL
 	);
 	
 	/* ------------------------- Affectation Tokens ------------------------- */

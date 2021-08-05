@@ -29,6 +29,7 @@ import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.parser.ExpressionParser.Section;
 import fr.wonder.ahk.compiler.tokens.Token;
@@ -95,8 +96,11 @@ public class StatementParser extends AbstractParser {
 		return new AffectationSt(unit.source, line[0].sourceStart, last.sourceStop, leftOperand, affectation);
 	}
 
-	// TODO parse var declaration modifiers (visibility, constants...)
 	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line, ErrorWrapper errors) {
+		return parseVariableDeclaration(unit, line, DeclarationModifiers.NONE, errors);
+	}
+	
+	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line, DeclarationModifiers modifiers, ErrorWrapper errors) {
 		try {
 			Pointer pointer = new Pointer();
 			
@@ -116,7 +120,7 @@ public class StatementParser extends AbstractParser {
 				defaultValue = ExpressionParser.parseExpression(unit, line, pointer.position, line.length, errors);
 			}
 			
-			return new VariableDeclaration(unit, line[0].sourceStart, line[line.length-1].sourceStop, varName, type, defaultValue);
+			return new VariableDeclaration(unit, line[0].sourceStart, line[line.length-1].sourceStop, varName, type, modifiers, defaultValue);
 		} catch (ParsingException e) {
 			return Invalids.VARIABLE_DECLARATION;
 		}
@@ -251,7 +255,7 @@ public class StatementParser extends AbstractParser {
 			return Invalids.STATEMENT;
 		}
 		// replace ':' by '=' (necessary to parse declaration)
-		line[equalsMarker] = new Token(unit.source, TokenBase.KW_EQUAL, "=", line[equalsMarker].sourceStart);
+		line[equalsMarker] = new Token(unit.source, TokenBase.KW_EQUAL, "=", line[equalsMarker].sourceStart, line[equalsMarker].sourceStop);
 		if(line[2].base != TokenBase.TYPE_INT) {
 			errors.add("Missing range target in for statement:" + unit.source.getErr(line, 2, simpleRangeMarker));
 			return Invalids.STATEMENT;
@@ -286,7 +290,7 @@ public class StatementParser extends AbstractParser {
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors);
 			expectToken(line[pointer.position], TokenBase.TK_COLUMN, "Expected ':'", errors);
 			VariableDeclaration var = new VariableDeclaration(unit, line[2].sourceStart,
-					line[pointer.position-1].sourceStop, line[3].text, type, null);
+					line[pointer.position-1].sourceStop, line[3].text, type, DeclarationModifiers.NONE, null);
 			Expression iterable = ExpressionParser.parseExpression(unit, line, pointer.position, conditionEnd, errors);
 			
 			return new ForEachSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine, var, iterable);

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -16,8 +15,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 
 class Scope {
 	
-	@SuppressWarnings("unused")
-	private final Unit unit;
+	private final UnitWriter writer;
 	private final FunctionSection func;
 	private final int stackSpace;
 	
@@ -27,8 +25,8 @@ class Scope {
 	
 	private int stackOffset = 0;
 	
-	Scope(Unit unit, FunctionSection func, int stackSpace) {
-		this.unit = unit;
+	Scope(UnitWriter writer, FunctionSection func, int stackSpace) {
+		this.writer = writer;
 		this.func = func;
 		this.stackSpace = stackSpace;
 	}
@@ -51,7 +49,7 @@ class Scope {
 				return new MemAddress(Register.RSP, stackSpace-(i+1)*MemSize.POINTER_SIZE+stackOffset);
 		}
 		// search through global variables
-		Address baseAddress = new LabelAddress(UnitWriter.getRegistry(var));
+		Address baseAddress = new LabelAddress(writer.getRegistry(var));
 		
 		if(var instanceof FunctionPrototype)
 			return baseAddress;
