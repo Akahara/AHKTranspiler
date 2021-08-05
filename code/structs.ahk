@@ -8,7 +8,7 @@ struct Structure {
   
   int a;
   
-  /*constructor(int a);*/
+  constructor(int a);
   
 }
 

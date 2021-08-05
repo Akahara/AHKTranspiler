@@ -32,6 +32,10 @@ func int gcd2(int x, int y) {
 	return x;
 }
 
+func Structure structGen(int i) {
+	return Structure(i);
+}
+
 func int main() {
 	Kernel.println("------ Expected: argc argv[1]");
 	Kernel.printlni(sizeof(Kernel.argv));
@@ -86,7 +90,7 @@ func int main() {
 	Kernel.println("------ Expected composed strings:");
 	Kernel.println("a composed " + "string");
 	Kernel.println("");
-	Kernel.println("------ Expected 2 37 5 1 65");
+	Kernel.println("------ Expected 2 37 5 1 65 42");
 	Cyclic1 cyclic1 = null;
 	cyclic1.a = 2;
 	Kernel.printlni(cyclic1.other.other.a);
@@ -95,9 +99,9 @@ func int main() {
 	Kernel.printlni(aliasedInt);
 	IntArray aliasedIntArray = [0, 1, 2];
 	Kernel.printlni(aliasedIntArray[1]);
-	/*ComplexAlias complex = null;
-	Kernel.printlni(int:(complex));*/
 	Afunction function = null;
 	Kernel.printlni(function(0).a);
+	function = structGen;
+	Kernel.printlni(function(42).a);
 	return 5;
 }

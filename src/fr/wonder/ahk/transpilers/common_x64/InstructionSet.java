@@ -9,6 +9,7 @@ import java.util.List;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
+import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.declarations.Comment;
 import fr.wonder.ahk.transpilers.common_x64.declarations.EmptyLine;
 import fr.wonder.ahk.transpilers.common_x64.declarations.Label;
@@ -25,9 +26,17 @@ import fr.wonder.commons.utils.ArrayOperator;
 public class InstructionSet {
 	
 	public final List<Instruction> instructions = new ArrayList<>();
+	
+	public static boolean needsCasting(OperationParameter o1, OperationParameter o2) {
+		return o1 instanceof MemAddress && (o2 instanceof ImmediateValue || o2 instanceof LabelAddress);
+	}
 
 	public void add(Instruction instruction) {
 		instructions.add(instruction);
+	}
+
+	public void addAll(int index, Collection<Instruction> instructions) {
+		this.instructions.addAll(index, instructions);
 	}
 	
 	public void add(OpCode instruction, OperationParameter... params) {
@@ -47,6 +56,14 @@ public class InstructionSet {
 				params,
 				InstructionSet::asExtendedOperationParameter);
 		add(new CastedInstruction(instruction, ps));
+	}
+	
+	public void mov(Address to, Object from) {
+		OperationParameter f = asOperationParameter(from);
+		if(needsCasting(to, f))
+			add(new MovOperation(to, f, MemSize.QWORD));
+		else
+			add(new MovOperation(to, f));
 	}
 	
 	private static Object asExtendedOperationParameter(Object param) {
@@ -71,8 +88,7 @@ public class InstructionSet {
 	public void ret(int stackSize) { add(RET, stackSize); }
 	public void call(String label) { add(CALL, label); }
 	public void jmp(String label) { add(JMP, label); }
-	public void mov(Address to, Object from) { add(new MovOperation(to, asOperationParameter(from))); }
-	public void mov(Address to, Object from, MemSize cast) { add(new MovOperation(to, asOperationParameter(from), cast)); }
+//	public void mov(Address to, Object from, MemSize cast) { add(new MovOperation(to, asOperationParameter(from), cast)); }
 	public void push(OperationParameter target) { add(PUSH, target); }
 	public void pop(Address target) { add(POP, target); }
 	public void clearRegister(Register target) { add(XOR, target, target); }
@@ -122,10 +138,6 @@ public class InstructionSet {
 			sb.append('\n');
 		}
 		return sb.toString();
-	}
-
-	public void addAll(int index, Collection<Instruction> instructions) {
-		this.instructions.addAll(index, instructions);
 	}
 	
 }

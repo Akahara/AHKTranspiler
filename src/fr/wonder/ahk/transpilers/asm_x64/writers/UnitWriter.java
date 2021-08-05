@@ -373,7 +373,7 @@ public class UnitWriter {
 			Address address = new MemAddress(new LabelAddress(getRegistry(var.getPrototype())));
 			if(var.modifiers.hasModifier(Modifier.NATIVE)) {
 				String nativeLabel = var.modifiers.getModifier(NativeModifier.class).nativeRef;
-				instructions.mov(address, new LabelAddress(nativeLabel), MemSize.POINTER);
+				instructions.mov(address, nativeLabel);
 			} else {
 				Expression defaultVal = var.getDefaultValue();
 				if(defaultVal == null)

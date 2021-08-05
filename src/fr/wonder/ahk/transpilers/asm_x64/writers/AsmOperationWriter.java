@@ -159,7 +159,7 @@ public class AsmOperationWriter {
 		MemAddress floatst = writer.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
 		writer.instructions.mov(floatst, Register.RAX);
 		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
-		writer.mem.moveData(floatst, ro, MemSize.QWORD);
+		writer.mem.moveData(floatst, ro);
 		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
 		writer.instructions.add(opCode);
 		writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);

@@ -10,7 +10,6 @@ import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
@@ -51,9 +50,9 @@ public class MemoryManager {
 	public void writeTo(Address loc, Expression exp, ErrorWrapper errors) {
 		if(exp instanceof NoneExp) {
 			// note: "NONE" is a nasm macro that resolve to "0"
-			writeMov(loc, "NONE", MemSize.POINTER);
+			writeMov(loc, "NONE");
 		} else if(exp instanceof LiteralExp) {
-			writeMov(loc, writer.getValueString((LiteralExp<?>) exp), MemSize.POINTER);
+			writeMov(loc, writer.getValueString((LiteralExp<?>) exp));
 		} else if(exp instanceof VarExp) {
 			moveData(loc, currentScope.getVarAddress(((VarExp) exp).declaration));
 		} else {
@@ -72,13 +71,13 @@ public class MemoryManager {
 	}
 	
 	/** Moves a literal to #loc, literals being ints, floats, string labels... */
-	private void writeMov(Address loc, String literal, MemSize literalSize) {
+	private void writeMov(Address loc, String literal) {
 		if(loc instanceof Register && literal.equals("0") || literal.equals("0x0")) {
 			writer.instructions.clearRegister((Register) loc);
 		} else if(loc instanceof Register || loc instanceof LabelAddress) {
 			writer.instructions.mov(loc, literal);
 		} else if(loc instanceof MemAddress) {
-			moveData(loc, new ImmediateValue(literal), literalSize);
+			moveData(loc, new ImmediateValue(literal));
 		} else {
 			throw new IllegalStateException("Unhandled location type " + loc.getClass());
 		}
@@ -108,15 +107,6 @@ public class MemoryManager {
 	 * otherwise a single {@code mov} is enough.
 	 */
 	public void moveData(Address to, OperationParameter from) {
-		moveData(to, from, null);
-	}
-
-	/**
-	 * Writes the consecutive {@code mov} instructions to move any data stored at #from to #to.
-	 * If both addresses are memory addresses, {@code rax} is used as a temporary storage,
-	 * otherwise a single {@code mov} is enough.
-	 */
-	public void moveData(Address to, OperationParameter from, MemSize cast) {
 		if(from instanceof MemAddress && ((MemAddress) from).base instanceof MemAddress) {
 			MemAddress f = (MemAddress) from;
 			moveData(Register.RAX, f.base);
@@ -139,7 +129,7 @@ public class MemoryManager {
 			moveData(Register.RAX, from);
 			moveData(to, Register.RAX);
 		} else {
-			writer.instructions.mov(to, from, cast);
+			writer.instructions.mov(to, from);
 		}
 	}
 
