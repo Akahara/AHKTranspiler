@@ -1,7 +1,6 @@
 package fr.wonder.ahk.compiler.linker;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +62,15 @@ class Prelinker {
 	
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
 	static void prelinkUnit(Unit unit, UnitPrototype[] units, ErrorWrapper errors) {
-		Map<String, StructPrototype[]> declaredStructures = new HashMap<>();
-		for(UnitPrototype u : units)
-			declaredStructures.put(u.fullBase, u.structures);
+		Map<String, List<StructPrototype>> declaredStructures = new HashMap<>();
+		for(UnitPrototype u : units) {
+			List<StructPrototype> globalStructures = new ArrayList<>();
+			for(StructPrototype s : u.structures) {
+				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
+					globalStructures.add(s);
+			}
+			declaredStructures.put(u.fullBase, globalStructures);
+		}
 		
 		for(UnitPrototype u : unit.prototype.filterImportedUnits(units)) {
 			for(StructPrototype s : u.structures) {
@@ -76,13 +81,7 @@ class Prelinker {
 		
 		// link the structure types instances to their structure prototypes
 		
-		for(Triplet<VarStructType, Token, Integer> composite : unit.usedStructTypes.values()) {
-			VarStructType structType = composite.a;
-			structType.structure = searchStructSection(unit, structType.name, declaredStructures, errors);
-			if(structType.structure == Invalids.STRUCT_PROTOTYPE)
-				errors.add("Unknown structure type used: " + structType.name + 
-						" (" + composite.c + " references)" + composite.b.getErr());
-		}
+		linkStructSections(unit, declaredStructures, errors);
 		
 		// validate unit
 		
@@ -184,9 +183,9 @@ class Prelinker {
 		}
 		
 		List<StructPrototype> accessibleStructs = new ArrayList<>();
-		accessibleStructs.addAll(Arrays.asList(declaredStructures.get(unit.fullBase)));
+		accessibleStructs.addAll(declaredStructures.get(unit.fullBase));
 		for(String importation : unit.importations)
-			accessibleStructs.addAll(Arrays.asList(declaredStructures.get(importation)));
+			accessibleStructs.addAll(declaredStructures.get(importation));
 		
 		for(int i = 1; i < accessibleStructs.size(); i++) {
 			StructPrototype s1 = accessibleStructs.get(i);
@@ -200,14 +199,26 @@ class Prelinker {
 		}
 	}
 
+	private static void linkStructSections(Unit unit, 
+			Map<String, List<StructPrototype>> declaredStructures, ErrorWrapper errors) {
+		
+		for(Triplet<VarStructType, Token, Integer> composite : unit.usedStructTypes.values()) {
+			VarStructType structType = composite.a;
+			structType.structure = searchStructSection(unit, structType.name, declaredStructures, errors);
+			if(structType.structure == Invalids.STRUCT_PROTOTYPE)
+				errors.add("Unknown structure type used: " + structType.name + 
+						" (" + composite.c + " references)" + composite.b.getErr());
+		}
+	}
+
 	private static StructPrototype searchStructSection(Unit unit, String name,
-			Map<String, StructPrototype[]> declaredStructures, ErrorWrapper errors) {
+			Map<String, List<StructPrototype>> declaredStructures, ErrorWrapper errors) {
 		for(StructSection structure : unit.structures) {
 			if(structure.name.equals(name))
 				return structure.getPrototype();
 		}
 		for(String imported : unit.importations) {
-			StructPrototype[] structures = declaredStructures.get(imported);
+			List<StructPrototype> structures = declaredStructures.get(imported);
 			for(StructPrototype structure : structures) {
 				if(structure.getName().equals(name) && (
 						structure.signature.declaringUnit.equals(unit.fullBase) ||

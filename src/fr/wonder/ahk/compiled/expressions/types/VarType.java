@@ -10,14 +10,12 @@ public abstract class VarType {
 	public static final VarNativeType BOOL = new VarNativeType("bool");
 	public static final VarStrType STR = new VarStrType();
 	
-	/** The null type is only used for {@link NullExp Null expressions}, their
-	 * "actual type" is computed by the linker whenever required, see 
-	 * Linker#checkAffectationType (package method so no link available) */
+	/**
+	 * The null type is only used for {@link NullExp Null expressions}, their
+	 * "actual type" is computed by the linker whenever required, see
+	 * Linker#checkAffectationType (package method so no link available)
+	 */
 	public static final VarNullType NULL = VarNullType.INSTANCE;
-	
-	public static boolean isNumber(VarType type) {
-		return type == INT || type == FLOAT;
-	}
 	
 	/** Returns the user-friendly name of this type */
 	public abstract String getName();

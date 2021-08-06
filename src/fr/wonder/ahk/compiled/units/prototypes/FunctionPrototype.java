@@ -3,11 +3,10 @@ package fr.wonder.ahk.compiled.units.prototypes;
 import java.util.Objects;
 
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 
-public class FunctionPrototype implements VarAccess, Prototype<FunctionPrototype>, CallablePrototype {
+public class FunctionPrototype implements VarAccess, Prototype<FunctionPrototype> {
 
 	public final Signature signature;
 	/** The type of this function, contains its arguments and return type */
@@ -44,11 +43,6 @@ public class FunctionPrototype implements VarAccess, Prototype<FunctionPrototype
 		return functionType;
 	}
 	
-	@Override
-	public VarType[] getArgumentTypes() {
-		return functionType.arguments;
-	}
-
 	@Override
 	public int hashCode() {
 		return Objects.hash(signature, functionType, modifiers);

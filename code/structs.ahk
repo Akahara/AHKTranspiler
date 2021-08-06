@@ -6,22 +6,22 @@ global struct Structure {
   
   null (a=65);
   
-  int a;
+  global int a;
   
-  constructor(int a);
+  global constructor(int a);
   
 }
 
 global struct Cyclic1 {
 	
-	Cyclic2 other;
-	int a = 32;
+	global Cyclic2 other;
+	global int a = 32;
 	
 }
 
-struct Cyclic2 {
+global struct Cyclic2 {
 
-	int b = 29;
-	Cyclic1 other;
+	global int b = 29;
+	global Cyclic1 other;
 
 }

@@ -331,7 +331,7 @@ public class ExpressionParser extends AbstractParser {
 		Expression[] arguments = parseArgumentList(unit, line, section, errors);
 		Token structToken = line[section.start-2];
 		VarStructType type = unit.getStructType(structToken);
-		return new ConstructorExp(unit.source, structToken.sourceStart, line[section.stop-1].sourceStop, type, arguments);
+		return new ConstructorExp(unit.source, structToken.sourceStart, line[section.stop].sourceStop, type, arguments);
 	}
 	
 	/** Assumes that the last subsection of section is a bracket section */

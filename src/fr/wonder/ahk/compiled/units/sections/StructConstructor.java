@@ -12,14 +12,16 @@ public class StructConstructor extends SourceObject {
 	
 	public final StructSection struct;
 	public final FunctionArgument[] arguments;
-	public final DeclarationVisibility visibility = DeclarationVisibility.GLOBAL;
+	public final DeclarationModifiers modifiers;
 	
 	private ConstructorPrototype prototype;
 	
 	public StructConstructor(StructSection struct, int sourceStart, int sourceStop,
-			FunctionArgument[] arguments) {
+			DeclarationModifiers modifiers, FunctionArgument[] arguments) {
+		
 		super(struct.unit.source, sourceStart, sourceStop);
 		this.struct = struct;
+		this.modifiers = modifiers;
 		this.arguments = arguments;
 	}
 	
@@ -36,6 +38,7 @@ public class StructConstructor extends SourceObject {
 		this.prototype = new ConstructorPrototype(
 				ArrayOperator.map(arguments, VarType[]::new, a->a.type),
 				ArrayOperator.map(arguments, String[]::new, a->a.name),
+				modifiers,
 				signature
 		);
 	}

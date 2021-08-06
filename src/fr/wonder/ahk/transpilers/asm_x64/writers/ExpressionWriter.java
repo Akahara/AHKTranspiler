@@ -104,7 +104,7 @@ public class ExpressionWriter {
 	private void writeDirectAccessExp(DirectAccessExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getStruct(), errors);
 		ConcreteType structType = writer.types.getConcreteType((VarStructType) exp.getStruct().getType());
-		int offset = structType.getOffset(exp.member);
+		int offset = structType.getOffset(exp.memberName);
 		writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, offset));
 	}
 	
@@ -212,13 +212,13 @@ public class ExpressionWriter {
 		ConcreteType type = writer.types.getConcreteType(exp.getType());
 		ConstructorPrototype constructor = exp.constructor;
 		writer.callAlloc(type.size);
-		if(constructor.names.length == 0)
+		if(constructor.argNames.length == 0)
 			return;
 		writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 		writer.instructions.push(Register.RAX);
 		MemAddress instanceAddress = new MemAddress(Register.RSP);
-		for(int i = 0; i < constructor.types.length; i++) {
-			int fieldOffset = type.getOffset(constructor.names[i]);
+		for(int i = 0; i < constructor.argTypes.length; i++) {
+			int fieldOffset = type.getOffset(constructor.argNames[i]);
 			MemAddress fieldAddress = new MemAddress(instanceAddress, fieldOffset);
 			writer.mem.writeTo(fieldAddress, exp.expressions[i], errors);
 		}

@@ -160,7 +160,7 @@ public class MemoryManager {
 			writer.expWriter.writeExpression(exp.getStruct(), errors);
 			writer.instructions.push(Register.RAX);
 			addStackOffset(8);
-			int memberOffset = structType.getOffset(exp.member);
+			int memberOffset = structType.getOffset(exp.memberName);
 			Address memberAddress = new MemAddress(new MemAddress(Register.RSP), memberOffset);
 			writeTo(memberAddress, value, errors);
 			writer.instructions.pop(Register.RAX);

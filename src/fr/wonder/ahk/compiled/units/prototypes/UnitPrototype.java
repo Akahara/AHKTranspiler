@@ -83,6 +83,17 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 		return null;
 	}
 
+	public boolean isAccessibleStruct(StructPrototype structure) {
+		if(structure.signature.declaringUnit.equals(fullBase)) {
+			for(StructPrototype localStructure : structures) {
+				if(localStructure.getName().equals(structure.getName()))
+					return true;
+			}
+			return false;
+		}
+		return externalAccesses.contains(structure);
+	}
+
 	@Override
 	public Signature getSignature() {
 		return signature;

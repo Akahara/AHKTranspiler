@@ -4,9 +4,7 @@ import java.util.Arrays;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceElement;
-import fr.wonder.ahk.compiled.units.prototypes.CallablePrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 /**
@@ -41,48 +39,40 @@ public class FunctionArguments {
 	
 	/**
 	 * <p>
-	 * Returns the callable that bests suits the given argument types.
+	 * Returns the constructor that bests suits the given argument types.
 	 * 
 	 * <p>
-	 * If multiple callable have a similar declaration, given different arguments
-	 * will result in different calls: 
-	 * 
-	 * <blockquote><pre>
-	 * func foo(int a)
-	 * func foo(float a)
-	 * 
-	 * foo(3);    // the first foo is called with an int
-	 * foo(true); // the first foo is called with a bool implicitely casted to an int
-	 * </pre></blockquote>
+	 * If multiple constructors have a similar declaration, different arguments will
+	 * result in different calls.
 	 * 
 	 * <p>
-	 * Multiple implicit casts can be made but only the callable with the lower
-	 * number of casts will be retained. If multiple functions could be called with
-	 * the same number of casts or if no function can be called at all an error is
-	 * reported.
+	 * Multiple implicit casts can be made but only the constructor with the lower
+	 * number of casts will be retained. If multiple constructors could be called
+	 * with the same number of casts or if no function can be called at all an error
+	 * is reported.
 	 * 
-	 * @param callables      an array of {@link FunctionPrototype} or
-	 *                       {@link ConstructorPrototype}
-	 * @param args           the arguments given to the yet-unknown function
-	 * @param callingElement the element calling a function or constructor, used to
-	 *                       print meaningful errors
-	 * @return a function or constructor that best suits the given arguments
+	 * @param constructors   an array of {@link ConstructorPrototype}
+	 * @param args           the arguments given to the yet-unknown constructor
+	 * @param callingElement the element calling a constructor, used to print
+	 *                       meaningful errors
+	 * @return a constructor that best suits the given arguments, or null if none
+	 *         match given arguments
 	 */
-	public static <T extends CallablePrototype> T searchMatchingCallable(T[] callables, VarType[] args, SourceElement callingElement, ErrorWrapper errors) {
+	public static ConstructorPrototype searchMatchingConstructor(ConstructorPrototype[] constructors, VarType[] args, SourceElement callingElement, ErrorWrapper errors) {
 		int validFuncConversionCount = Integer.MAX_VALUE;
-		T validFunc = null;
+		ConstructorPrototype validFunc = null;
 		boolean multipleMatches = false;
-		for(T func : callables) {
-			if(func.getArgumentTypes().length != args.length)
+		for(ConstructorPrototype con : constructors) {
+			if(con.argTypes.length != args.length)
 				continue;
-			int convertionCount = getMinimumConversionCount(func.getArgumentTypes(), args);
+			int convertionCount = getMinimumConversionCount(con.argTypes, args);
 			if(convertionCount == -1)
 				continue;
 			if(convertionCount == validFuncConversionCount) {
 				validFunc = null;
 				multipleMatches = true;
 			} else if(convertionCount < validFuncConversionCount) {
-				validFunc = func;
+				validFunc = con;
 				validFuncConversionCount = convertionCount;
 				multipleMatches = false;
 			}

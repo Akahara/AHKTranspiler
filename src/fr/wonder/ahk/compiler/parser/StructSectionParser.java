@@ -20,7 +20,9 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class StructSectionParser extends AbstractParser {
 
-	public static StructSection parseStruct(Unit unit, Token[][] lines, int begin, int end, DeclarationModifiers modifiers, ErrorWrapper errors) {
+	public static StructSection parseStruct(Unit unit, Token[][] lines, int begin, int end,
+			DeclarationModifiers structModifiers, ErrorWrapper errors) {
+		
 		Token[] declaration = lines[begin];
 		if(declaration.length != 3) {
 			errors.add("Invalid declaration:" + unit.source.getErr(declaration));
@@ -35,23 +37,34 @@ class StructSectionParser extends AbstractParser {
 				declaration[0].sourceStart,
 				declaration[declaration.length-1].sourceStop,
 				structName,
-				modifiers);
+				structModifiers);
 		
 		List<VariableDeclaration> members = new ArrayList<>();
 		List<StructConstructor> constructors = new ArrayList<>();
 		ConstructorDefaultValue[] nullFields = null;
 		
+		ModifiersHolder modifiers = new ModifiersHolder();
+		
 		for(int i = begin+1; i < end; i++) {
 			Token[] line = lines[i];
 			
 			if(Tokens.isVarType(line[0].base)) {
-				members.add(StatementParser.parseVariableDeclaration(unit, line, errors));
+				members.add(StatementParser.parseVariableDeclaration(unit, line, modifiers.getModifiers(), errors));
+				
 			} else if(line[0].base == TokenBase.KW_CONSTRUCTOR) {
-				constructors.add(parseConstructor(structure, line, errors));
+				constructors.add(parseConstructor(structure, line, modifiers.getModifiers(), errors));
+				
 			} else if(line[0].base == TokenBase.LIT_NULL) {
 				if(nullFields != null)
 					errors.add("Null defined twice:" + unit.source.getErr(line));
 				nullFields = parseNull(unit, line, errors);
+				
+			} else if(line[0].base == TokenBase.VAR_MODIFIER) {
+				modifiers.add(parseModifier(line, errors));
+				
+			} else if(Tokens.isDeclarationVisibility(line[0].base)) {
+				modifiers.setVisibility(line[0], errors);
+				
 			} else {
 				errors.add("Unexpected line begin token in struct declaration:" + unit.source.getErr(line));
 			}
@@ -62,6 +75,7 @@ class StructSectionParser extends AbstractParser {
 					structure,
 					declaration[0].sourceStart,
 					declaration[declaration.length-1].sourceStop,
+					DeclarationModifiers.NONE,
 					new FunctionArgument[0]));
 		}
 		
@@ -76,7 +90,9 @@ class StructSectionParser extends AbstractParser {
 	}
 	
 	/** assumes that the line starts with the 'constructor' keyword */
-	private static StructConstructor parseConstructor(StructSection structure, Token[] line, ErrorWrapper errors) {
+	private static StructConstructor parseConstructor(StructSection structure,
+			Token[] line, DeclarationModifiers modifiers, ErrorWrapper errors) {
+		
 		if(line.length < 3 || line[line.length-1].base != TokenBase.TK_PARENTHESIS_CLOSE) {
 			errors.add("Invalid constructor declaration:" + structure.unit.source.getErr(line));
 			return Invalids.CONSTRUCTOR;
@@ -94,6 +110,7 @@ class StructSectionParser extends AbstractParser {
 					structure,
 					line[0].sourceStart,
 					line[line.length-1].sourceStop,
+					modifiers,
 					arguments);
 			
 		} catch (ParsingException e) {

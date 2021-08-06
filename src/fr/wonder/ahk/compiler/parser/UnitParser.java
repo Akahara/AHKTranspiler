@@ -4,14 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.UnitSource;
-import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
-import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -193,63 +190,6 @@ public class UnitParser extends AbstractParser {
 				return i;
 		}
 		return -1;
-	}
-	
-	private static class ModifiersHolder {
-		
-		private final List<Modifier> modifiers = new ArrayList<>();
-		private DeclarationVisibility visibility;
-		
-		private DeclarationModifiers getModifiers() {
-			if(visibility == null)
-				visibility = DeclarationVisibility.LOCAL;
-			DeclarationModifiers dm = new DeclarationModifiers(visibility, modifiers.toArray(Modifier[]::new));
-			modifiers.clear();
-			visibility = null;
-			return dm;
-		}
-		
-		public void add(Modifier modifier) {
-			this.modifiers.add(modifier);
-		}
-
-		private void setVisibility(Token tk, ErrorWrapper errors) {
-			if(this.visibility != null)
-				errors.add("Declaration visibility already specified:" + tk.getErr());
-			this.visibility = Tokens.getDeclarationVisibility(tk.base);
-		}
-		
-	}
-	
-	/** Assumes that the first line token base is VAR_MODIFIER */
-	private static Modifier parseModifier(Token[] line, ErrorWrapper errors) {
-		if(line.length == 1)
-			return new Modifier(line[0].text.substring(1));
-		
-		if(line.length < 3) {
-			errors.add("Invalid modifier syntax:" + line[0].getErr());
-		} else if(line[1].base != TokenBase.TK_PARENTHESIS_OPEN || line[line.length-1].base != TokenBase.TK_PARENTHESIS_CLOSE) {
-			Token t = line[1].base != TokenBase.TK_PARENTHESIS_OPEN ? line[1] : line[line.length-1];
-			errors.add("Invalid modifier syntax:" + t.getErr());
-			return null;
-		}
-		LiteralExp<?>[] arguments = new LiteralExp[(line.length-2)/2];
-		ErrorWrapper subErrors = errors.subErrrors("Unable to parse modifier parameter, expected literal");
-		for(int i = 2; i < line.length-1; i++) {
-			if(i%2 == 0) {
-				if(line[i].base == TokenBase.LIT_NULL)
-					errors.add("Invalid modifier value, null values are not accepted:" + line[i].getErr());
-				else if(!Tokens.isLiteral(line[i].base))
-					errors.add("Invalid modifier syntax, expected argument:" + line[i].getErr());
-				else
-					arguments[(i-2)/2] = ExpressionParser.parseLiteral(line[i], subErrors);
-				
-			} else {
-				if(line[i].base != TokenBase.TK_COMMA)
-					errors.add("Invalid modifier syntax:" + line[i].getErr());
-			}
-		}
-		return new Modifier(line[0].text.substring(1), arguments);
 	}
 	
 }
