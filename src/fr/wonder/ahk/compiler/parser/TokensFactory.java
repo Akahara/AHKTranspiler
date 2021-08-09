@@ -84,13 +84,6 @@ public class TokensFactory {
 			}
 		}
 		
-//		// remove empty lines (<should> be useless) TODO0 remove commented code
-//		for(int i = lines.size()-1; i >= 0; i--) {
-//			if(lines.get(i).length == 0) {
-//				lines.remove(i);
-//			}
-//		}
-		
 		return lines.toArray(Token[][]::new);
 	}
 

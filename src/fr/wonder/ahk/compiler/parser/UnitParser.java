@@ -90,7 +90,7 @@ public class UnitParser extends AbstractParser {
 		
 		int declarationEnd = 1+aliasCount+importationCount;
 		
-		// TODO check if the declaration end is right
+		// TODO0 check if the declaration end is right
 		
 		if(lines.length == declarationEnd) {
 			errors.add("Incomplete source file:" + source.getErr(source.length()-1));

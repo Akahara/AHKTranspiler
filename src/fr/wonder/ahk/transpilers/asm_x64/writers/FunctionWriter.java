@@ -104,7 +104,7 @@ public class FunctionWriter {
 				
 			} else if(st instanceof AffectationSt) {
 				writeAffectationStatement((AffectationSt) st, errors);
-				// TODO implement MultipleAffectationSt
+				
 			} else if(st instanceof MultipleAffectationSt) {
 				writeMultipleAffectationSt((MultipleAffectationSt) st, errors);
 				

@@ -24,7 +24,8 @@ public class AliasDeclarationParser extends AbstractParser {
 	private static final byte 
 			STATUS_NOT_PARSED = 0,
 			STATUS_PARSING = 1,
-			STATUS_RESOLVED = 2;
+			STATUS_RESOLVED = 2,
+			STATUS_ERROR = 3;
 	
 	public static void resolveAliases(Unit[] units, Token[][][] unitsTokens, ErrorWrapper errors) throws WrappedException {
 		UnitAliases[] unitsAliases = new UnitAliases[units.length];
@@ -50,8 +51,13 @@ public class AliasDeclarationParser extends AbstractParser {
 		errors.assertNoErrors();
 
 		for(UnitAliases unit : unitsAliases) {
-			for(AliasParser alias : unit.aliases)
-				resolveAlias(alias);
+			for(AliasParser alias : unit.aliases) {
+				try {
+					resolveAlias(alias);
+				} catch (CyclicAliasDeclaration e) {
+					errors.add("Cyclic alias declaration: " + e.getMessage());
+				}
+			}
 		}
 		
 		for(UnitAliases unit : unitsAliases) {
@@ -162,10 +168,9 @@ public class AliasDeclarationParser extends AbstractParser {
 		
 	}
 	
-	private static void resolveAlias(AliasParser alias) {
+	private static void resolveAlias(AliasParser alias) throws CyclicAliasDeclaration {
 		if(alias.parsingStatus == STATUS_PARSING) {
-			alias.errors.add("Cyclic definition"); // TODO find a way to print the cycle
-			return;
+			throw new CyclicAliasDeclaration(alias.name);
 		} else if(alias.parsingStatus == STATUS_RESOLVED) {
 			return;
 		}
@@ -183,12 +188,16 @@ public class AliasDeclarationParser extends AbstractParser {
 			}
 			
 			alias.resolvedType = type;
-		} catch (ParsingException x) { }
-		
-		alias.parsingStatus = STATUS_RESOLVED;
+			alias.parsingStatus = STATUS_RESOLVED;
+		} catch (ParsingException x) {
+			alias.parsingStatus = STATUS_ERROR;
+		} catch (CyclicAliasDeclaration x) {
+			alias.parsingStatus = STATUS_ERROR;
+			throw x;
+		}
 	}
 	
-	private static VarType parseType(AliasParser alias, Pointer pointer) throws ParsingException {
+	private static VarType parseType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {
 		ErrorWrapper errors = alias.errors;
 		Token[] line = alias.line;
 		
@@ -226,11 +235,18 @@ public class AliasDeclarationParser extends AbstractParser {
 		return baseType;
 	}
 	
-	private static VarType resolveStructOrAlias(AliasParser alias, Token token) {
+	private static VarType resolveStructOrAlias(AliasParser alias, Token token) throws CyclicAliasDeclaration {
 		for(UnitAliases unit : alias.unit.accessibleUnits) {
 			for(AliasParser a : unit.aliases) {
 				if(a.name.equals(token.text)) {
-					resolveAlias(a);
+					try {
+						if(a.parsingStatus != STATUS_ERROR)
+							resolveAlias(a);
+						else
+							alias.errors.add("Cannot rely on unresolvable alias " + a.name);
+					} catch (CyclicAliasDeclaration e) {
+						throw new CyclicAliasDeclaration(alias.name + " > " + e.getMessage());
+					}
 					return a.resolvedType;
 				}
 			}
@@ -239,7 +255,7 @@ public class AliasDeclarationParser extends AbstractParser {
 	}
 	
 	/** assumes that line[pointer] is a KW_FUNC */
-	private static VarType parseFunctionType(AliasParser alias, Pointer pointer) throws ParsingException {
+	private static VarType parseFunctionType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {
 		assertHasNext(alias, pointer, 3);
 		
 		pointer.position++; // skip the 'func' keyword
@@ -254,12 +270,12 @@ public class AliasDeclarationParser extends AbstractParser {
 		return new VarFunctionType(returnType, arguments);
 	}
 	
-	private static VarType parseCompositeType(AliasParser alias, Pointer pointer) throws ParsingException {
+	private static VarType parseCompositeType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {
 		var args = readArguments(alias, pointer, true);
 		return new VarCompositeType(args.b, args.a);
 	}
 	
-	private static Tuple<VarType[], String[]> readArguments(AliasParser alias, Pointer pointer, boolean requireNames) throws ParsingException {
+	private static Tuple<VarType[], String[]> readArguments(AliasParser alias, Pointer pointer, boolean requireNames) throws ParsingException, CyclicAliasDeclaration {
 		Token[] line = alias.line;
 		assertHasNext(alias, pointer, 2);
 		
@@ -303,6 +319,16 @@ public class AliasDeclarationParser extends AbstractParser {
 	
 	private static void assertHasNext(AliasParser alias, Pointer pointer, int count) throws ParsingException {
 		assertHasNext(alias.line, pointer, "Unexpected alias end", alias.errors);
+	}
+	
+	private static final class CyclicAliasDeclaration extends Exception {
+
+		private static final long serialVersionUID = 1L;
+		
+		private CyclicAliasDeclaration(String error) {
+			super(error);
+		}
+		
 	}
 	
 }
