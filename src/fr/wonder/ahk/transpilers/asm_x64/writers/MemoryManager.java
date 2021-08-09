@@ -5,18 +5,19 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
-import fr.wonder.ahk.compiled.statements.SectionEndSt;
-import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
+import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnreachableException;
 
 public class MemoryManager {
 	
@@ -31,14 +32,14 @@ public class MemoryManager {
 		currentScope = new Scope(writer, func, stackSpace);
 	}
 	
-	public void updateScope(Statement st) {
-		if(st instanceof SectionEndSt)
-			currentScope.endScope();
-		else if(FunctionWriter.SECTION_STATEMENTS.contains(st.getClass()))
+	public void updateScope(boolean beginNewScope) {
+		if(beginNewScope)
 			currentScope.beginScope();
+		else
+			currentScope.endScope();
 	}
 	
-	/** Used to offset all uses of $rsp */
+	/** Used to offset all uses of $rsp, to revert pass a negative space */
 	public void addStackOffset(int argsSpace) {
 		currentScope.addStackOffset(argsSpace);
 	}
@@ -60,14 +61,6 @@ public class MemoryManager {
 			if(loc != Register.RAX)
 				moveData(loc, Register.RAX);
 		}
-	}
-	
-	/**
-	 * stores the value of #exp in the location of #var
-	 * (this can only be done here as other classes cannot know where #var is stored)
-	 */
-	public void writeTo(VarAccess var, Expression exp, ErrorWrapper errors) {
-		writeTo(currentScope.getVarAddress(var), exp, errors);
 	}
 	
 	/** Moves a literal to #loc, literals being ints, floats, string labels... */
@@ -135,7 +128,7 @@ public class MemoryManager {
 
 	public void writeAffectationTo(Expression variable, Expression value, ErrorWrapper errors) {
 		if(variable instanceof VarExp) {
-			writeTo(((VarExp) variable).declaration, value, errors);
+			writeTo(currentScope.getVarAddress(((VarExp) variable).declaration), value, errors);
 			
 		} else if(variable instanceof IndexingExp) {
 			IndexingExp exp = (IndexingExp) variable;
@@ -163,12 +156,62 @@ public class MemoryManager {
 			int memberOffset = structType.getOffset(exp.memberName);
 			Address memberAddress = new MemAddress(new MemAddress(Register.RSP), memberOffset);
 			writeTo(memberAddress, value, errors);
-			writer.instructions.pop(Register.RAX);
+			writer.instructions.pop();
 			addStackOffset(-8);
 			
 		} else {
-			errors.add("Cannot affect a value to type " + variable.getType().getName() + variable.getErr());
+			throw new UnreachableException("Cannot affect a value to type " + variable.getType().getName());
 		}
+	}
+	
+	public void writeMultipleAffectationTo(Expression[] variables, Expression[] values, ErrorWrapper errors) {
+		int stackSpace = variables.length*2*MemSize.POINTER_SIZE;
+		addStackOffset(stackSpace);
+		writer.instructions.add(OpCode.SUB, Register.RSP, stackSpace);
+		
+		Address[] variableAccesses = new Address[variables.length];
+		
+		for(int i = 0; i < variables.length; i++) {
+			Address varAdd = new MemAddress(Register.RSP, i*2 * MemSize.POINTER_SIZE);
+			Address valAdd = new MemAddress(Register.RSP, (i*2+1) * MemSize.POINTER_SIZE);
+			writeTo(valAdd, values[i], errors);
+			
+			Expression variable = variables[i];
+			if(variable instanceof VarExp) {
+				variableAccesses[i] = currentScope.getVarAddress(((VarExp) variable).declaration);
+				
+			} else if(variable instanceof IndexingExp) {
+				IndexingExp exp = (IndexingExp) variable;
+				Expression[] indices = exp.getIndices();
+				if(indices.length > 1) {
+					IndexingExp subExp = exp.subIndexingExpression();
+					writeTo(Register.RAX, subExp, errors);
+				} else {
+					writeTo(Register.RAX, exp.getArray(), errors);
+				}
+				MemAddress indexed = writer.expWriter.writeArrayIndex(indices[indices.length-1], errors);
+				writer.instructions.lea(Register.RAX, indexed);
+				moveData(varAdd, Register.RAX);
+				variableAccesses[i] = new MemAddress(varAdd);
+				
+			} else if(variable instanceof DirectAccessExp) {
+				DirectAccessExp exp = (DirectAccessExp) variable;
+				ConcreteType structType = writer.types.getConcreteType(exp.getStructType());
+				writeTo(varAdd, exp.getStruct(), errors);
+				variableAccesses[i] = new MemAddress(varAdd, structType.getOffset(exp.memberName));
+				
+			} else {
+				throw new UnreachableException("Cannot affect a value to type " + variable.getType().getName());
+			}
+		}
+		
+		for(int i = 0; i < variables.length; i++) {
+			Address valAdd = new MemAddress(Register.RSP, (i*2+1) * MemSize.POINTER_SIZE);
+			moveData(variableAccesses[i], valAdd);
+		}
+		
+		addStackOffset(-stackSpace);
+		writer.instructions.add(OpCode.ADD, Register.RSP, stackSpace);
 	}
 	
 }

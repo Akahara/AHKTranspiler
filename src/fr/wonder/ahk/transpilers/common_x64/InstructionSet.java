@@ -83,27 +83,26 @@ public class InstructionSet {
 		throw new IllegalArgumentException("Unknown operand type: " + param.getClass() + " " + param);
 	}
 	
+	public void section(String section) { add(new SectionDeclaration(section)); }
+	public void comment(String text) { add(new Comment(text)); }
 	public void label(String label) { add(new Label(label)); }
 	public void ret() { add(RET); }
 	public void ret(int stackSize) { add(RET, stackSize); }
 	public void call(String label) { add(CALL, label); }
 	public void jmp(String label) { add(JMP, label); }
-//	public void mov(Address to, Object from, MemSize cast) { add(new MovOperation(to, asOperationParameter(from), cast)); }
 	public void push(OperationParameter target) { add(PUSH, target); }
 	public void pop(Address target) { add(POP, target); }
+	public void pop() { add(ADD, Register.RSP, MemSize.POINTER_SIZE); }
 	public void clearRegister(Register target) { add(XOR, target, target); }
-	
+	public void lea(Register reg, MemAddress add) { add(LEA, reg, add); }
 	public void xor(Address target, Address with) { add(XOR, target, with); }
+	public void cmp(Address a, Object b) { add(CMP, a, b); }
+	public void test(Address a, Address b) { add(TEST, a, b); }
+	public void test(Register reg) { test(reg, reg); }
 
 	public void repeat(OpCode stringOperation) {
 		add(new RepeatedInstruction(new Operation(stringOperation)));
 	}
-	
-	public void cmp(Address a, Object b) { add(CMP, a, b); }
-	public void test(Address a, Address b) { add(TEST, a, b); }
-	public void test(Register reg) { test(reg, reg); }
-	
-	public void section(String section) { add(new SectionDeclaration(section)); }
 	
 	public void createStackFrame() {
 		push(Register.RBP);
@@ -122,10 +121,6 @@ public class InstructionSet {
 	public void skip(int lineCount) {
 		while(lineCount-- > 0)
 			skip();
-	}
-	
-	public void comment(String text) {
-		instructions.add(new Comment(text));
 	}
 	
 	@Override

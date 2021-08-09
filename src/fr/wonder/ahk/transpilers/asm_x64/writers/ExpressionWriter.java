@@ -73,7 +73,7 @@ public class ExpressionWriter {
 		case __stdcall: {
 			
 			Expression[] arguments = function.getArguments();
-			int argsSpace = FunctionWriter.getArgumentsSize(arguments.length);
+			int argsSpace = arguments.length * MemSize.POINTER_SIZE;
 			if(argsSpace != 0) {
 				writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
 				writer.mem.addStackOffset(argsSpace);
@@ -138,7 +138,7 @@ public class ExpressionWriter {
 	}
 	
 	private void writeIndexingExp(IndexingExp exp, ErrorWrapper errors) {
-		writer.mem.writeTo(Register.RAX, exp.getArray(), errors);
+		writeExpression(exp.getArray(), errors);
 		for(Expression index : exp.getIndices()) {
 			MemAddress indexed = writeArrayIndex(index, errors);
 			writer.instructions.mov(Register.RAX, indexed);
@@ -171,7 +171,7 @@ public class ExpressionWriter {
 			writer.mem.writeTo(Register.RBX, index, errors);
 			writer.instructions.pop(Register.RAX);
 			writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
-			writer.instructions.add(OpCode.SHL, Register.RBX, 3); // scale the index (multiply by 9
+			writer.instructions.add(OpCode.SHL, Register.RBX, 3); // scale the index (multiply by 8)
 			checkOOB();
 			return new MemAddress(Register.RAX, Register.RBX, 1);
 		}

@@ -1,7 +1,6 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,13 +12,13 @@ import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
+import fr.wonder.ahk.compiled.statements.MultipleAffectationSt;
 import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
-import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
@@ -28,10 +27,6 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class FunctionWriter {
-	
-	public static final List<Class<? extends Statement>> SECTION_STATEMENTS = Arrays.asList(
-			IfSt.class, ElseSt.class, ForSt.class, RangedForSt.class, WhileSt.class
-	);
 	
 	private final UnitWriter writer;
 	private final FunctionSection func;
@@ -59,7 +54,7 @@ public class FunctionWriter {
 		
 		writer.mem.enterFunction(func, stackSpace);
 		
-		int argsSpace = getArgumentsSize(func.getPrototype());
+		int argsSpace = func.getPrototype().functionType.arguments.length * MemSize.POINTER_SIZE;
 		
 		boolean needsRetLabel = false;
 		
@@ -91,12 +86,12 @@ public class FunctionWriter {
 				writeWhileStatement((WhileSt) st, errors);
 				
 			} else if(st instanceof ForSt) {
-				writer.mem.updateScope(st);
+				writer.mem.updateScope(true);
 				scopeUpdated = true;
 				writeForStatement((ForSt) st, errors);
 				
 			} else if(st instanceof RangedForSt) {
-				writer.mem.updateScope(st);
+				writer.mem.updateScope(true);
 				scopeUpdated = true;
 				writeRangedForStatement((RangedForSt) st, errors);
 				
@@ -110,12 +105,19 @@ public class FunctionWriter {
 			} else if(st instanceof AffectationSt) {
 				writeAffectationStatement((AffectationSt) st, errors);
 				// TODO implement MultipleAffectationSt
+			} else if(st instanceof MultipleAffectationSt) {
+				writeMultipleAffectationSt((MultipleAffectationSt) st, errors);
+				
 			} else {
 				errors.add("Unhandled statement type: " + st.getClass().getSimpleName() + " " + st.getErr());
 			}
 			
-			if(!scopeUpdated)
-				writer.mem.updateScope(st);
+			if(!scopeUpdated) {
+				if(st instanceof SectionEndSt)
+					writer.mem.updateScope(false);
+				else if(st instanceof LabeledStatement)
+					writer.mem.updateScope(true);
+			}
 		}
 		
 		if(needsRetLabel)
@@ -148,19 +150,11 @@ public class FunctionWriter {
 				current += 3*MemSize.POINTER_SIZE;
 				max = Math.max(current, max);
 				sections.add(current);
-			} else if(SECTION_STATEMENTS.contains(s.getClass())) {
+			} else if(s instanceof LabeledStatement) {
 				sections.add(current);
 			}
 		}
 		return max;
-	}
-	
-	public static int getArgumentsSize(FunctionPrototype func) {
-		return getArgumentsSize(func.functionType.arguments.length);
-	}
-	
-	public static int getArgumentsSize(int argCount) {
-		return argCount * MemSize.POINTER_SIZE;
 	}
 	
 	private void fillLabelsMap() {
@@ -272,6 +266,10 @@ public class FunctionWriter {
 	
 	private void writeAffectationStatement(AffectationSt st, ErrorWrapper errors) {
 		writer.mem.writeAffectationTo(st.getVariable(), st.getValue(), errors);
+	}
+	
+	private void writeMultipleAffectationSt(MultipleAffectationSt st, ErrorWrapper errors) {
+		writer.mem.writeMultipleAffectationTo(st.getVariables(), st.getValues(), errors);
 	}
 	
 }

@@ -10,6 +10,7 @@ import fr.wonder.ahk.compiler.Invalids;
  */
 public class DummyVariableDeclaration extends VariableDeclaration {
 
+	/** @param name solely for debug purpose */
 	public DummyVariableDeclaration(String name) {
 		super(Invalids.UNIT, 0, 0, name, Invalids.TYPE, Invalids.MODIFIERS, Invalids.EXPRESSION);
 		setSignature(new Signature("Dummy", name, "Dummy-"+name));

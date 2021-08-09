@@ -5,6 +5,7 @@ public enum OpCode {
 	MOV,
 	PUSH,
 	POP,
+	LEA,
 	
 	CALL,
 	RET,

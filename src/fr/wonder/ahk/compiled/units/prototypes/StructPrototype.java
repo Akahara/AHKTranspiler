@@ -6,7 +6,7 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 public class StructPrototype implements Prototype<StructPrototype> {
 
 	public final Signature signature;
-	public final VariablePrototype[] members; // TODO read visibility of structure members
+	public final VariablePrototype[] members;
 	public final ConstructorPrototype[] constructors;
 	public final DeclarationModifiers modifiers;
 	

@@ -25,9 +25,7 @@ func int gcd(int x, int y) {
 }
 func int gcd2(int x, int y) {
 	while(y) {
-		int t = x;
-		x = y;
-		y = t%y;
+		x, y = y, x%y;
 	}
 	return x;
 }

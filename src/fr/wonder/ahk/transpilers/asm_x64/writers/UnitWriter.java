@@ -361,10 +361,12 @@ public class UnitWriter {
 				ConstructorDefaultValue nullField = struct.getNullField(member.name);
 				Expression nullMemberValue = nullField == null ? member.getDefaultValue() : nullField.getValue();
 				Address fieldAddress = nullAddress.addOffset(concreteType.getOffset(member.name));
+				instructions.comment("init " + struct.name + " null");
 				mem.writeTo(fieldAddress, nullMemberValue, errors);
 			}
 		}
 		for(VariableDeclaration var : initializableVariables) {
+			instructions.comment("init " + var.name);
 			Address address = new MemAddress(new LabelAddress(getRegistry(var.getPrototype())));
 			if(var.modifiers.hasModifier(Modifier.NATIVE)) {
 				String nativeLabel = var.modifiers.getModifier(NativeModifier.class).nativeRef;
