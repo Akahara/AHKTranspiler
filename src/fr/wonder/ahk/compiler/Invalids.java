@@ -98,6 +98,6 @@ public class Invalids {
 
 	public static final FunctionSection FUNCTION = new FunctionSection(UNIT, 0, 0, 0, MODIFIERS);
 
-	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(UNIT, Operator.ADD, TYPE, TYPE, TYPE, 0, 0);
+	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(UNIT, Operator.ADD, TYPE, TYPE, TYPE, STRING, 0, 0);
 	
 }

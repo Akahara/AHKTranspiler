@@ -101,5 +101,6 @@ global func int main() {
 	Kernel.printlni(function(0).a);
 	function = structGen;
 	Kernel.printlni(function(42).a);
+	Kernel.printlni((function(0)+function(42)).a);
 	return 5;
 }

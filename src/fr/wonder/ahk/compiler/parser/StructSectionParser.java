@@ -86,6 +86,7 @@ class StructSectionParser extends AbstractParser {
 
 		structure.members = members.toArray(VariableDeclaration[]::new);
 		structure.constructors = constructors.toArray(StructConstructor[]::new);
+		structure.operators = operators.toArray(OverloadedOperator[]::new);
 		structure.nullFields = nullFields;
 		
 		return structure;
@@ -172,7 +173,7 @@ class StructSectionParser extends AbstractParser {
 		try {
 			Pointer p = new Pointer(1);
 			assertHasNext(line, p, "Incomplete operator declaration", errors, 7);
-			assertToken(line, p, TokenBase.VAR_VARIABLE, "Expected operator implementation function name", errors);
+			String funcName = assertToken(line, p, TokenBase.VAR_VARIABLE, "Expected operator implementation function name", errors).text;
 			assertToken(line, p, TokenBase.TK_COLUMN, "Expected ':'", errors);
 			VarType leftOperand = null;
 			if(!Tokens.isOperator(line[p.position].base))
@@ -190,7 +191,7 @@ class StructSectionParser extends AbstractParser {
 			assertNoRemainingTokens(line, p, errors);
 			
 			return new OverloadedOperator(unit, op,
-					resultType, leftOperand, rightOperand,
+					resultType, leftOperand, rightOperand, funcName,
 					line[0].sourceStart, line[line.length-1].sourceStop);
 		} catch (ParsingException e) {
 			return Invalids.OVERLOADED_OPERATOR;

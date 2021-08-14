@@ -9,7 +9,6 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
-import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.types.ConversionTable;
@@ -115,29 +114,21 @@ public class Linker {
 		for(FunctionSection func : unit.functions) {
 			ErrorWrapper ferrors = errors.subErrrors("Errors in function " + func.getSignature().computedSignature);
 			StatementLinker.linkStatements(
-					typesTable,
 					unit,
 					unitScope.innerScope(),
 					func,
+					typesTable,
 					ferrors);
 		}
 		
 		for(StructSection struct : unit.structures) {
-			for(ConstructorDefaultValue nullField : struct.nullFields) {
-				ExpressionLinker.linkExpressions(unit, unitScope, nullField, typesTable, errors);
-				VariableDeclaration member = struct.getMember(nullField.name);
-				checkAffectationType(nullField, 0, member.getType(), errors);
-			}
-			for(VariableDeclaration member : struct.members) {
-				ExpressionLinker.linkExpressions(unit, unitScope, member, typesTable, errors);
-				checkAffectationType(member, 0, member.getType(), errors);
-			}
+			StructureLinker.linkStructure(unit, unitScope, typesTable, struct, errors);
 		}
 		
 		if(errors.noErrors())
 			unit.compilationState = UnitCompilationState.LINKED;
 	}
-	
+
 	/**
 	 * <p>
 	 * Checks if the expression at index {@code valueIndex} of

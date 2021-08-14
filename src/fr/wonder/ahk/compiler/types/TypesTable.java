@@ -2,7 +2,6 @@ package fr.wonder.ahk.compiler.types;
 
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
-import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
@@ -26,14 +25,11 @@ public class TypesTable {
 		VarType rightOp = exp.getROType();
 		Operator operator = exp.operator;
 		
-		if(leftOp instanceof VarArrayType || rightOp instanceof VarArrayType)
-			return null;
-		
 		if((leftOp instanceof VarNativeType || leftOp == null) && rightOp instanceof VarNativeType)
 			return NativeOperation.getOperation(leftOp, rightOp, operator, true);
 		
 		if(leftOp instanceof VarStructType || rightOp instanceof VarStructType)
-			return operations.getOperation(leftOp, operator, OperationTable.TYPE_ANY);
+			return operations.getOperation(leftOp, operator, rightOp);
 		
 		return null;
 	}

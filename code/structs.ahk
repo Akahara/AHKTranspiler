@@ -14,8 +14,8 @@ global struct Structure {
   
 }
 
-func Structure opStructPlus() {
-	return null;
+func Structure opStructPlus(Structure a, Structure b) {
+	return Structure(a.a+b.a);
 }
 
 global struct Cyclic1 {

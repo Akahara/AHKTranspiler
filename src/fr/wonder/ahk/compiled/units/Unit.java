@@ -14,7 +14,6 @@ import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.Prototypes;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
-import fr.wonder.commons.types.Triplet;
 
 public class Unit {
 	
@@ -45,7 +44,7 @@ public class Unit {
 	 * token that required it and the number of references
 	 * to it (for error logging purpose).
 	 */
-	public final Map<String, Triplet<VarStructType, Token, Integer>> usedStructTypes = new HashMap<>();
+	public final Map<String, ExternalStructAccess> usedStructTypes = new HashMap<>();
 	
 	/** Set by {@link Prototypes#buildPrototype(Unit)} */
 	public UnitPrototype prototype;
@@ -84,12 +83,12 @@ public class Unit {
 	public VarStructType getStructType(Token token) {
 		var knownType = usedStructTypes.get(token.text);
 		if(knownType != null) {
-			knownType.c++;
-			return knownType.a;
+			knownType.occurenceCount++;
+			return knownType.structTypeInstance;
 		}
 		
 		VarStructType type = new VarStructType(token.text);
-		usedStructTypes.put(token.text, new Triplet<>(type, token, 1));
+		usedStructTypes.put(token.text, new ExternalStructAccess(type, token));
 		return type;
 	}
 	

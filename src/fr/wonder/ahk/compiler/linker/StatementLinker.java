@@ -30,8 +30,8 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 class StatementLinker {
 
-	static void linkStatements(TypesTable typesTable, Unit unit, Scope scope,
-			FunctionSection func, ErrorWrapper errors) {
+	static void linkStatements(Unit unit, Scope scope, FunctionSection func,
+			TypesTable typesTable, ErrorWrapper errors) {
 		
 		List<LabeledStatement> openedSections = new ArrayList<>();
 		LabeledStatement latestClosedStatement = null;
