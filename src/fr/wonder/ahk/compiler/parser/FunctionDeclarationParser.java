@@ -63,8 +63,7 @@ class FunctionDeclarationParser extends AbstractParser {
 		
 		assertHasNext(declaration, pointer, "Incomplete function declaration", errors, 3);
 		
-		expectToken(declaration[pointer.position], TokenBase.VAR_VARIABLE, "Expected function name", errors);
-		func.name = declaration[pointer.position++].text;
+		func.name = assertToken(declaration, pointer, TokenBase.VAR_VARIABLE, "Expected function name", errors).text;
 		
 		ArgumentList arguments = readArguments(unit, declaration, pointer, true, errors);
 		

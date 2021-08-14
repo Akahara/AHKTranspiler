@@ -6,6 +6,7 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
+import fr.wonder.commons.annotations.Nullable;
 
 public class VariableDeclaration extends Statement {
 	
@@ -40,6 +41,7 @@ public class VariableDeclaration extends Statement {
 		return prototype;
 	}
 	
+	@Nullable
 	public Expression getDefaultValue() {
 		return expressions[0];
 	}

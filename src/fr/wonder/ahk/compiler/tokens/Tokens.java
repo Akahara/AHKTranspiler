@@ -31,7 +31,7 @@ public class Tokens {
 			KW_VAR, KW_IF, KW_ELSE, KW_FOR, KW_FOREACH,			// keywords
 			KW_WHILE, KW_FUNC, KW_STRUCT, KW_CONSTRUCTOR,
 			KW_RETURN, KW_SIZEOF, KW_ALIAS, KW_GLOBAL,
-			KW_LOCAL,
+			KW_LOCAL, KW_OPERATOR,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,			// types
 			TYPE_BOOL,
 			VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,				// variable elements (MUST be read last by the tokenizer)

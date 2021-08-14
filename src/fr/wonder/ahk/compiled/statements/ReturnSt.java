@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.statements;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.commons.annotations.Nullable;
 
 public class ReturnSt extends Statement {
 	
@@ -13,6 +14,7 @@ public class ReturnSt extends Statement {
 		super(source, sourceStart, sourceStop);
 	}
 
+	@Nullable
 	public Expression getExpression() {
 		return expressions.length == 0 ? null : expressions[0];
 	}

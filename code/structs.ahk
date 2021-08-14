@@ -10,6 +10,12 @@ global struct Structure {
   
   global constructor(int a);
   
+  operator opStructPlus : Structure + Structure = Structure;
+  
+}
+
+func Structure opStructPlus() {
+	return null;
 }
 
 global struct Cyclic1 {

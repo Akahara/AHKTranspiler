@@ -129,13 +129,11 @@ public class UnitParser extends AbstractParser {
 			if(line[0].base == TokenBase.KW_FUNC) {
 				// parse function section
 				DeclarationModifiers mods = modifiers.getModifiers();
-				if(!expectToken(line[line.length-1], TokenBase.TK_BRACE_OPEN, "Expected '{' to begin function", errors))
-					continue;
-				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
-				if(functionEnd == -1) {
-					errors.add("Unfinished function:" + unit.source.getErr(lines[i]));
+				if(line[line.length-1].base != TokenBase.TK_BRACE_OPEN) {
+					errors.add("Expected '{' to begin function:" + line[line.length-1].getErr());
 					continue;
 				}
+				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
 				FunctionSection func = FunctionDeclarationParser.parseFunctionSection(
 						unit, lines, i, functionEnd, mods, errors);
 				i = functionEnd;
@@ -148,17 +146,16 @@ public class UnitParser extends AbstractParser {
 			} else if(line[0].base == TokenBase.KW_STRUCT) {
 				// parse struct
 				DeclarationModifiers mods = modifiers.getModifiers();
-				if(line.length < 3) {
-					errors.add("Invalid struct declaration:" + unit.source.getErr(lines[i]));
-					continue;
-				} else if(!expectToken(line[2], TokenBase.TK_BRACE_OPEN, "Expected '{' to begin structure", errors)) {
+				try {
+					Pointer p = new Pointer(1);
+					assertHasNext(line, p, "Invalid struct declaration", errors);
+					assertToken(line, p, TokenBase.VAR_UNIT, "Expected structure name", errors);
+					assertToken(line, p, TokenBase.TK_BRACE_OPEN, "Expected '{' to begin structure", errors);
+					assertNoRemainingTokens(line, p, errors);
+				} catch (ParsingException e) {
 					continue;
 				}
 				int structEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
-				if(structEnd == -1) {
-					errors.add("Unfinished struct:" + unit.source.getErr(lines[i]));
-					continue;
-				}
 				ErrorWrapper subErrors = errors.subErrrors("Cannot parse a struct declaration");
 				StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, mods, subErrors);
 				i = structEnd;

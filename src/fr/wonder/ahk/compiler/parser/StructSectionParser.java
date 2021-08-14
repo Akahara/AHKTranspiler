@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.Operator;
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
+import fr.wonder.ahk.compiled.units.sections.OverloadedOperator;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Invalids;
@@ -20,18 +23,13 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class StructSectionParser extends AbstractParser {
 
+	/* assumes that the lines[begin] is a valid struct declaration (kw_struct var_unit tk_{)*/
 	public static StructSection parseStruct(Unit unit, Token[][] lines, int begin, int end,
 			DeclarationModifiers structModifiers, ErrorWrapper errors) {
 		
 		Token[] declaration = lines[begin];
-		if(declaration.length != 3) {
-			errors.add("Invalid declaration:" + unit.source.getErr(declaration));
-			return Invalids.STRUCTURE;
-		} else if(!expectToken(declaration[1], TokenBase.VAR_UNIT, "Expected structure name", errors)) {
-			return Invalids.STRUCTURE;
-		}
-
 		String structName = declaration[1].text;
+		
 		StructSection structure = new StructSection(
 				unit,
 				declaration[0].sourceStart,
@@ -41,6 +39,7 @@ class StructSectionParser extends AbstractParser {
 		
 		List<VariableDeclaration> members = new ArrayList<>();
 		List<StructConstructor> constructors = new ArrayList<>();
+		List<OverloadedOperator> operators = new ArrayList<>();
 		ConstructorDefaultValue[] nullFields = null;
 		
 		ModifiersHolder modifiers = new ModifiersHolder();
@@ -65,6 +64,9 @@ class StructSectionParser extends AbstractParser {
 			} else if(Tokens.isDeclarationVisibility(line[0].base)) {
 				modifiers.setVisibility(line[0], errors);
 				
+			} else if(line[0].base == TokenBase.KW_OPERATOR) {
+				operators.add(parseOverloadedOperator(unit, line, errors));
+				
 			} else {
 				errors.add("Unexpected line begin token in struct declaration:" + unit.source.getErr(line));
 			}
@@ -88,7 +90,7 @@ class StructSectionParser extends AbstractParser {
 		
 		return structure;
 	}
-	
+
 	/** assumes that the line starts with the 'constructor' keyword */
 	private static StructConstructor parseConstructor(StructSection structure,
 			Token[] line, DeclarationModifiers modifiers, ErrorWrapper errors) {
@@ -122,9 +124,9 @@ class StructSectionParser extends AbstractParser {
 		if(line.length < 3) {
 			errors.add("Invalid null declaration:" + unit.source.getErr(line));
 			return null;
-		} else if(!assertParentheses(line, 1, line.length-1, errors)) {
-			return null;
 		}
+		try { assertParentheses(line, 1, line.length-1, errors); }
+		catch (ParsingException e) { return null; }
 		Section section = ExpressionParser.getVisibleSection(line, 2, line.length-1);
 		
 		int prevComa = 2;
@@ -148,8 +150,12 @@ class StructSectionParser extends AbstractParser {
 		if(i - prevComa < 3) {
 			errors.add("Invalid default value syntax:" + unit.source.getErr(line, prevComa, i));
 			return null;
-		} else if(!expectToken(line[prevComa], TokenBase.VAR_VARIABLE, "Expected default value name", errors) ||
-				!expectToken(line[prevComa+1], TokenBase.KW_EQUAL, "Expected '='", errors)) {
+		}
+		try {
+			Pointer p = new Pointer(prevComa);
+			assertToken(line, p, TokenBase.VAR_VARIABLE, "Expected default value name", errors);
+			assertToken(line, p, TokenBase.KW_EQUAL, "Expected '='", errors);
+		} catch (ParsingException e) {
 			return null;
 		}
 		Expression value = ExpressionParser.parseExpression(unit, line, prevComa+2, i, errors);
@@ -159,6 +165,36 @@ class StructSectionParser extends AbstractParser {
 				line[i-1].sourceStop,
 				line[prevComa].text,
 				value);
+	}
+	
+	/** assumes that line[0].base == KW_OPERATOR */
+	private static OverloadedOperator parseOverloadedOperator(Unit unit, Token[] line, ErrorWrapper errors) {
+		try {
+			Pointer p = new Pointer(1);
+			assertHasNext(line, p, "Incomplete operator declaration", errors, 7);
+			assertToken(line, p, TokenBase.VAR_VARIABLE, "Expected operator implementation function name", errors);
+			assertToken(line, p, TokenBase.TK_COLUMN, "Expected ':'", errors);
+			VarType leftOperand = null;
+			if(!Tokens.isOperator(line[p.position].base))
+				leftOperand = parseType(unit, line, p, errors);
+			assertHasNext(line, p, "Expected overloaded operator", errors);
+			Operator op = Tokens.getOperator(line[p.position].base);
+			if(op == null)
+				errors.add("Expected operator:" + line[p.position].getErr());
+			p.position++;
+			assertHasNext(line, p, "Incomplete operator declaration", errors);
+			VarType rightOperand = parseType(unit, line, p, errors);
+			assertToken(line, p, TokenBase.KW_EQUAL, "Expected '='", errors);
+			assertHasNext(line, p, "Expected operator result type", errors);
+			VarType resultType = parseType(unit, line, p, errors);
+			assertNoRemainingTokens(line, p, errors);
+			
+			return new OverloadedOperator(unit, op,
+					resultType, leftOperand, rightOperand,
+					line[0].sourceStart, line[line.length-1].sourceStop);
+		} catch (ParsingException e) {
+			return Invalids.OVERLOADED_OPERATOR;
+		}
 	}
 
 }

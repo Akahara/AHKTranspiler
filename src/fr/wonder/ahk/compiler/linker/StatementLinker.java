@@ -101,19 +101,18 @@ class StatementLinker {
 		
 		if(st instanceof ReturnSt) {
 			ReturnSt rst = (ReturnSt) st;
+			Expression returned = rst.getExpression();
 			if(func.returnType == VarType.VOID) {
-				if(rst.getExpression() != null)
+				if(returned != null) {
 					errors.add("A void function cannot return a value:" + rst.getErr());
-			} else {
-				Expression returnExp = rst.getExpression();
-				if(returnExp == null) {
-					errors.add("This function must return a value of type " + func.returnType + rst.getErr());
-				} else {
-					VarType returnType = returnExp.getType();
-					if(!ConversionTable.canConvertImplicitely(returnType, func.returnType))
-						errors.add("Invalid return type, " + returnType +
-								" cannot be converted to " + func.returnType + rst.getErr());
+					return;
 				}
+			} else {
+				if(returned == null) {
+					errors.add("This function must return a value of type " + func.returnType + rst.getErr());
+					return;
+				}
+				Linker.checkAffectationType(st, 0, func.returnType, errors);
 			}
 			
 		} else if(st instanceof IfSt) {

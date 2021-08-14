@@ -5,6 +5,7 @@ import static fr.wonder.ahk.compiler.tokens.TokenBase.VAR_UNIT;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
@@ -25,6 +26,9 @@ class AbstractParser {
 	public static class ParsingException extends Exception {
 
 		private static final long serialVersionUID = 1L;
+		
+		public ParsingException() {}
+		public ParsingException(String e) { super(e); }
 		
 	}
 
@@ -124,25 +128,51 @@ class AbstractParser {
 		return baseType;
 	}
 
-	public static boolean expectToken(Token token, TokenBase base,
-			String error, ErrorWrapper errors) {
-		if(token.base != base) {
-			errors.add(error + ':' + token.getErr());
-			return false;
+	public static Token assertToken(Token[] line, Pointer p, TokenBase base,
+			String error, ErrorWrapper errors) throws ParsingException {
+		if(p.position == line.length) {
+			errors.add(error + ':' + line[0].getSource().getErr(line[line.length-1].sourceStop));
+			throw new ParsingException();
 		}
-		return true;
+		Token t = line[p.position];
+		p.position++;
+		if(t.base != base) {
+			errors.add(error + ':' + t.getErr());
+			throw new ParsingException();
+		}
+		return t;
 	}
-
+	
+	/**
+	 * Parses an argument list, may be used for function declarations or composite
+	 * types.<br>
+	 * (int, Struct, bool[][]) for example. Won't work with complex types that must
+	 * be aliased (function types and composites). Names can be required, in which
+	 * case no exception will be thrown if one is missing but an error will be reported
+	 * in the error wrapper and the name will default to the empty string.
+	 */
 	public static ArgumentList readArguments(Unit unit, Token[] line,
 			Pointer pointer, boolean requireNames, ErrorWrapper errors) throws ParsingException {
 		
+		return readArguments(() -> parseType(unit, line, pointer, errors),
+				unit.source, line, pointer, requireNames, errors);
+	}
+	
+	/**
+	 * Used both by the simple
+	 * {@link #readArguments(Unit, Token[], Pointer, boolean, ErrorWrapper)} method
+	 * and by the alias parser, in which case the {@code typeParser} argument will
+	 * be {@link AliasDeclarationParser#parseType(Unit, Token[], Pointer, ErrorWrapper)}
+	 * which can parse complex types that should be aliased otherwise.
+	 */
+	public static ArgumentList readArguments(TypeParser typeParser, UnitSource source, Token[] line,
+			Pointer pointer, boolean requireNames, ErrorWrapper errors) throws ParsingException {
+
 		assertHasNext(line, pointer, "Incomplete composite", errors, 2);
 		
 		ArgumentList arguments = new ArgumentList();
 		
-		if(!expectToken(line[pointer.position], TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", errors))
-			throw new ParsingException();
-		pointer.position++; // skip '('
+		assertToken(line, pointer, TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", errors);
 		if(line[pointer.position].base == TokenBase.TK_PARENTHESIS_CLOSE) {
 			pointer.position++; // skip ')'
 			return arguments;
@@ -151,8 +181,8 @@ class AbstractParser {
 		while(true) {
 			assertHasNext(line, pointer, "Expected argument type", errors);
 			int sourceStart = line[pointer.position].sourceStart;
-			VarType type = parseType(unit, line, pointer, errors);
-			String name = null;
+			VarType type = typeParser.parseType();
+			String name = "";
 			assertHasNext(line, pointer, "Incomplete composite", errors);
 			Token nextTk = line[pointer.position++];
 			if(nextTk.base == TokenBase.VAR_VARIABLE) {
@@ -162,26 +192,27 @@ class AbstractParser {
 				nextTk = line[pointer.position++];
 			} else if(requireNames) {
 				errors.add("Expected name:" + nextTk.getErr());
-				name = "";
 			}
 			int sourceStop = nextTk.sourceStart;
-			arguments.add(new FunctionArgument(unit.source, sourceStart, sourceStop, name, type));
+			arguments.add(new FunctionArgument(source, sourceStart, sourceStop, name, type));
 			
-			if(nextTk.base == TokenBase.TK_PARENTHESIS_CLOSE) {
+			if(nextTk.base == TokenBase.TK_PARENTHESIS_CLOSE)
 				return arguments;
-			} else if(!expectToken(nextTk, TokenBase.TK_COMMA, "Expected ','", errors)) {
-				throw new ParsingException();
-			}
+			else if(nextTk.base != TokenBase.TK_COMMA)
+				errors.add("Expected ',':" + nextTk.getErr());
 		}
 	}
+	
+	protected static interface TypeParser {
+		
+		/** Will use the pointer, error wrapper and token line given to #readArguments */
+		public VarType parseType() throws ParsingException;
+		
+	}
 
-	public static boolean assertParentheses(Token[] line, int begin, int end, ErrorWrapper errors) {
-		boolean success = true;
-		if(!expectToken(line[begin], TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", errors))
-			success = false;
-		if(!expectToken(line[end], TokenBase.TK_PARENTHESIS_CLOSE, "Exppected ')'", errors))
-			success = false;
-		return success;
+	public static void assertParentheses(Token[] line, int begin, int end, ErrorWrapper errors) throws ParsingException {
+		assertToken(line, new Pointer(begin), TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", errors);
+		assertToken(line, new Pointer(end), TokenBase.TK_PARENTHESIS_CLOSE, "Exppected ')'", errors);
 	}
 
 	/** Assumes that the first line token base is VAR_MODIFIER */

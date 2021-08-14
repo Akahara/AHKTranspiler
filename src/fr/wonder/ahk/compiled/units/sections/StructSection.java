@@ -20,6 +20,7 @@ public class StructSection extends SourceObject {
 	public VariableDeclaration[] members;
 	public StructConstructor[] constructors;
 	public ConstructorDefaultValue[] nullFields;
+	public OverloadedOperator[] operators;
 	
 	private StructPrototype prototype;
 	

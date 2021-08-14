@@ -92,15 +92,23 @@ public class StatementParser extends AbstractParser {
 		Token last = line[line.length-1];
 		Expression rightOperand = new IntLiteral(unit.source, last.sourceStart, last.sourceStop, 1);
 		Operator op = Tokens.getDirectOperation(last.base);
-		Expression affectation = new OperationExp(unit.source, line[0].sourceStart, last.sourceStop, op, leftOperand, rightOperand);
-		return new AffectationSt(unit.source, line[0].sourceStart, last.sourceStop, leftOperand, affectation);
+		Expression affectation = new OperationExp(
+				unit.source,
+				line[0].sourceStart, last.sourceStop,
+				op, leftOperand, rightOperand);
+		return new AffectationSt(
+				unit.source,
+				line[0].sourceStart, last.sourceStop,
+				leftOperand, affectation);
 	}
 
 	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line, ErrorWrapper errors) {
 		return parseVariableDeclaration(unit, line, DeclarationModifiers.NONE, errors);
 	}
 	
-	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line, DeclarationModifiers modifiers, ErrorWrapper errors) {
+	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line,
+			DeclarationModifiers modifiers, ErrorWrapper errors) {
+		
 		try {
 			Pointer pointer = new Pointer();
 			
@@ -108,19 +116,20 @@ public class StatementParser extends AbstractParser {
 			
 			VarType type = parseType(unit, line, pointer, errors);
 			
-			expectToken(line[pointer.position], TokenBase.VAR_VARIABLE, "Expected variable name", errors);
-			String varName = line[pointer.position++].text;
+			String varName = assertToken(line, pointer, TokenBase.VAR_VARIABLE, "Expected variable name", errors).text;
 			
 			Expression defaultValue;
 			if(line.length == pointer.position) {
 				defaultValue = getDefaultValue(type, unit.source, line[line.length-1].sourceStop);
 			} else {
-				assertHasNext(line, pointer, "Expected affectation value", errors, 2);
-				expectToken(line[pointer.position++], TokenBase.KW_EQUAL, "Expected affectation value", errors);
+				assertToken(line, pointer, TokenBase.KW_EQUAL, "Expected affectation value", errors);
+				assertHasNext(line, pointer, "Expected affectation value", errors);
 				defaultValue = ExpressionParser.parseExpression(unit, line, pointer.position, line.length, errors);
 			}
 			
-			return new VariableDeclaration(unit, line[0].sourceStart, line[line.length-1].sourceStop, varName, type, modifiers, defaultValue);
+			return new VariableDeclaration(unit,
+					line[0].sourceStart, line[line.length-1].sourceStop,
+					varName, type, modifiers, defaultValue);
 		} catch (ParsingException e) {
 			return Invalids.VARIABLE_DECLARATION;
 		}
@@ -145,17 +154,15 @@ public class StatementParser extends AbstractParser {
 	
 	/** Assumes that the first token is KW_IF */
 	private static Statement parseIfStatement(Unit unit, Token[] line, ErrorWrapper errors) {
-		if(line.length < 3) {
-			errors.add("Incomplete if statement:" + unit.source.getErr(line));
-			return Invalids.STATEMENT;
-		}
-		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
-		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!assertParentheses(line, 1, conditionEnd, errors)) {
-			return Invalids.STATEMENT;
-		} else {
+		try {
+			assertHasNext(line, new Pointer(), "Incomplete if statement", errors, 3);
+			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
+			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
+			assertParentheses(line, 1, conditionEnd, errors);
 			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
 			return new IfSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
+		} catch (ParsingException e) {
+			return Invalids.STATEMENT;
 		}
 	}
 	
@@ -167,37 +174,33 @@ public class StatementParser extends AbstractParser {
 	
 	/** Assumes that the first token is KW_WHILE */
 	private static Statement parseWhileStatement(Unit unit, Token[] line, ErrorWrapper errors) {
-		if(line.length < 3) {
-			errors.add("Incomplete while statement:" + unit.source.getErr(line));
-			return Invalids.STATEMENT;
-		}
-		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
-		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!assertParentheses(line, 1, conditionEnd, errors)) {
-			return Invalids.STATEMENT;
-		} else {
+		try {
+			assertHasNext(line, new Pointer(), "Incomplete while statement", errors, 3);
+			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
+			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
+			assertParentheses(line, 1, conditionEnd, errors);
 			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
 			return new WhileSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, condition, singleLine);
+		} catch (ParsingException e) {
+			return Invalids.STATEMENT;
 		}
 	}
 	
 	/** Assumes that the first token is KW_FOR */
 	private static Statement parseForStatement(Unit unit, Token[] line, ErrorWrapper errors) {
-		if(line.length < 3) {
-			errors.add("Incomplete for statement:" + unit.source.getErr(line));
+		try {
+			assertHasNext(line, new Pointer(), "Incomplete for statement", errors, 3);
+			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
+			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
+			assertParentheses(line, 1, conditionEnd, errors);
+			int simpleRangeMarker = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, 2);
+			if(simpleRangeMarker != -1)
+				return parseRangedFor(unit, line, conditionEnd, simpleRangeMarker, singleLine, errors);
+			else
+				return parseComplexFor(unit, line, conditionEnd, singleLine, errors);
+		} catch (ParsingException e) {
 			return Invalids.STATEMENT;
 		}
-		boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
-		int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-		if(!assertParentheses(line, 1, conditionEnd, errors))
-			return Invalids.STATEMENT;
-		
-		int simpleRangeMarker = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, 2);
-		
-		if(simpleRangeMarker != -1)
-			return parseRangedFor(unit, line, conditionEnd, simpleRangeMarker, singleLine, errors);
-		else
-			return parseComplexFor(unit, line, conditionEnd, singleLine, errors);
 	}
 
 	private static Statement parseComplexFor(Unit unit, Token[] line, int conditionEnd, boolean singleLine,
@@ -255,7 +258,8 @@ public class StatementParser extends AbstractParser {
 			return Invalids.STATEMENT;
 		}
 		// replace ':' by '=' (necessary to parse declaration)
-		line[equalsMarker] = new Token(unit.source, TokenBase.KW_EQUAL, "=", line[equalsMarker].sourceStart, line[equalsMarker].sourceStop);
+		line[equalsMarker] = new Token(unit.source, TokenBase.KW_EQUAL, "=",
+				line[equalsMarker].sourceStart, line[equalsMarker].sourceStop);
 		if(line[2].base != TokenBase.TYPE_INT) {
 			errors.add("Missing range target in for statement:" + unit.source.getErr(line, 2, simpleRangeMarker));
 			return Invalids.STATEMENT;
@@ -279,8 +283,7 @@ public class StatementParser extends AbstractParser {
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors, 5);
 			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
-			if(!assertParentheses(line, 1, conditionEnd, errors))
-				return Invalids.STATEMENT;
+			assertParentheses(line, 1, conditionEnd, errors);
 			if(!Tokens.isVarType(line[2].base) || line[3].base != TokenBase.VAR_VARIABLE) {
 				errors.add("Expected variable declaration " + unit.source.getErr(line, 2, 3));
 				return Invalids.STATEMENT;
@@ -288,12 +291,17 @@ public class StatementParser extends AbstractParser {
 			pointer.position = 2;
 			VarType type = parseType(unit, line, pointer, errors);
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors);
-			expectToken(line[pointer.position], TokenBase.TK_COLUMN, "Expected ':'", errors);
-			VariableDeclaration var = new VariableDeclaration(unit, line[2].sourceStart,
-					line[pointer.position-1].sourceStop, line[3].text, type, DeclarationModifiers.NONE, null);
-			Expression iterable = ExpressionParser.parseExpression(unit, line, pointer.position, conditionEnd, errors);
+			assertToken(line, pointer, TokenBase.TK_COLUMN, "Expected ':'", errors);
+			VariableDeclaration var = new VariableDeclaration(unit,
+					line[2].sourceStart, line[pointer.position-1].sourceStop,
+					line[3].text, type, DeclarationModifiers.NONE, null);
+			Expression iterable = ExpressionParser.parseExpression(
+					unit, line, pointer.position, conditionEnd, errors);
 			
-			return new ForEachSt(unit.source, line[0].sourceStart, line[line.length-1].sourceStop, singleLine, var, iterable);
+			return new ForEachSt(
+					unit.source,
+					line[0].sourceStart, line[line.length-1].sourceStop,
+					singleLine, var, iterable);
 		} catch (ParsingException e) {
 			return Invalids.STATEMENT;
 		}

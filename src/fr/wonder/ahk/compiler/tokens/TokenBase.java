@@ -34,6 +34,7 @@ public enum TokenBase {
 	KW_ALIAS("alias"),
 	KW_GLOBAL("global"),
 	KW_LOCAL("local"),
+	KW_OPERATOR("operator"),
 	
 	TYPE_VOID("void"),
 	TYPE_INT("int"),

@@ -16,7 +16,6 @@ import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.exceptions.UnreachableException;
-import fr.wonder.commons.types.Tuple;
 import fr.wonder.commons.utils.Assertions;
 
 public class AliasDeclarationParser extends AbstractParser {
@@ -96,15 +95,17 @@ public class AliasDeclarationParser extends AbstractParser {
 			
 			Assertions.assertTrue(line[0].base == TokenBase.KW_ALIAS);
 			
-			if(line.length < 3) {
-				unitAliases.errors.add("Invalid alias declaration:" + unit.source.getErr(line));
-			} else if(expectToken(line[1], TokenBase.VAR_UNIT, "Expected alias name", unitAliases.errors) &&
-					expectToken(line[2], TokenBase.KW_EQUAL, "Expected '='", unitAliases.errors)) {
-				
-				String aliasName = line[1].text;
-				ErrorWrapper aliasErrors = unitAliases.errors.subErrrors("Cannot resolve alias " + aliasName);
-				unitAliases.aliases.add(new AliasParser(unitAliases, line, aliasName, aliasErrors));
+			try {
+				Pointer p = new Pointer(1);
+				assertHasNext(line, p, "Invalid alias declaration", unitAliases.errors, 2);
+				assertToken(line, p, TokenBase.VAR_UNIT, "Expected alias name", unitAliases.errors);
+				assertToken(line, p, TokenBase.KW_EQUAL, "Expected '='", unitAliases.errors);
+			} catch (ParsingException e) {
+				continue;
 			}
+			String aliasName = line[1].text;
+			ErrorWrapper aliasErrors = unitAliases.errors.subErrrors("Cannot resolve alias " + aliasName);
+			unitAliases.aliases.add(new AliasParser(unitAliases, line, aliasName, aliasErrors));
 		}
 	}
 	
@@ -189,11 +190,11 @@ public class AliasDeclarationParser extends AbstractParser {
 			
 			alias.resolvedType = type;
 			alias.parsingStatus = STATUS_RESOLVED;
-		} catch (ParsingException x) {
-			alias.parsingStatus = STATUS_ERROR;
 		} catch (CyclicAliasDeclaration x) {
 			alias.parsingStatus = STATUS_ERROR;
 			throw x;
+		} catch (ParsingException x) {
+			alias.parsingStatus = STATUS_ERROR;
 		}
 	}
 	
@@ -256,72 +257,26 @@ public class AliasDeclarationParser extends AbstractParser {
 	
 	/** assumes that line[pointer] is a KW_FUNC */
 	private static VarType parseFunctionType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {
-		assertHasNext(alias, pointer, 3);
+		assertHasNext(alias.line, pointer, "Incomplete function type", alias.errors, 3);
 		
 		pointer.position++; // skip the 'func' keyword
 		VarType returnType = parseType(alias, pointer);
 		
-		VarType[] arguments = readArguments(alias, pointer, false).a;
-		if(arguments.length > VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT) {
+		ArgumentList arguments = readArguments(() -> parseType(alias, pointer), alias.unit.unit.source, alias.line, pointer, false, null);
+		if(arguments.size() > VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT) {
 			alias.errors.add("Function types cannot exceed " + VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT + " arguments");
 			throw new ParsingException();
 		}
 		
-		return new VarFunctionType(returnType, arguments);
+		return new VarFunctionType(returnType, arguments.getTypes());
 	}
 	
 	private static VarType parseCompositeType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {
-		var args = readArguments(alias, pointer, true);
-		return new VarCompositeType(args.b, args.a);
+		var args = readArguments(() -> parseType(alias, pointer), alias.unit.unit.source, alias.line, pointer, true, alias.errors);
+		return new VarCompositeType(args.getNames(), args.getTypes());
 	}
 	
-	private static Tuple<VarType[], String[]> readArguments(AliasParser alias, Pointer pointer, boolean requireNames) throws ParsingException, CyclicAliasDeclaration {
-		Token[] line = alias.line;
-		assertHasNext(alias, pointer, 2);
-		
-		if(!expectToken(line[pointer.position], TokenBase.TK_PARENTHESIS_OPEN, "Expected '('", alias.errors))
-			throw new ParsingException();
-		pointer.position++; // skip '('
-		if(line[pointer.position].base == TokenBase.TK_PARENTHESIS_CLOSE) {
-			pointer.position++; // skip ')'
-			return new Tuple<>(new VarType[0], new String[0]);
-		}
-		
-		List<VarType> arguments = new ArrayList<>();
-		List<String> names = new ArrayList<>();
-		while(true) {
-			assertHasNext(alias, pointer);
-			VarType type = parseType(alias, pointer);
-			arguments.add(type);
-			assertHasNext(alias, pointer);
-			Token nextTk = line[pointer.position++];
-			if(nextTk.base == TokenBase.VAR_VARIABLE) {
-				// skip optional argument name
-				names.add(nextTk.text);
-				assertHasNext(alias, pointer);
-				nextTk = line[pointer.position++];
-			} else if(requireNames) {
-				alias.errors.add("Expected name:" + nextTk.getErr());
-			}
-			if(nextTk.base == TokenBase.TK_PARENTHESIS_CLOSE) {
-				VarType[] argsArr = arguments.toArray(VarType[]::new);
-				String[] namesArr = names.toArray(String[]::new);
-				return new Tuple<>(argsArr, namesArr);
-			} else if(!expectToken(nextTk, TokenBase.TK_COMMA, "Expected ','", alias.errors)) {
-				throw new ParsingException();
-			}
-		}
-	}
-	
-	private static void assertHasNext(AliasParser alias, Pointer pointer) throws ParsingException {
-		assertHasNext(alias, pointer, 1);
-	}
-	
-	private static void assertHasNext(AliasParser alias, Pointer pointer, int count) throws ParsingException {
-		assertHasNext(alias.line, pointer, "Unexpected alias end", alias.errors);
-	}
-	
-	private static final class CyclicAliasDeclaration extends Exception {
+	private static final class CyclicAliasDeclaration extends ParsingException {
 
 		private static final long serialVersionUID = 1L;
 		

@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiler;
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
@@ -21,6 +22,7 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiled.units.sections.OverloadedOperator;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.types.Operation;
@@ -95,5 +97,7 @@ public class Invalids {
 	public static final Alias ALIAS = new Alias(SOURCE, 0, 0, STRING, FUNCTION_TYPE);
 
 	public static final FunctionSection FUNCTION = new FunctionSection(UNIT, 0, 0, 0, MODIFIERS);
+
+	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(UNIT, Operator.ADD, TYPE, TYPE, TYPE, 0, 0);
 	
 }
