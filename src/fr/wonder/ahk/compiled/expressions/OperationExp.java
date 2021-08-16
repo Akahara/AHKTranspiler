@@ -37,17 +37,21 @@ public class OperationExp extends Expression {
 	public Expression getRightOperand() {
 		return expressions[0];
 	}
+
+	public Expression[] getOperands() {
+		return expressions;
+	}
 	
 	public void setOperation(Operation op) {
 		this.operation = op;
 		if(op == Invalids.OPERATION)
 			return;
-		if((op.getLOType() == null) != (getLOType() == null))
+		if((op.loType == null) != (getLOType() == null))
 			throw new IllegalStateException("Invalid operand count");
-		if(getLOType() != op.getLOType())
-			expressions[1] = new ConversionExp(getLeftOperand(), op.getLOType());
-		if(getROType() != op.getROType())
-			expressions[0] = new ConversionExp(getRightOperand(), op.getROType());
+		if(!Objects.equals(getLOType(), op.loType))
+			expressions[1] = new ConversionExp(getLeftOperand(), op.loType);
+		if(!getROType().equals(op.roType))
+			expressions[0] = new ConversionExp(getRightOperand(), op.roType);
 	}
 	
 	public Operation getOperation() {
@@ -70,11 +74,11 @@ public class OperationExp extends Expression {
 	
 	@Override
 	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return operation.getResultType();
+		return operation.resultType;
 	}
-
+	
 	public String operationString() {
 		return getLOType() + " " + operator + " " + getROType();
 	}
-	
+
 }

@@ -88,7 +88,7 @@ global func int main() {
 	Kernel.println("------ Expected composed strings:");
 	Kernel.println("a composed " + "string");
 	Kernel.println("");
-	Kernel.println("------ Expected 2 37 5 1 65 42");
+	Kernel.println("------ Expected 2 37 5 1 65 42 22");
 	Cyclic1 cyclic1 = null;
 	cyclic1.a = 2;
 	Kernel.printlni(cyclic1.other.other.a);
@@ -101,6 +101,6 @@ global func int main() {
 	Kernel.printlni(function(0).a);
 	function = structGen;
 	Kernel.printlni(function(42).a);
-	Kernel.printlni((function(0)+function(42)).a);
+	Kernel.printlni((function(10)+function(12)).a);
 	return 5;
 }

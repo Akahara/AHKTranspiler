@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiler.linker;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.AliasPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
@@ -30,25 +31,29 @@ public class Signatures {
 				var.name);
 	}
 	
+	public static Signature of(StructSection structure) {
+		return new Signature(
+				structure.unit.fullBase,
+				structure.name,
+				structSig(structure));
+	}
+	
+	private static String structSig(StructSection structure) {
+		return structure.unit.fullBase + '@' + structure.name;
+	}
+	
 	public static Signature of(VariableDeclaration member, StructSection struct) {
 		return new Signature(
-				member.unit.fullBase + '@' + struct.name,
+				structSig(struct),
 				member.name,
 				member.name);
 	}
 
 	public static Signature of(StructConstructor constructor) {
 		return new Signature(
-				constructor.struct.unit.fullBase + "@" + constructor.struct.name,
+				structSig(constructor.struct),
 				"constructor",
 				"constructor_" + constructor.getConstructorSignature());
-	}
-	
-	public static Signature of(StructSection structure) {
-		return new Signature(
-				structure.unit.fullBase,
-				structure.name,
-				structure.name);
 	}
 	
 	public static Signature of(FunctionArgument arg) {
@@ -70,6 +75,14 @@ public class Signatures {
 				unitFullBase,
 				alias.text,
 				"alias_"+alias.text+"_"+alias.resolvedType.getSignature());
+	}
+	
+	public static Signature of(OverloadedOperatorPrototype operator, StructSection structure) {
+		return new Signature(
+				structSig(structure),
+				"operator_"+operator.operator.toString(),
+				"operator_"+operator.loType+"_"+operator.operator+"_"+
+						operator.roType+"_"+operator.resultType);
 	}
 
 }

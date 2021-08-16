@@ -8,15 +8,19 @@ public class StructPrototype implements Prototype<StructPrototype> {
 	public final Signature signature;
 	public final VariablePrototype[] members;
 	public final ConstructorPrototype[] constructors;
+	public final OverloadedOperatorPrototype[] overloadedOperators;
 	public final DeclarationModifiers modifiers;
 	
 	public StructPrototype(
 			VariablePrototype[] members,
 			ConstructorPrototype[] constructors,
+			OverloadedOperatorPrototype[] overloadedOperators,
 			DeclarationModifiers modifiers,
 			Signature signature) {
+		
 		this.members = members;
 		this.constructors = constructors;
+		this.overloadedOperators = overloadedOperators;
 		this.modifiers = modifiers;
 		this.signature = signature;
 	}

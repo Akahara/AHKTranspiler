@@ -1,26 +1,32 @@
 package fr.wonder.ahk.compiler.types;
 
+import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.commons.annotations.Nullable;
 
 /**
- * An operation takes a right and possibly a right operand and return a value,
+ * An operation takes a right and possibly a left operand and return a value,
  * native operations are stored in the {@link NativeOperation} class and
  * user-defined operations (operator overloading) are declared in structures.
  */
-public interface Operation {
+public abstract class Operation {
+	
+	public final VarType loType, roType, resultType;
+	public final Operator operator;
+	
+	public Operation(VarType loType, VarType roType, Operator operator, VarType resultType) {
+		this.loType = loType;
+		this.roType = roType;
+		this.operator = operator;
+		this.resultType = resultType;
+	}
 
-	/** Returns the result type of this of this operation */
-	public VarType getResultType();
-
-	/**
-	 * Returns the left operand type, if {@code null} this operation does not take a
-	 * left operand
-	 */
-	@Nullable
-	public VarType getLOType();
-
-	/** Returns the right operand type */
-	public VarType getROType();
+	public int argCount() {
+		return loType == null ? 1 : 2;
+	}
+	
+	@Override
+	public String toString() {
+		return loType + " " + operator + " " + roType + " = " + resultType;
+	}
 
 }

@@ -357,11 +357,11 @@ public class UnitWriter {
 		for(StructSection struct : unit.structures) {
 			ConcreteType concreteType = types.getConcreteType(struct);
 			MemAddress nullAddress = new MemAddress(new LabelAddress(getStructNullRegistry(struct.getPrototype())));
+			instructions.comment("init " + struct.name + " null");
 			for(VariableDeclaration member : struct.members) {
 				ConstructorDefaultValue nullField = struct.getNullField(member.name);
 				Expression nullMemberValue = nullField == null ? member.getDefaultValue() : nullField.getValue();
 				Address fieldAddress = nullAddress.addOffset(concreteType.getOffset(member.name));
-				instructions.comment("init " + struct.name + " null");
 				mem.writeTo(fieldAddress, nullMemberValue, errors);
 			}
 		}

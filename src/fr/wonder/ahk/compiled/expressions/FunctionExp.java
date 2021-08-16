@@ -1,8 +1,8 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -20,10 +20,21 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 public class FunctionExp extends FunctionExpression {
 	
 	public final FunctionPrototype function;
-	
-	public FunctionExp(UnitSource source, FunctionCallExp funcCall, FunctionPrototype function) {
-		super(source, funcCall.sourceStart, funcCall.sourceStop, funcCall.getArguments());
+
+	public FunctionExp(FunctionCallExp funcCall, FunctionPrototype function) {
+		super(funcCall.getSource(), funcCall.sourceStart,
+				funcCall.sourceStop, funcCall.getArguments());
 		this.function = function;
+	}
+	
+	/**
+	 * Can only be used for linked operation expressions referring to overloaded
+	 * operators.
+	 */
+	public FunctionExp(OperationExp operation) {
+		super(operation.getSource(), operation.sourceStart,
+				operation.sourceStop, operation.getOperands());
+		this.function = ((OverloadedOperatorPrototype) operation.getOperation()).function;
 	}
 	
 	@Override

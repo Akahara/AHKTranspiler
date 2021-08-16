@@ -17,6 +17,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
@@ -57,7 +58,7 @@ class ExpressionLinker {
 				exp = linkFunctionExpression(unit, expressions, i, errors);
 				
 			} else if(exp instanceof OperationExp) {
-				linkOperationExpression((OperationExp) exp, typesTable, errors);
+				linkOperationExpression(unit, (OperationExp) exp, typesTable, errors);
 			
 			} else if(exp instanceof ConstructorExp) {
 				linkConstructorExpression(unit, (ConstructorExp) exp, errors);
@@ -131,14 +132,20 @@ class ExpressionLinker {
 		exp.constructor = matchingConstructor == null ? Invalids.CONSTRUCTOR_PROTOTYPE : matchingConstructor;
 	}
 
-	private static void linkOperationExpression(OperationExp exp, TypesTable typesTable, ErrorWrapper errors) {
+	private static void linkOperationExpression(Unit unit, OperationExp exp,
+			TypesTable typesTable, ErrorWrapper errors) {
+		
 		Operation op = typesTable.getOperation(exp);
-		// TODO when operator overloading is implemented...
-		// if the operation refers to an overloaded operator add it to the external accesses of the unit prototype
+		
 		if(op == null) {
 			errors.add("Unimplemented operation! " + exp.operationString() + exp.getErr());
 			op = Invalids.OPERATION;
+		} else if(op instanceof OverloadedOperatorPrototype) {
+			OverloadedOperatorPrototype oop = (OverloadedOperatorPrototype) op;
+			unit.prototype.externalAccesses.add(oop);
+			unit.prototype.externalAccesses.add(oop.function);
 		}
+		
 		// #setOperation replaces the operation expression operands by cast expressions if needed
 		exp.setOperation(op);
 	}
@@ -185,7 +192,7 @@ class ExpressionLinker {
 		// if possible, replace the FunctionCallExp by a FunctionExp
 		if(fexp.getFunction() instanceof VarExp && ((VarExp) fexp.getFunction()).declaration instanceof FunctionPrototype) {
 			FunctionPrototype function = (FunctionPrototype) ((VarExp) fexp.getFunction()).declaration;
-			FunctionExp functionExpression = new FunctionExp(unit.source, fexp, function);
+			FunctionExp functionExpression = new FunctionExp(fexp, function);
 			expressions[expressionIndex] = functionExpression;
 			functionType = function.functionType;
 		} else {

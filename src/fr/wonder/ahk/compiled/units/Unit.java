@@ -38,11 +38,7 @@ public class Unit {
 	 * when a declaration is read the structure type is not known
 	 * (we only know its name) so a single instance is registered
 	 * and reused wherever the same struct name is used. This instance
-	 * will be linked to its struct declaration by the linker.<br>
-	 * <br>
-	 * Triplets in this list contain the type instance, the first
-	 * token that required it and the number of references
-	 * to it (for error logging purpose).
+	 * will be linked to its struct declaration by the linker.
 	 */
 	public final Map<String, ExternalStructAccess> usedStructTypes = new HashMap<>();
 	

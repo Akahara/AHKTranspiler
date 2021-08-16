@@ -14,11 +14,6 @@ public class TypesTable {
 		
 	}
 	
-	public VarType getOperationResult(OperationExp exp) {
-		Operation op = getOperation(exp);
-		return op == null ? null : op.getResultType();
-	}
-	
 	public Operation getOperation(OperationExp exp) {
 		// only the left operand may be null
 		VarType leftOp = exp.getLOType();
@@ -29,7 +24,7 @@ public class TypesTable {
 			return NativeOperation.getOperation(leftOp, rightOp, operator, true);
 		
 		if(leftOp instanceof VarStructType || rightOp instanceof VarStructType)
-			return operations.getOperation(leftOp, operator, rightOp);
+			return operations.getOperation(leftOp, rightOp, operator);
 		
 		return null;
 	}

@@ -20,14 +20,13 @@ import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
-import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.exceptions.UnreachableException;
 
 public class ExpressionWriter {
@@ -109,9 +108,8 @@ public class ExpressionWriter {
 	}
 	
 	private void writeOperationExp(OperationExp exp, ErrorWrapper errors) {
-		if(exp.getOperation() instanceof FunctionSection) { // FIX when operator overloading is implemented...
-			// functionSections do not implement operation, use the appropriate class instead
-			throw new UnimplementedException();
+		if(exp.getOperation() instanceof OverloadedOperatorPrototype) {
+			writeFunctionExp(new FunctionExp(exp), errors);
 		} else {
 			writer.opWriter.writeOperation(exp, errors);
 		}

@@ -4,6 +4,8 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 
 public class VarStructType extends VarType {
 	
+	// FIX the equality check between types CANNOT be made using ==
+	
 	public final String name;
 	
 	/** Set by the Prelinker */
@@ -32,6 +34,12 @@ public class VarStructType extends VarType {
 	public boolean equals(Object other) {
 		return other instanceof VarStructType &&
 				((VarStructType) other).name.equals(name);
+	}
+	
+	/** Needed for hashMaps, <b>cannot</b> be used before the linkage of the unit */
+	@Override
+	public int hashCode() {
+		return structure.signature.hashCode();
 	}
 	
 }

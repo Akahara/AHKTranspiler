@@ -16,39 +16,12 @@ import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Triplet;
 import fr.wonder.commons.utils.ArrayOperator;
 
-public class NativeOperation implements Operation {
-	
-	private final VarType resultType;
-	private final VarType leftOperand, rightOperand;
-	private final String registry;
+public class NativeOperation extends Operation {
 	
 	private NativeOperation(VarType l, VarType r, Operator o, VarType resultType) {
-		this.resultType = resultType;
-		this.leftOperand = l;
-		this.rightOperand = r;
-		this.registry = (l == null ? "" : l.getName()+'_') + r.getName()+'_'+o.name();
-	}
-	
-	@Override
-	public VarType getResultType() {
-		return resultType;
+		super(l, r, o, resultType);
 	}
 
-	@Override
-	public VarType getLOType() {
-		return leftOperand;
-	}
-	
-	@Override
-	public VarType getROType() {
-		return rightOperand;
-	}
-	
-	@Override
-	public String toString() {
-		return registry;
-	}
-	
 	/** Used to minimize the number */
 	private static final VarType[] nativeOrder = { BOOL, INT, FLOAT };
 	

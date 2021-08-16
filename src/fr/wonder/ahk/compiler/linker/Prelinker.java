@@ -10,6 +10,7 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.ExternalStructAccess;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
@@ -63,14 +64,8 @@ class Prelinker {
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
 	static void prelinkUnit(Unit unit, UnitPrototype[] units, ErrorWrapper errors) {
 		Map<String, List<StructPrototype>> declaredStructures = new HashMap<>();
-		for(UnitPrototype u : units) {
-			List<StructPrototype> globalStructures = new ArrayList<>();
-			for(StructPrototype s : u.structures) {
-				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
-					globalStructures.add(s);
-			}
-			declaredStructures.put(u.fullBase, globalStructures);
-		}
+		
+		collectGlobalStructures(units, declaredStructures); // TODO this may be done separately, only once
 		
 		// link the structure types instances to their structure prototypes
 		
@@ -90,20 +85,18 @@ class Prelinker {
 			validateStructOperators(structure, errors);
 		}
 		
-		List<StructPrototype> accessibleStructs = new ArrayList<>();
-		accessibleStructs.addAll(declaredStructures.get(unit.fullBase));
-		for(String importation : unit.importations)
-			accessibleStructs.addAll(declaredStructures.get(importation));
-		
-		for(int i = 1; i < accessibleStructs.size(); i++) {
-			StructPrototype s1 = accessibleStructs.get(i);
-			for(int j = 0; j < i; j++) {
-				StructPrototype s2 = accessibleStructs.get(j);
-				if(s1.getName().equals(s2.getName()))
-					errors.add("Two accessible structs have the same name: "
-							+ s1.getSignature().declaringUnit+'@'+s1.getName() + " and "
-							+ s2.getSignature().declaringUnit+'@'+s2.getName());
+		validateAccessibleStructures(unit, declaredStructures, errors);
+	}
+
+	private static void collectGlobalStructures(UnitPrototype[] units,
+			Map<String, List<StructPrototype>> declaredStructures) {
+		for(UnitPrototype u : units) {
+			List<StructPrototype> globalStructures = new ArrayList<>();
+			for(StructPrototype s : u.structures) {
+				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
+					globalStructures.add(s);
 			}
+			declaredStructures.put(u.fullBase, globalStructures);
 		}
 	}
 
@@ -276,19 +269,41 @@ class Prelinker {
 	private static void validateStructOperators(StructSection structure, ErrorWrapper errors) {
 		for(int i = 0; i < structure.operators.length; i++) {
 			OverloadedOperator o1 = structure.operators[i];
+			OverloadedOperatorPrototype op1 = o1.prototype;
 			// check overload duplicates
 			for(int j = 0; j < i; j++) {
 				OverloadedOperator o2 = structure.operators[j];
-				if(o1.leftOperand.equals(o2.leftOperand) && o1.rightOperand.equals(o2.rightOperand))
+				OverloadedOperatorPrototype op2 = o2.prototype;
+				if(op1.loType.equals(op2.loType) && op1.roType.equals(op2.roType))
 					errors.add("Duplicate operator found:" + o1.getErr() + o2.getErr());
 			}
 			// check types
-			if(!(o1.leftOperand instanceof VarStructType && ((VarStructType) o1.leftOperand)
+			if(!(op1.loType instanceof VarStructType && ((VarStructType) op1.loType)
 					.structure.equals(structure.getPrototype())) &&
-				!(o1.leftOperand instanceof VarStructType && ((VarStructType) o1.leftOperand)
+				!(op1.roType instanceof VarStructType && ((VarStructType) op1.roType)
 					.structure.equals(structure.getPrototype()))) {
 				errors.add("Operator overloads must take at least one argument of"
 						+ " the struct type holding them:" + o1.getErr());
+			}
+		}
+	}
+
+	private static void validateAccessibleStructures(Unit unit, Map<String, List<StructPrototype>> declaredStructures,
+			ErrorWrapper errors) {
+		
+		List<StructPrototype> accessibleStructs = new ArrayList<>();
+		accessibleStructs.addAll(declaredStructures.get(unit.fullBase));
+		for(String importation : unit.importations)
+			accessibleStructs.addAll(declaredStructures.get(importation));
+		
+		for(int i = 1; i < accessibleStructs.size(); i++) {
+			StructPrototype s1 = accessibleStructs.get(i);
+			for(int j = 0; j < i; j++) {
+				StructPrototype s2 = accessibleStructs.get(j);
+				if(s1.getName().equals(s2.getName()))
+					errors.add("Two accessible structs have the same name: "
+							+ s1.getSignature().declaringUnit+'@'+s1.getName() + " and "
+							+ s2.getSignature().declaringUnit+'@'+s2.getName());
 			}
 		}
 	}

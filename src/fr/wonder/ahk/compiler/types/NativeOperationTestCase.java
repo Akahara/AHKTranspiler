@@ -22,7 +22,7 @@ class NativeOperationTestCase {
 					if(op == null)
 						System.out.print("_ ");
 					else
-						System.out.print(op.getResultType().getName().charAt(0) + " ");
+						System.out.print(op.resultType.getName().charAt(0) + " ");
 //						System.out.print(op + " ");
 				}
 				System.out.println();
@@ -35,7 +35,7 @@ class NativeOperationTestCase {
 			if(op == null)
 				System.out.println("_ ");
 			else
-				System.out.println(op.getResultType().getName().charAt(0) + " ");
+				System.out.println(op.resultType.getName().charAt(0) + " ");
 		}
 	}
 	

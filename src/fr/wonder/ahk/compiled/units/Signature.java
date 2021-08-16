@@ -21,15 +21,12 @@ public class Signature {
 		this.computedSignature = Objects.requireNonNull(computedSignature);
 	}
 	
-	/**
-	 * Returns true iff {@code other} is a Signature and both have the same
-	 * declaring units and names
-	 */
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof Signature &&
-				((Signature) other).declaringUnit == declaringUnit &&
-				((Signature) other).name.equals(name);
+				((Signature) other).declaringUnit.equals(declaringUnit) &&
+				((Signature) other).name.equals(name) &&
+				((Signature) other).computedSignature.equals(computedSignature);
 	}
 	
 	@Override

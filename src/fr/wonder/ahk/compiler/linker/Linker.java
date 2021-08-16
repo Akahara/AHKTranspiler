@@ -8,6 +8,8 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
@@ -32,19 +34,18 @@ public class Linker {
 		prelinkUnits(handle.units, errors);
 		
 		UnitPrototype[] prototypes = ArrayOperator.map(handle.units, UnitPrototype[]::new, u -> u.prototype);
-		TypesTable typesTable = new TypesTable();
 		
 		// actually link unit statements and expressions
 		// only link non-native units, natives are already linked
 		for(Unit unit : handle.units) {
 			ErrorWrapper subErrors = errors.subErrrors("Unable to link unit " + unit.fullBase);
-			linkUnit(unit, prototypes, typesTable, subErrors);
+			linkUnit(unit, prototypes, subErrors);
 		}
 		errors.assertNoErrors();
 		
-		return new LinkedHandle(handle.units, typesTable);
+		return new LinkedHandle(handle.units);
 	}
-	
+
 	public static void assertNoDuplicates(Unit[] units, ErrorWrapper errors) throws WrappedException {
 		// check unit duplicates
 		for(int u = 0; u < units.length; u++) {
@@ -93,19 +94,43 @@ public class Linker {
 				unit.compilationState = UnitCompilationState.PRELINKED;
 		}
 		
+		// collect overloaded operators and check for duplicates
+		for(UnitPrototype u : prototypes) {
+			collectOverloadedOperators(u, typesTable, errors);
+		}
+		
 		errors.assertNoErrors();
 	}
+	
+	private static void collectOverloadedOperators(UnitPrototype unit,
+			TypesTable typesTable, ErrorWrapper errors) {
+		
+		for(StructPrototype struct : unit.structures) {
+			for(OverloadedOperatorPrototype oop : struct.overloadedOperators) {
+				OverloadedOperatorPrototype overridden = typesTable.operations.registerOperation(oop);
+				
+				if(overridden != null) {
+					errors.add("Two operators overloads conflict: in " +
+							oop.signature.declaringUnit + " and " +
+							overridden.signature.declaringUnit + ": " + oop);
+				}
+			}
+		}
+	}
+	
+	static 		TypesTable typesTable = new TypesTable(); // FIX
 	
 	/**
 	 * Assumes that the unit has been prelinked.
 	 */
-	public static void linkUnit(Unit unit, UnitPrototype[] units, TypesTable typesTable, ErrorWrapper errors) {
+	public static void linkUnit(Unit unit, UnitPrototype[] prototypes, ErrorWrapper errors) {
 		if(unit.compilationState != UnitCompilationState.PRELINKED)
 			throw new IllegalStateException("Cannot link an unit with state " + unit.compilationState);
 		
 		unit.compilationState = UnitCompilationState.LINKED_WITH_ERRORS;
 		
-		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(units));
+		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(prototypes));
+		
 		for(VariableDeclaration var : unit.variables) {
 			ExpressionLinker.linkExpressions(unit, unitScope, var, typesTable, errors);
 			checkAffectationType(var, 0, var.getType(), errors);

@@ -13,6 +13,7 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
@@ -52,11 +53,7 @@ public class Invalids {
 		public boolean equals(Object o) { return this == o; }
 	};
 	
-	public static final Operation OPERATION = new Operation() {
-		public VarType getResultType() { return TYPE; }
-		public VarType getLOType() { return TYPE; }
-		public VarType getROType() { return TYPE; }
-	};
+	public static final Operation OPERATION = new Operation(TYPE, TYPE, Operator.ADD, TYPE) {};
 
 	public static final Expression EXPRESSION = new Expression(SOURCE, 0, 0) {
 		public String toString() { return STRING; }
@@ -84,7 +81,8 @@ public class Invalids {
 		STRUCTURE.nullFields = new ConstructorDefaultValue[0];
 	}
 	
-	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(new VariablePrototype[0], new ConstructorPrototype[0], MODIFIERS, SIGNATURE);
+	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(new VariablePrototype[0],
+			new ConstructorPrototype[0], new OverloadedOperatorPrototype[0], MODIFIERS, SIGNATURE);
 	
 	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, 0, 0, MODIFIERS, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], MODIFIERS, SIGNATURE);
@@ -98,6 +96,6 @@ public class Invalids {
 
 	public static final FunctionSection FUNCTION = new FunctionSection(UNIT, 0, 0, 0, MODIFIERS);
 
-	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(UNIT, Operator.ADD, TYPE, TYPE, TYPE, STRING, 0, 0);
+	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(STRUCTURE, Operator.ADD, TYPE, TYPE, TYPE, STRING, 0, 0);
 	
 }

@@ -65,7 +65,7 @@ class StructSectionParser extends AbstractParser {
 				modifiers.setVisibility(line[0], errors);
 				
 			} else if(line[0].base == TokenBase.KW_OPERATOR) {
-				operators.add(parseOverloadedOperator(unit, line, errors));
+				operators.add(parseOverloadedOperator(unit, structure, line, errors));
 				
 			} else {
 				errors.add("Unexpected line begin token in struct declaration:" + unit.source.getErr(line));
@@ -169,7 +169,7 @@ class StructSectionParser extends AbstractParser {
 	}
 	
 	/** assumes that line[0].base == KW_OPERATOR */
-	private static OverloadedOperator parseOverloadedOperator(Unit unit, Token[] line, ErrorWrapper errors) {
+	private static OverloadedOperator parseOverloadedOperator(Unit unit, StructSection structure, Token[] line, ErrorWrapper errors) {
 		try {
 			Pointer p = new Pointer(1);
 			assertHasNext(line, p, "Incomplete operator declaration", errors, 7);
@@ -190,7 +190,7 @@ class StructSectionParser extends AbstractParser {
 			VarType resultType = parseType(unit, line, p, errors);
 			assertNoRemainingTokens(line, p, errors);
 			
-			return new OverloadedOperator(unit, op,
+			return new OverloadedOperator(structure, op,
 					resultType, leftOperand, rightOperand, funcName,
 					line[0].sourceStart, line[line.length-1].sourceStop);
 		} catch (ParsingException e) {
