@@ -14,7 +14,7 @@ public class CompiledHandle {
 	}
 	
 	public LinkedHandle link(ErrorWrapper errors) throws WrappedException {
-		return Linker.link(this, errors);
+		return new Linker(this).link(errors);
 	}
 
 }

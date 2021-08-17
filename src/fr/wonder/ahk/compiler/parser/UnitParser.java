@@ -6,7 +6,6 @@ import java.util.List;
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
@@ -17,16 +16,6 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 
 public class UnitParser extends AbstractParser {
-	
-	public static void parseUnit(Unit unit, Token[][] tokens, ErrorWrapper errors) throws WrappedException {
-		unit.compilationState = UnitCompilationState.PARSED_WITH_ERRORS;
-		
-		int declarationEnd = unit.importations.length + unit.declaredAliasCount + 2;
-		parseSections(unit, tokens, declarationEnd, errors.subErrrors("Unable to parse unit body"));
-		errors.assertNoErrors();
-		
-		unit.compilationState = UnitCompilationState.PARSED;
-	}
 	
 	public static Unit preparseUnit(UnitSource source, Token[][] lines, ErrorWrapper errors) throws WrappedException {
 		String base = null;
@@ -113,6 +102,12 @@ public class UnitParser extends AbstractParser {
 				name,
 				importations,
 				aliasCount);
+	}
+	
+	public static void parseUnit(Unit unit, Token[][] tokens, ErrorWrapper errors) throws WrappedException {
+		int declarationEnd = unit.importations.length + unit.declaredAliasCount + 2;
+		parseSections(unit, tokens, declarationEnd, errors.subErrrors("Unable to parse unit body"));
+		errors.assertNoErrors();
 	}
 	
 	/** Assumes no line is empty */

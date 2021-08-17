@@ -2,7 +2,6 @@ package fr.wonder.ahk.compiler;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiler.linker.Linker;
 import fr.wonder.ahk.compiler.parser.AliasDeclarationParser;
 import fr.wonder.ahk.compiler.parser.Tokenizer;
 import fr.wonder.ahk.compiler.parser.TokensFactory;
@@ -12,13 +11,10 @@ import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.ahk.handles.ProjectHandle;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class Compiler {
 
-	/**
-	 * @param unitaryComp whether the project should be compiled as a whole or as a
-	 *                    collection of units.
-	 */
 	public static CompiledHandle compile(ProjectHandle project, ErrorWrapper errors) throws WrappedException {
 		Unit[] units = new Unit[project.units.length];
 		Token[][][] unitsTokens = new Token[units.length][][];
@@ -45,8 +41,8 @@ public class Compiler {
 		
 		errors.assertNoErrors();
 		
-		Linker.assertNoDuplicates(units, errors);
-		Linker.assertNoMissingImportation(units, errors);
+		assertNoDuplicates(units, errors);
+		assertNoMissingImportation(units, errors);
 		
 		AliasDeclarationParser.resolveAliases(units, unitsTokens, errors);
 		
@@ -58,6 +54,32 @@ public class Compiler {
 		}
 
 		return new CompiledHandle(units);
+	}
+
+	public static void assertNoMissingImportation(Unit[] units, ErrorWrapper errors) throws WrappedException {
+		Object[] bases = ArrayOperator.map(units, u->u.fullBase);
+		for(int i = 0; i < units.length; i++) {
+			Unit unit = units[i];
+			for(int j = 0; j < unit.importations.length; j++) {
+				String importation = unit.importations[j];
+				// search in the project & native units
+				if(!ArrayOperator.contains(bases, importation))
+					errors.add("Missing importation in unit " + unit.fullBase + " for " + importation);
+			}
+		}
+		errors.assertNoErrors();
+	}
+
+	public static void assertNoDuplicates(Unit[] units, ErrorWrapper errors) throws WrappedException {
+		// check unit duplicates
+		for(int i = 0; i < units.length; i++) {
+			Unit unit = units[i];
+			for(int j = 0; j < i; j++) {
+				if(units[j].fullBase.equals(unit.fullBase))
+					errors.add("Duplicate unit found with base " + unit.fullBase);
+			}
+		}
+		errors.assertNoErrors();
 	}
 
 }

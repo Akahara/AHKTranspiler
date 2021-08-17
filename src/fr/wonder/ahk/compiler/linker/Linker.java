@@ -2,8 +2,10 @@ package fr.wonder.ahk.compiler.linker;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
@@ -12,16 +14,14 @@ import fr.wonder.ahk.compiled.expressions.types.VarNullType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.ExternalStructAccess;
 import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.UnitCompilationState;
-import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
+import fr.wonder.ahk.compiler.Compiler;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.handles.CompiledHandle;
@@ -32,125 +32,89 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class Linker {
 	
-	/**
-	 * @throws WrappedException if any unit cannot be linked
-	 */
-	public static LinkedHandle link(CompiledHandle handle, ErrorWrapper errors) throws WrappedException {
-		assertNoDuplicates(handle.units, errors);
-		assertNoMissingImportation(handle.units, errors);
+	final Unit[] units;
+	final TypesTable typesTable = new TypesTable();
+	
+	final Prelinker prelinker;
+	
+	final ExpressionLinker expressions;
+	final StatementLinker statements;
+	final StructureLinker structures;
+	
+	// set by #prelinkUnits
+	UnitPrototype[] prototypes;
+	Map<String, List<StructPrototype>> declaredStructures;
+	
+	
+	public Linker(CompiledHandle handle) {
+		this.units = handle.units;
+		this.prelinker = new Prelinker(this);
+		this.expressions = new ExpressionLinker(this);
+		this.statements = new StatementLinker(this);
+		this.structures = new StructureLinker(this);
+	}
+	
+	public LinkedHandle link(ErrorWrapper errors) throws WrappedException {
+		Compiler.assertNoDuplicates(units, errors);
+		Compiler.assertNoMissingImportation(units, errors);
 		
 		// prelink units (project & natives)
-		prelinkUnits(handle.units, errors);
-		
-		UnitPrototype[] prototypes = ArrayOperator.map(handle.units, UnitPrototype[]::new, u -> u.prototype);
+		prelinkUnits(errors);
 		
 		// actually link unit statements and expressions
 		// only link non-native units, natives are already linked
-		for(Unit unit : handle.units) {
+		for(Unit unit : units) {
 			ErrorWrapper subErrors = errors.subErrrors("Unable to link unit " + unit.fullBase);
-			linkUnit(unit, prototypes, subErrors);
+			linkUnit(unit, subErrors);
 		}
 		errors.assertNoErrors();
 		
-		return new LinkedHandle(handle.units);
+		return new LinkedHandle(units);
 	}
 
-	public static void assertNoDuplicates(Unit[] units, ErrorWrapper errors) throws WrappedException {
-		// check unit duplicates
-		for(int u = 0; u < units.length; u++) {
-			Unit unit = units[u];
-			for(int j = 0; j < u; j++) {
-				if(units[j].fullBase.equals(unit.fullBase))
-					errors.add("Duplicate unit found with base " + unit.fullBase);
-			}
-		}
-		errors.assertNoErrors();
-	}
-	
-	public static void assertNoMissingImportation(Unit[] units, ErrorWrapper errors) throws WrappedException {
-		Object[] bases = ArrayOperator.map(units, u->u.fullBase);
-		for(int i = 0; i < units.length; i++) {
-			Unit unit = units[i];
-			for(int j = 0; j < unit.importations.length; j++) {
-				String importation = unit.importations[j];
-				// search in the project & native units
-				if(!ArrayOperator.contains(bases, importation))
-					errors.add("Missing importation in unit " + unit.fullBase + " for " + importation);
-			}
-		}
-		errors.assertNoErrors();
-	}
-	
-	private static void prelinkUnits(Unit[] units, ErrorWrapper errors) throws WrappedException {
+	private void prelinkUnits(ErrorWrapper errors) throws WrappedException {
 		// compute signatures before listing prototypes
 		// at this point their still might be name collisions, that will cause
 		// signature collisions but they will be detected by Prelinker#prelinkUnit
-		for(Unit unit : units) {
-			
-			if(unit.compilationState != UnitCompilationState.PARSED)
-				throw new IllegalStateException("Cannot prelink an unit with state " + unit.compilationState);
-			unit.compilationState = UnitCompilationState.PRELINKED_WITH_ERRORS;
-			
+		for(Unit unit : units)
 			Prelinker.computeSignaturesAndPrototypes(unit);
+		
+		this.prototypes = ArrayOperator.map(units, UnitPrototype[]::new, u -> u.prototype);
+		this.declaredStructures = new HashMap<>();
+		
+		// collect global structures
+		for(UnitPrototype u : prototypes) {
+			List<StructPrototype> globalStructures = new ArrayList<>();
+			for(StructPrototype s : u.structures) {
+				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
+					globalStructures.add(s);
+			}
+			declaredStructures.put(u.fullBase, globalStructures);
 		}
-		
-		UnitPrototype[] prototypes = ArrayOperator.map(units, UnitPrototype[]::new, u->u.prototype);
-		
-		Map<String, List<StructPrototype>> declaredStructures = new HashMap<>();
-		collectGlobalStructures(prototypes, declaredStructures);
 		
 		for(Unit unit : units) {
-			ErrorWrapper subErrors = errors.subErrrors("Unable to prelink unit " + unit.fullBase);
-			Prelinker.prelinkUnit(unit, declaredStructures, subErrors);
-			if(subErrors.noErrors())
-				unit.compilationState = UnitCompilationState.PRELINKED;
+			prelinker.prelinkUnit(unit, errors.subErrrors("Unable to prelink unit " + unit.fullBase));
 		}
 		
-		// collect overloaded operators and check for duplicates
-		for(UnitPrototype u : prototypes) {
-			collectOverloadedOperators(u, typesTable, errors);
-		}
+		structures.collectOverloadedOperators(errors);
 		
 		errors.assertNoErrors();
 	}
-	
-	private static void collectOverloadedOperators(UnitPrototype unit,
-			TypesTable typesTable, ErrorWrapper errors) {
-		
-		for(StructPrototype struct : unit.structures) {
-			for(OverloadedOperatorPrototype oop : struct.overloadedOperators) {
-				OverloadedOperatorPrototype overridden = typesTable.operations.registerOperation(oop);
-				
-				if(overridden != null) {
-					errors.add("Two operators overloads conflict: in " +
-							oop.signature.declaringUnit + " and " +
-							overridden.signature.declaringUnit + ": " + oop);
-				}
-			}
-		}
-	}
-	
-	static 		TypesTable typesTable = new TypesTable(); // FIX
 	
 	/**
 	 * Assumes that the unit has been prelinked.
 	 */
-	public static void linkUnit(Unit unit, UnitPrototype[] prototypes, ErrorWrapper errors) {
-		if(unit.compilationState != UnitCompilationState.PRELINKED)
-			throw new IllegalStateException("Cannot link an unit with state " + unit.compilationState);
-		
-		unit.compilationState = UnitCompilationState.LINKED_WITH_ERRORS;
-		
+	private void linkUnit(Unit unit, ErrorWrapper errors) {
 		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(prototypes));
 		
 		for(VariableDeclaration var : unit.variables) {
-			ExpressionLinker.linkExpressions(unit, unitScope, var, typesTable, errors);
+			expressions.linkExpressions(unit, unitScope, var, typesTable, errors);
 			checkAffectationType(var, 0, var.getType(), errors);
 		}
 		
 		for(FunctionSection func : unit.functions) {
 			ErrorWrapper ferrors = errors.subErrrors("Errors in function " + func.getSignature().computedSignature);
-			StatementLinker.linkStatements(
+			statements.linkStatements(
 					unit,
 					unitScope.innerScope(),
 					func,
@@ -159,11 +123,8 @@ public class Linker {
 		}
 		
 		for(StructSection struct : unit.structures) {
-			StructureLinker.linkStructure(unit, unitScope, typesTable, struct, errors);
+			structures.linkStructure(unit, unitScope, typesTable, struct, errors);
 		}
-		
-		if(errors.noErrors())
-			unit.compilationState = UnitCompilationState.LINKED;
 	}
 
 	/**
@@ -185,7 +146,7 @@ public class Linker {
 	 * must be 0. For function calls this method will be used once for each argument
 	 * with {@code valueIndex} ranging from 0 to the number of arguments -1.
 	 */
-	static void checkAffectationType(ExpressionHolder valueHolder, int valueIndex,
+	void checkAffectationType(ExpressionHolder valueHolder, int valueIndex,
 			VarType validType, ErrorWrapper errors) {
 		
 		Expression value = valueHolder.getExpressions()[valueIndex];
@@ -207,40 +168,118 @@ public class Linker {
 		}
 	}
 	
-	static void requireType(Unit unit, VarType type, SourceElement elem, ErrorWrapper errors) {
-		if(type instanceof VarStructType) {
-			VarStructType s = (VarStructType) type;
-			ExternalStructAccess ext = unit.usedStructTypes.get(s.name);
-//			if(ext == null) {
-//				Prelinker.searchStructSection(unit, s.name, null);
-//			}
+	/**
+	 * Checks if the given unit can use the given type.
+	 * <p>
+	 * When the unit somehow accesses a type it may not be usable because the unit
+	 * is missing a struct type used by a function argument...
+	 * <p>
+	 * For example this won't work:
+	 * 
+	 * <blockquote><pre>
+	 * unit A;
+	 * 
+	 * struct A {...}
+	 * 
+	 * -----------------
+	 * unit Ap;
+	 * 
+	 * struct A {...} // note that the names are the same
+	 * 
+	 * -----------------
+	 * unit B;
+	 * import Ap;
+	 * 
+	 * func A f() {...} // 'A' results in Ap.A
+	 * 
+	 * -----------------
+	 * unit C;
+	 * import A;
+	 * 
+	 * func main() {
+	 *    A a = ...;
+	 *    f(a); // will fail because 'A' is A.A here and not Ap.A
+	 * }
+	 * </pre></blockquote>
+	 * 
+	 * @param unit the unit accessing {@code type}
+	 * @param type the type to use
+	 * @param elem the element accessing {@code type}, for logging purposes
+	 * @param errors error wrapper
+	 * 
+	 * @return true iff {@code type} can safely be used
+	 */
+	boolean requireType(Unit unit, VarType type, SourceElement elem, ErrorWrapper errors) {
+		Set<VarStructType> effectiveTypes = new HashSet<>();
+		collectEffectiveTypes(type, effectiveTypes);
+		
+		boolean canBeUsed = true;
+		
+		for(VarStructType t : effectiveTypes) {
+			StructPrototype sproto = t.structure;
+			StructPrototype uproto = unit.prototype.getExternalStruct(t.name);
 			
-			VarStructType u = ext == null ? null : ext.structTypeInstance;
-			
-			if(u == null) {
-				// the type is not imported by this unit
-				errors.add("Cannot make use of type " + s + ", this type is not accessible:" + elem.getErr());
-			} else if(!s.structure.matchesPrototype(u.structure)) {
-				// a type with the same name is accessible but is declared by another unit
-				errors.add("Cannot make use of type " + s.structure + ", this type does not match "
-						+ u.structure + ":" + elem.getErr());
+			if(uproto == null) {
+				uproto = searchStructSection(unit, t.name);
+				if(uproto != null && uproto.signature.declaringUnit.equals(unit.fullBase)) {
+					unit.prototype.externalAccesses.add(uproto);
+				}
 			}
+			
+			if(uproto == null) {
+				// the type is not imported by this unit
+				errors.add("Cannot make use of type " + type + ", type " + t + " is not accessible:" + elem.getErr());
+				canBeUsed = false;
+				
+			} else if(!sproto.matchesPrototype(uproto)) {
+				// a type with the same name is accessible but is declared by another unit
+				errors.add("Cannot make use of type " + type + ", type " + sproto + " type does not match "
+						+ uproto + ":" + elem.getErr());
+				canBeUsed = false;
+			}
+		}
+		return canBeUsed;
+	}
+	
+	/**
+	 * collects the set of structure types used by {@code type} into
+	 * {@code effectiveTypes}. If {@code type} is itself a struct type it is added
+	 * to the list, otherwise its sub types are collected. For example a function of
+	 * type {@code void:(Struct, StructB[])} has ({@code Struct, StructB}) as
+	 * effective types.
+	 * 
+	 * @see VarType#getSubTypes()
+	 */
+	private static void collectEffectiveTypes(VarType type, Set<VarStructType> effectiveTypes) {
+		if(type instanceof VarStructType) {
+			effectiveTypes.add((VarStructType) type);
 		} else {
-			for(VarType t : type.getSubTypes())
-				requireType(unit, t, elem, errors);
+			for(VarType st : type.getSubTypes()) {
+				collectEffectiveTypes(st, effectiveTypes);
+			}
 		}
 	}
-
-	private static void collectGlobalStructures(UnitPrototype[] units,
-			Map<String, List<StructPrototype>> declaredStructures) {
-		for(UnitPrototype u : units) {
-			List<StructPrototype> globalStructures = new ArrayList<>();
-			for(StructPrototype s : u.structures) {
-				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
-					globalStructures.add(s);
-			}
-			declaredStructures.put(u.fullBase, globalStructures);
+	
+	/**
+	 * Returns an accessible structure with the given name, null if none match.<br>
+	 * A structure is accessible if it is local to the given unit or global and
+	 * imported.
+	 */
+	StructPrototype searchStructSection(Unit unit, String name) {
+		for(StructSection structure : unit.structures) {
+			if(structure.name.equals(name))
+				return structure.getPrototype();
 		}
+		for(String imported : unit.importations) {
+			List<StructPrototype> structures = declaredStructures.get(imported);
+			for(StructPrototype structure : structures) {
+				if(structure.getName().equals(name) && (
+						structure.signature.declaringUnit.equals(unit.fullBase) ||
+						structure.modifiers.visibility == DeclarationVisibility.GLOBAL))
+					return structure;
+			}
+		}
+		return null;
 	}
 	
 }

@@ -21,7 +21,10 @@ public abstract class VarType {
 	public abstract String getName();
 	/** Returns a non user-friendly descriptor (signature) of this type */
 	public abstract String getSignature();
-	
+	/**
+	 * Returns the set of types used to make this type.
+	 * On function types it returns arguments and result types for example.
+	 */
 	public abstract VarType[] getSubTypes();
 	
 	@Override

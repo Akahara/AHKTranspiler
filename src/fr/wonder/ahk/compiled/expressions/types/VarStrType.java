@@ -16,9 +16,4 @@ public class VarStrType extends VarNativeType {
 		return "s";
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		return o == VarType.STR;
-	}
-
 }

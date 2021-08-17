@@ -2,7 +2,7 @@ package fr.wonder.ahk.compiled.expressions.types;
 
 public class VarNullType extends VarType {
 
-	public static VarNullType INSTANCE = new VarNullType();
+	public static final VarNullType INSTANCE = new VarNullType();
 	
 	private VarNullType() {}
 	
@@ -21,6 +21,10 @@ public class VarNullType extends VarType {
 		return new VarType[0];
 	}
 
+	/**
+	 * A single instance of the null type may exist at any point so '==' can be used
+	 * safely here
+	 */
 	@Override
 	public boolean equals(Object o) {
 		return o == this;

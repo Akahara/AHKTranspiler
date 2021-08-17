@@ -14,6 +14,10 @@ global struct Structure {
   
 }
 
+global func int fff(Structure a) {
+	return a.a;
+}
+
 global func Structure opStructPlus(Structure a, Structure b) {
 	return Structure(a.a+b.a);
 }

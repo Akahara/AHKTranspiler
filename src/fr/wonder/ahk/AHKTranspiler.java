@@ -26,6 +26,7 @@ public class AHKTranspiler {
 	
 	public static ProjectHandle createProject(File dir) throws IOException {
 		List<File> files = FilesUtils.listFiles(dir, f->f.isFile() && f.getName().endsWith(".ahk"));
+		files.removeIf(f -> f.getAbsolutePath().contains("ex_"));
 		UnitSource[] sources = new UnitSource[files.size()];
 		for(int i = 0; i < files.size(); i++) {
 			File f = files.get(i);

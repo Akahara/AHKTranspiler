@@ -12,15 +12,14 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class Prototypes {
 
-	// TODO populate Unit#externalAccesses with aliases, Unit and constructor prototypes
-	// TODO check affected structures
+	// TODO rework the #getRecompilableUnits method
 	
 	public static List<UnitPrototype> getRecompilableUnits(
 			List<UnitPrototype> units,
 			UnitPrototype previousProto,
 			UnitPrototype newProto) {
 		
-		if(previousProto == null || previousProto == newProto)
+		if(previousProto == null || previousProto == newProto) // '==' cannot be used here !!!!!! use #matchesPrototype instead
 			return Collections.emptyList();
 		
 		List<Prototype<?>> affectedAccesses = new ArrayList<>();

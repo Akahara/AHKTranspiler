@@ -31,8 +31,6 @@ public class Unit {
 	public Alias[] accessibleAliases;
 	public final int declaredAliasCount;
 	
-	public UnitCompilationState compilationState = UnitCompilationState.FRESH;
-	
 	/**
 	 * List of structure types used through variable declarations,
 	 * when a declaration is read the structure type is not known

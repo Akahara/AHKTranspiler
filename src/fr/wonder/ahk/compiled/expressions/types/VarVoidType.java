@@ -17,6 +17,10 @@ public class VarVoidType extends VarType {
 		return new VarType[0];
 	}
 
+	/**
+	 * A single instance of the void type may exist at any point so '==' can be used
+	 * safely here
+	 */
 	@Override
 	public boolean equals(Object o) {
 		return o == VarType.VOID;

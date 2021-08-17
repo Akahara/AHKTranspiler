@@ -33,7 +33,13 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 class ExpressionLinker {
 
-	static void linkExpressions(Unit unit, Scope scope, ExpressionHolder expressionHolder,
+	private final Linker linker;
+	
+	ExpressionLinker(Linker linker) {
+		this.linker = linker;
+	}
+	
+	void linkExpressions(Unit unit, Scope scope, ExpressionHolder expressionHolder,
 			TypesTable typesTable, ErrorWrapper errors) {
 		
 		Expression[] expressions = expressionHolder.getExpressions();
@@ -69,11 +75,11 @@ class ExpressionLinker {
 			}
 			
 			exp.computeValueType(typesTable, errors);
-			Linker.requireType(unit, exp.getType(), exp, errors);
+			linker.requireType(unit, exp.getType(), exp, errors);
 		}
 	}
 	
-	private static void linkVariableExpression(Unit unit, Scope scope, VarExp exp, ErrorWrapper errors) {
+	private void linkVariableExpression(Unit unit, Scope scope, VarExp exp, ErrorWrapper errors) {
 		// search for the variable/function declaration
 		VarAccess var = scope.getVariable(exp.variable);
 		if(var == null) {
@@ -86,7 +92,7 @@ class ExpressionLinker {
 		exp.declaration = var;
 	}
 
-	private static void linkArrayExpression(ArrayExp exp, ErrorWrapper errors) {
+	private void linkArrayExpression(ArrayExp exp, ErrorWrapper errors) {
 		if(exp.getLength() == 0) {
 			exp.type = VarArrayType.EMPTY_ARRAY;
 		} else {
@@ -105,7 +111,7 @@ class ExpressionLinker {
 		}
 	}
 
-	private static void linkIndexingExpression(IndexingExp exp, ErrorWrapper errors) {
+	private void linkIndexingExpression(IndexingExp exp, ErrorWrapper errors) {
 		// validate types, there is no linking to do
 		VarType arrayType = exp.getArray().getType();
 		Expression[] indices = exp.getIndices();
@@ -123,7 +129,7 @@ class ExpressionLinker {
 		}
 	}
 
-	private static void linkConstructorExpression(Unit unit, ConstructorExp exp, ErrorWrapper errors) {
+	private void linkConstructorExpression(Unit unit, ConstructorExp exp, ErrorWrapper errors) {
 		StructPrototype structure = exp.getType().structure;
 		VarType[] args = ArrayOperator.map(exp.getExpressions(), VarType[]::new, Expression::getType);
 		ConstructorPrototype[] accessibleConstructors = structure.constructors;
@@ -133,7 +139,7 @@ class ExpressionLinker {
 		exp.constructor = matchingConstructor == null ? Invalids.CONSTRUCTOR_PROTOTYPE : matchingConstructor;
 	}
 
-	private static void linkOperationExpression(Unit unit, OperationExp exp,
+	private void linkOperationExpression(Unit unit, OperationExp exp,
 			TypesTable typesTable, ErrorWrapper errors) {
 		
 		Operation op = typesTable.getOperation(exp);
@@ -151,7 +157,7 @@ class ExpressionLinker {
 		exp.setOperation(op);
 	}
 
-	private static void linkDirectAccessExp(Unit unit, DirectAccessExp exp, ErrorWrapper errors) {
+	private void linkDirectAccessExp(Unit unit, DirectAccessExp exp, ErrorWrapper errors) {
 		VarType instanceType = exp.getStruct().getType();
 		if(!(instanceType instanceof VarStructType)) {
 			errors.add("Cannot access a member of an instance of type " + instanceType + exp.getErr());
@@ -160,32 +166,33 @@ class ExpressionLinker {
 		}
 		StructPrototype prototype = ((VarStructType) instanceType).structure;
 		VariablePrototype member = prototype.getMember(exp.memberName);
+		VarType memberType = member == null ? null : member.type;
+		
+		exp.member = Invalids.VARIABLE_PROTO;
+		
 		if(member == null) {
+			// no member with given name
 			errors.add("Type " + prototype.getName() + " does not have a member named " + exp.memberName + exp.getErr());
-			exp.member = Invalids.VARIABLE_PROTO;
-			return;
-		}
-		// check if member is accessible
-		if(!prototype.signature.declaringUnit.equals(unit.fullBase) &&
+		
+		} else if(!prototype.signature.declaringUnit.equals(unit.fullBase) &&
 				member.modifiers.visibility == DeclarationVisibility.LOCAL) {
+			// member is not accessible
 			errors.add("Member " + exp.memberName + " of structure " + prototype.getName()
 					+ " is not accessible:" + exp.getErr());
-			exp.member = Invalids.VARIABLE_PROTO;
-			return;
-		}
-		// check if member can be accessed (may not be because of non-imported struct type)
-		VarType memberType = member.type;
-		if(memberType instanceof VarStructType && 
-				!unit.prototype.isAccessibleStruct(((VarStructType) memberType).structure)) {
+			
+		} else if(memberType instanceof VarStructType && 
+				!linker.requireType(unit, memberType, exp, errors)) {
+			// check if member can be accessed (may not be because of non-imported struct type)
 			errors.add("Member " + exp.memberName + " of structure " + prototype.getName()
 					+ " has type " + memberType + " which cannot be accessed" + exp.getErr());
-			exp.member = Invalids.VARIABLE_PROTO;
-			return;
+			
+		} else {
+			// can access member
+			exp.member = member;
 		}
-		exp.member = member;
 	}
 
-	private static Expression linkFunctionExpression(Unit unit,
+	private Expression linkFunctionExpression(Unit unit,
 			Expression[] expressions, int expressionIndex, ErrorWrapper errors) {
 		
 		FunctionCallExp fexp = (FunctionCallExp) expressions[expressionIndex];
@@ -215,7 +222,7 @@ class ExpressionLinker {
 					+ " are given:" + functionExpression.getErr());
 		} else {
 			for(int j = 0; j < functionType.arguments.length; j++) {
-				Linker.checkAffectationType(functionExpression,
+				linker.checkAffectationType(functionExpression,
 						j, functionType.arguments[j], errors);
 			}
 		}

@@ -30,7 +30,13 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 class StatementLinker {
 
-	static void linkStatements(Unit unit, Scope scope, FunctionSection func,
+	private final Linker linker;
+	
+	StatementLinker(Linker linker) {
+		this.linker = linker;
+	}
+	
+	void linkStatements(Unit unit, Scope scope, FunctionSection func,
 			TypesTable typesTable, ErrorWrapper errors) {
 		
 		List<LabeledStatement> openedSections = new ArrayList<>();
@@ -66,14 +72,14 @@ class StatementLinker {
 			// handle special statements
 			if(st instanceof ForSt && ((ForSt) st).declaration != null) {
 				ForSt forst = (ForSt) st;
-				ExpressionLinker.linkExpressions(unit, scope, forst.declaration, typesTable, errors);
+				linker.expressions.linkExpressions(unit, scope, forst.declaration, typesTable, errors);
 				linkStatement(unit, func, forst.declaration, typesTable, errors);
 				declareVariable(forst.declaration, scope, errors);
-				ExpressionLinker.linkExpressions(unit, scope, forst.affectation, typesTable, errors);
+				linker.expressions.linkExpressions(unit, scope, forst.affectation, typesTable, errors);
 				linkStatement(unit, func, forst.affectation, typesTable, errors);
 			}
 			
-			ExpressionLinker.linkExpressions(unit, scope, st, typesTable, errors);
+			linker.expressions.linkExpressions(unit, scope, st, typesTable, errors);
 			linkStatement(unit, func, st, typesTable, errors);
 			
 			if(st instanceof VariableDeclaration)
@@ -85,7 +91,7 @@ class StatementLinker {
 		}
 	}
 
-	private static void declareVariable(VariableDeclaration decl, Scope scope, ErrorWrapper errors) {
+	private void declareVariable(VariableDeclaration decl, Scope scope, ErrorWrapper errors) {
 		VarAccess declaration = scope.getVariable(decl.name);
 		decl.setSignature(Signatures.scopedVariableSignature(decl.name));
 		
@@ -96,7 +102,7 @@ class StatementLinker {
 		}
 	}
 
-	private static void linkStatement(Unit lunit, FunctionSection func, Statement st,
+	private void linkStatement(Unit lunit, FunctionSection func, Statement st,
 			TypesTable typesTable, ErrorWrapper errors) {
 		
 		if(st instanceof ReturnSt) {
@@ -112,7 +118,7 @@ class StatementLinker {
 					errors.add("This function must return a value of type " + func.returnType + rst.getErr());
 					return;
 				}
-				Linker.checkAffectationType(st, 0, func.returnType, errors);
+				linker.checkAffectationType(st, 0, func.returnType, errors);
 			}
 			
 		} else if(st instanceof IfSt) {
@@ -126,7 +132,7 @@ class StatementLinker {
 				errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 			
 		} else if(st instanceof AffectationSt) {
-			Linker.checkAffectationType(st, 1, ((AffectationSt) st).getVariable().getType(), errors);
+			linker.checkAffectationType(st, 1, ((AffectationSt) st).getVariable().getType(), errors);
 			
 		} else if(st instanceof MultipleAffectationSt) {
 			MultipleAffectationSt a = (MultipleAffectationSt) st;
@@ -153,7 +159,7 @@ class StatementLinker {
 			
 			if(!a.isUnwrappedFunction()) {
 				for(int i = 0; i < variables.length; i++)
-					Linker.checkAffectationType(a, i, variables[i].getType(), errors);
+					linker.checkAffectationType(a, i, variables[i].getType(), errors);
 			} else {
 				for(int i = 0; i < variables.length; i++) {
 					VarType from = valuesTypes[i], to = variables[i].getType();
@@ -164,7 +170,7 @@ class StatementLinker {
 			}
 			
 		} else if(st instanceof VariableDeclaration) {
-			Linker.checkAffectationType(st, 0, ((VariableDeclaration) st).getType(), errors);
+			linker.checkAffectationType(st, 0, ((VariableDeclaration) st).getType(), errors);
 			
 		}
 	}

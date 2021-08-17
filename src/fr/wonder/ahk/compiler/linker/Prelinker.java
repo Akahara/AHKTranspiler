@@ -2,7 +2,6 @@ package fr.wonder.ahk.compiler.linker;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
@@ -14,7 +13,6 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
-import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.OverloadedOperator;
@@ -27,6 +25,12 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 class Prelinker {
 
+	private final Linker linker;
+	
+	Prelinker(Linker linker) {
+		this.linker = linker;
+	}
+	
 	static void computeSignaturesAndPrototypes(Unit unit) {
 		for(FunctionSection func : unit.functions)
 			func.setSignature(Signatures.of(func));
@@ -61,12 +65,11 @@ class Prelinker {
 	}
 	
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
-	static void prelinkUnit(Unit unit, Map<String, List<StructPrototype>> declaredStructures,
-			ErrorWrapper errors) {
+	void prelinkUnit(Unit unit, ErrorWrapper errors) {
 		
 		// link the structure types instances to their structure prototypes
 		
-		linkStructSections(unit, declaredStructures, errors);
+		linkStructSections(unit, errors);
 		
 		// validate unit
 		
@@ -82,76 +85,25 @@ class Prelinker {
 			validateStructOperators(structure, errors);
 		}
 		
-		validateAccessibleStructures(unit, declaredStructures, errors);
+		validateAccessibleStructures(unit, errors);
 	}
 
-	static void linkStructSections(Unit unit, 
-			Map<String, List<StructPrototype>> declaredStructures, ErrorWrapper errors) {
+	void linkStructSections(Unit unit, ErrorWrapper errors) {
 		
 		for(ExternalStructAccess structAccess : unit.usedStructTypes.values()) {
 			VarStructType structType = structAccess.structTypeInstance;
-			structType.structure = searchStructSection(unit, structType.name, declaredStructures);
-			if(structType.structure == Invalids.STRUCT_PROTOTYPE) {
+			structType.structure = linker.searchStructSection(unit, structType.name);
+			if(structType.structure == null) {
 				errors.add("Unknown structure type used: " + structType.name + 
 						" (" + structAccess.occurenceCount + " references)" +
 						structAccess.firstOccurence.getErr());
+				structType.structure = Invalids.STRUCT_PROTOTYPE;
 			} else {
 				unit.prototype.externalAccesses.add(structType.structure);
 			}
 		}
-		
-//		for(ExternalStructAccess structAccess : unit.usedStructTypes.values()) {
-//			VarStructType structType = structAccess.structTypeInstance;
-//			collectExternalStructAccesses(unit, structType.structure);
-//		}
 	}
 	
-//	/**
-//	 * collects all structures imported by this unit into its prototype's external
-//	 * accesses, if an imported structure is declaring an accessible field which
-//	 * type is a struct type and that type is accessible it is also collected (and
-//	 * recursively). This way this unit will be able to use accessible members of
-//	 * all imported accessible structures.
-//	 * 
-//	 * FIX if a member has type Struct[] or func Struct()... it won't be collected !
-//	 */
-//	private static void collectExternalStructAccesses(Unit unit, StructPrototype structure) {
-//		if(structure == Invalids.STRUCT_PROTOTYPE || !unit.prototype.externalAccesses.add(structure))
-//			return;
-//		for(VariablePrototype member : structure.members) {
-//			if(member.modifiers.visibility != DeclarationVisibility.GLOBAL || 
-//					!(member.getType() instanceof VarStructType))
-//				continue;
-//			StructPrototype mStruct = ((VarStructType) member.getType()).structure;
-//			String mStructUnit = mStruct.signature.declaringUnit;
-//			if(mStructUnit.equals(unit.fullBase))
-//				continue;
-//			if(mStruct.modifiers.visibility == DeclarationVisibility.GLOBAL &&
-//					ArrayOperator.contains(unit.importations, mStructUnit)) {
-//				
-//				collectExternalStructAccesses(unit, mStruct);
-//			}
-//		}
-//	}
-
-	private static StructPrototype searchStructSection(Unit unit, String name,
-			Map<String, List<StructPrototype>> declaredStructures) {
-		for(StructSection structure : unit.structures) {
-			if(structure.name.equals(name))
-				return structure.getPrototype();
-		}
-		for(String imported : unit.importations) {
-			List<StructPrototype> structures = declaredStructures.get(imported);
-			for(StructPrototype structure : structures) {
-				if(structure.getName().equals(name) && (
-						structure.signature.declaringUnit.equals(unit.fullBase) ||
-						structure.modifiers.visibility == DeclarationVisibility.GLOBAL))
-					return structure;
-			}
-		}
-		return Invalids.STRUCT_PROTOTYPE;
-	}
-
 	private static void validateVariables(Unit unit, ErrorWrapper errors) {
 		for(int i = 0; i < unit.variables.length; i++) {
 			String varName = unit.variables[i].name;
@@ -275,13 +227,13 @@ class Prelinker {
 		}
 	}
 
-	private static void validateAccessibleStructures(Unit unit, Map<String, List<StructPrototype>> declaredStructures,
+	private void validateAccessibleStructures(Unit unit,
 			ErrorWrapper errors) {
 		
 		List<StructPrototype> accessibleStructs = new ArrayList<>();
-		accessibleStructs.addAll(declaredStructures.get(unit.fullBase));
+		accessibleStructs.addAll(linker.declaredStructures.get(unit.fullBase));
 		for(String importation : unit.importations)
-			accessibleStructs.addAll(declaredStructures.get(importation));
+			accessibleStructs.addAll(linker.declaredStructures.get(importation));
 		
 		for(int i = 1; i < accessibleStructs.size(); i++) {
 			StructPrototype s1 = accessibleStructs.get(i);

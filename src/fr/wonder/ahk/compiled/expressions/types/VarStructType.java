@@ -4,8 +4,6 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 
 public class VarStructType extends VarType {
 	
-	// FIX the equality check between types CANNOT be made using ==
-	
 	public final String name;
 	
 	/** Set by the Prelinker */
