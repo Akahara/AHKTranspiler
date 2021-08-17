@@ -30,6 +30,11 @@ public class VarCompositeType extends VarType {
 			signature += t.getSignature();
 		return signature;
 	}
+	
+	@Override
+	public VarType[] getSubTypes() {
+		return types;
+	}
 
 	@Override
 	public boolean equals(Object o) {

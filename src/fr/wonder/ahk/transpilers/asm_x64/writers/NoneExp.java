@@ -20,8 +20,9 @@ public class NoneExp extends Expression {
 		public String getSignature() {
 			throw new IllegalStateException();
 		}
-		
-		@Override
+		public VarType[] getSubTypes() {
+			throw new IllegalStateException();
+		}
 		public boolean equals(Object o) {
 			throw new IllegalAccessError("The None type cannot be compared");
 		}

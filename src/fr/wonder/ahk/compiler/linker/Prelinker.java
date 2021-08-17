@@ -1,7 +1,6 @@
 package fr.wonder.ahk.compiler.linker;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -62,10 +61,8 @@ class Prelinker {
 	}
 	
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
-	static void prelinkUnit(Unit unit, UnitPrototype[] units, ErrorWrapper errors) {
-		Map<String, List<StructPrototype>> declaredStructures = new HashMap<>();
-		
-		collectGlobalStructures(units, declaredStructures); // TODO this may be done separately, only once
+	static void prelinkUnit(Unit unit, Map<String, List<StructPrototype>> declaredStructures,
+			ErrorWrapper errors) {
 		
 		// link the structure types instances to their structure prototypes
 		
@@ -88,67 +85,57 @@ class Prelinker {
 		validateAccessibleStructures(unit, declaredStructures, errors);
 	}
 
-	private static void collectGlobalStructures(UnitPrototype[] units,
-			Map<String, List<StructPrototype>> declaredStructures) {
-		for(UnitPrototype u : units) {
-			List<StructPrototype> globalStructures = new ArrayList<>();
-			for(StructPrototype s : u.structures) {
-				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
-					globalStructures.add(s);
-			}
-			declaredStructures.put(u.fullBase, globalStructures);
-		}
-	}
-
-	private static void linkStructSections(Unit unit, 
+	static void linkStructSections(Unit unit, 
 			Map<String, List<StructPrototype>> declaredStructures, ErrorWrapper errors) {
 		
 		for(ExternalStructAccess structAccess : unit.usedStructTypes.values()) {
 			VarStructType structType = structAccess.structTypeInstance;
-			structType.structure = searchStructSection(unit, structType.name, declaredStructures, errors);
+			structType.structure = searchStructSection(unit, structType.name, declaredStructures);
 			if(structType.structure == Invalids.STRUCT_PROTOTYPE) {
 				errors.add("Unknown structure type used: " + structType.name + 
 						" (" + structAccess.occurenceCount + " references)" +
 						structAccess.firstOccurence.getErr());
+			} else {
+				unit.prototype.externalAccesses.add(structType.structure);
 			}
 		}
-
-		for(ExternalStructAccess structAccess : unit.usedStructTypes.values()) {
-			VarStructType structType = structAccess.structTypeInstance;
-			collectExternalStructAccesses(unit, structType.structure);
-		}
+		
+//		for(ExternalStructAccess structAccess : unit.usedStructTypes.values()) {
+//			VarStructType structType = structAccess.structTypeInstance;
+//			collectExternalStructAccesses(unit, structType.structure);
+//		}
 	}
 	
-	/**
-	 * collects all structures imported by this unit into its prototype's external
-	 * accesses, if an imported structure is declaring an accessible field which
-	 * type is a struct type and that type is accessible it is also collected (and
-	 * recursively). This way this unit will be able to use accessible members of
-	 * all imported accessible structures.
-	 * 
-	 * FIX if a member has type Struct[] or func Struct()... it won't be collected !
-	 */
-	private static void collectExternalStructAccesses(Unit unit, StructPrototype structure) {
-		if(structure == Invalids.STRUCT_PROTOTYPE || !unit.prototype.externalAccesses.add(structure))
-			return;
-		for(VariablePrototype member : structure.members) {
-			if(member.modifiers.visibility != DeclarationVisibility.GLOBAL || 
-					!(member.getType() instanceof VarStructType))
-				continue;
-			StructPrototype mStruct = ((VarStructType) member.getType()).structure;
-			String mStructUnit = mStruct.signature.declaringUnit;
-			if(mStructUnit.equals(unit.fullBase))
-				continue;
-			if(mStruct.modifiers.visibility == DeclarationVisibility.GLOBAL &&
-					ArrayOperator.contains(unit.importations, mStructUnit)) {
-				
-				collectExternalStructAccesses(unit, mStruct);
-			}
-		}
-	}
+//	/**
+//	 * collects all structures imported by this unit into its prototype's external
+//	 * accesses, if an imported structure is declaring an accessible field which
+//	 * type is a struct type and that type is accessible it is also collected (and
+//	 * recursively). This way this unit will be able to use accessible members of
+//	 * all imported accessible structures.
+//	 * 
+//	 * FIX if a member has type Struct[] or func Struct()... it won't be collected !
+//	 */
+//	private static void collectExternalStructAccesses(Unit unit, StructPrototype structure) {
+//		if(structure == Invalids.STRUCT_PROTOTYPE || !unit.prototype.externalAccesses.add(structure))
+//			return;
+//		for(VariablePrototype member : structure.members) {
+//			if(member.modifiers.visibility != DeclarationVisibility.GLOBAL || 
+//					!(member.getType() instanceof VarStructType))
+//				continue;
+//			StructPrototype mStruct = ((VarStructType) member.getType()).structure;
+//			String mStructUnit = mStruct.signature.declaringUnit;
+//			if(mStructUnit.equals(unit.fullBase))
+//				continue;
+//			if(mStruct.modifiers.visibility == DeclarationVisibility.GLOBAL &&
+//					ArrayOperator.contains(unit.importations, mStructUnit)) {
+//				
+//				collectExternalStructAccesses(unit, mStruct);
+//			}
+//		}
+//	}
 
 	private static StructPrototype searchStructSection(Unit unit, String name,
-			Map<String, List<StructPrototype>> declaredStructures, ErrorWrapper errors) {
+			Map<String, List<StructPrototype>> declaredStructures) {
 		for(StructSection structure : unit.structures) {
 			if(structure.name.equals(name))
 				return structure.getPrototype();

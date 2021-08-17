@@ -15,6 +15,11 @@ public class VarNullType extends VarType {
 	public String getSignature() {
 		throw new IllegalAccessError("The null type does not have a signature");
 	}
+	
+	@Override
+	public VarType[] getSubTypes() {
+		return new VarType[0];
+	}
 
 	@Override
 	public boolean equals(Object o) {

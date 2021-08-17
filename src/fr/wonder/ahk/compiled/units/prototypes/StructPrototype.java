@@ -37,6 +37,11 @@ public class StructPrototype implements Prototype<StructPrototype> {
 		return signature;
 	}
 	
+	@Override
+	public String toString() {
+		return signature.computedSignature;
+	}
+	
 	/** Returns the structure name */
 	public String getName() {
 		return signature.name;

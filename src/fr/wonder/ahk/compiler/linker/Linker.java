@@ -1,16 +1,25 @@
 package fr.wonder.ahk.compiler.linker;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.types.VarNullType;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.ExternalStructAccess;
+import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.UnitCompilationState;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
+import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.types.ConversionTable;
@@ -87,9 +96,12 @@ public class Linker {
 		
 		UnitPrototype[] prototypes = ArrayOperator.map(units, UnitPrototype[]::new, u->u.prototype);
 		
+		Map<String, List<StructPrototype>> declaredStructures = new HashMap<>();
+		collectGlobalStructures(prototypes, declaredStructures);
+		
 		for(Unit unit : units) {
 			ErrorWrapper subErrors = errors.subErrrors("Unable to prelink unit " + unit.fullBase);
-			Prelinker.prelinkUnit(unit, prototypes, subErrors);
+			Prelinker.prelinkUnit(unit, declaredStructures, subErrors);
 			if(subErrors.noErrors())
 				unit.compilationState = UnitCompilationState.PRELINKED;
 		}
@@ -173,7 +185,9 @@ public class Linker {
 	 * must be 0. For function calls this method will be used once for each argument
 	 * with {@code valueIndex} ranging from 0 to the number of arguments -1.
 	 */
-	static void checkAffectationType(ExpressionHolder valueHolder, int valueIndex, VarType validType, ErrorWrapper errors) {
+	static void checkAffectationType(ExpressionHolder valueHolder, int valueIndex,
+			VarType validType, ErrorWrapper errors) {
+		
 		Expression value = valueHolder.getExpressions()[valueIndex];
 		if(value instanceof NullExp) {
 			if(!VarNullType.isAcceptableNullType(validType)) {
@@ -190,6 +204,42 @@ public class Linker {
 			valueHolder.getExpressions()[valueIndex] = value;
 		} else {
 			errors.add("Type mismatch, cannot convert " + value.getType() + " to " + validType + value.getErr());
+		}
+	}
+	
+	static void requireType(Unit unit, VarType type, SourceElement elem, ErrorWrapper errors) {
+		if(type instanceof VarStructType) {
+			VarStructType s = (VarStructType) type;
+			ExternalStructAccess ext = unit.usedStructTypes.get(s.name);
+//			if(ext == null) {
+//				Prelinker.searchStructSection(unit, s.name, null);
+//			}
+			
+			VarStructType u = ext == null ? null : ext.structTypeInstance;
+			
+			if(u == null) {
+				// the type is not imported by this unit
+				errors.add("Cannot make use of type " + s + ", this type is not accessible:" + elem.getErr());
+			} else if(!s.structure.matchesPrototype(u.structure)) {
+				// a type with the same name is accessible but is declared by another unit
+				errors.add("Cannot make use of type " + s.structure + ", this type does not match "
+						+ u.structure + ":" + elem.getErr());
+			}
+		} else {
+			for(VarType t : type.getSubTypes())
+				requireType(unit, t, elem, errors);
+		}
+	}
+
+	private static void collectGlobalStructures(UnitPrototype[] units,
+			Map<String, List<StructPrototype>> declaredStructures) {
+		for(UnitPrototype u : units) {
+			List<StructPrototype> globalStructures = new ArrayList<>();
+			for(StructPrototype s : u.structures) {
+				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
+					globalStructures.add(s);
+			}
+			declaredStructures.put(u.fullBase, globalStructures);
 		}
 	}
 	

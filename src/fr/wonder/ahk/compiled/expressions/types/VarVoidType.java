@@ -11,6 +11,11 @@ public class VarVoidType extends VarType {
 	public String getSignature() {
 		return "v";
 	}
+	
+	@Override
+	public VarType[] getSubTypes() {
+		return new VarType[0];
+	}
 
 	@Override
 	public boolean equals(Object o) {

@@ -51,6 +51,7 @@ public class Invalids {
 		public String getSignature() { return STRING; }
 		public String getName() { return STRING; }
 		public boolean equals(Object o) { return this == o; }
+		public VarType[] getSubTypes() { return new VarType[0]; }
 	};
 	
 	public static final Operation OPERATION = new Operation(TYPE, TYPE, Operator.ADD, TYPE) {};

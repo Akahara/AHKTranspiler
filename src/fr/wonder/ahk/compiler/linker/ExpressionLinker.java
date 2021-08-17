@@ -69,9 +69,10 @@ class ExpressionLinker {
 			}
 			
 			exp.computeValueType(typesTable, errors);
+			Linker.requireType(unit, exp.getType(), exp, errors);
 		}
 	}
-
+	
 	private static void linkVariableExpression(Unit unit, Scope scope, VarExp exp, ErrorWrapper errors) {
 		// search for the variable/function declaration
 		VarAccess var = scope.getVariable(exp.variable);

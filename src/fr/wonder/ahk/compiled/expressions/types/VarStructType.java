@@ -26,6 +26,15 @@ public class VarStructType extends VarType {
 	}
 	
 	/**
+	 * A struct does not have sub-types, it has members that may have different
+	 * types but it itself is the targeted sub-type of other types.
+	 */
+	@Override
+	public VarType[] getSubTypes() {
+		return new VarType[0];
+	}
+	
+	/**
 	 * Two structure types are equal if the structure they point to are the same,
 	 * as a single unit cannot import multiple structure with the same name this
 	 * equality check can be done only by comparing the structures' names.

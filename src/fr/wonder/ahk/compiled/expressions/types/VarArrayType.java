@@ -21,6 +21,11 @@ public class VarArrayType extends VarType {
 	}
 	
 	@Override
+	public VarType[] getSubTypes() {
+		return new VarType[] { componentType };
+	}
+	
+	@Override
 	public boolean equals(Object o) {
 		return o instanceof VarArrayType && ((VarArrayType) o).componentType.equals(componentType);
 	}

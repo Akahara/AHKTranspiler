@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiled.expressions.types;
 import java.util.Objects;
 
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class VarFunctionType extends VarType {
 	
@@ -31,6 +32,11 @@ public class VarFunctionType extends VarType {
 		for(VarType arg : arguments)
 			signature += arg.getSignature();
 		return signature;
+	}
+	
+	@Override
+	public VarType[] getSubTypes() {
+		return ArrayOperator.add(arguments, returnType);
 	}
 	
 	@Override

@@ -17,6 +17,11 @@ public class VarNativeType extends VarType {
 	public String getSignature() {
 		return String.valueOf(name.charAt(0));
 	}
+	
+	@Override
+	public VarType[] getSubTypes() {
+		return new VarType[0];
+	}
 
 	/**
 	 * Native types are only created in {@link VarType} and only one instance

@@ -22,6 +22,8 @@ public abstract class VarType {
 	/** Returns a non user-friendly descriptor (signature) of this type */
 	public abstract String getSignature();
 	
+	public abstract VarType[] getSubTypes();
+	
 	@Override
 	public String toString() {
 		return getName();
