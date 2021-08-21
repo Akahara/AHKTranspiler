@@ -50,7 +50,7 @@ public class AHKTranspiler {
 				.compile(new ErrorWrapper("Unable to compile", true))
 				.link(new ErrorWrapper("Unable to link", true))
 				.prepare(manifest);
-			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export"));
+			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export", true));
 			logger.warn("Running with " + transpiler.getName());
 			Process process = transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run"));
 			if(process != null)

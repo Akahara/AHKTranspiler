@@ -12,18 +12,11 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
-import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
-import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
-import fr.wonder.ahk.compiled.expressions.types.VarStructType;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
-import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
@@ -52,10 +45,9 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.Instruction;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
+import fr.wonder.ahk.transpilers.common_x64.macros.ClosureDefinition;
 import fr.wonder.ahk.transpilers.common_x64.macros.StringDefinition;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
-import fr.wonder.commons.exceptions.UnreachableException;
 
 public class UnitWriter {
 	
@@ -89,10 +81,15 @@ public class UnitWriter {
 	
 	public final TranspilableHandle project;
 	public final Unit unit;
+	
 	public final MemoryManager mem;
+	public final RegistryManager registries;
 	public final ExpressionWriter expWriter;
 	public final AsmOperationWriter opWriter;
+	public final AsmFuncOperationWriter funcOpWriter;
+	
 	public final ConcreteTypesTable types;
+	
 	/** populated by {@link #writeDataSegment(ErrorWrapper)} and used by {@link #getLabel(StrLiteral)} */
 	private final List<StrLiteral> strConstants = new ArrayList<>();
 	
@@ -105,80 +102,15 @@ public class UnitWriter {
 		this.project = handle;
 		this.unit = unit;
 		this.mem = new MemoryManager(this);
+		this.registries = new RegistryManager(this);
 		this.expWriter = new ExpressionWriter(this);
 		this.opWriter = new AsmOperationWriter(this);
+		this.funcOpWriter = new AsmFuncOperationWriter(this);
 		this.types = types;
 	}
 	
 	// ------------------------ registries & labels ------------------------
 	
-	/** Returns the registry (the label) of the variable or function denoted by #var */
-	public String getRegistry(VarAccess var) {
-		if(var.getSignature().declaringUnit == VarAccess.INNER_UNIT)
-			throw new IllegalStateException("Cannot globally access a scoped variable");
-		if(var instanceof FunctionPrototype || !var.getSignature().declaringUnit.equals(unit.fullBase))
-			return getGlobalRegistry(var);
-		else
-			return getLocalRegistry(var);
-	}
-	
-	public static String getUnitRegistry(Unit unit) {
-		return getUnitRegistry(unit.fullBase);
-	}
-	
-	public static String getUnitRegistry(String unitFullBase) {
-		return unitFullBase.replaceAll("\\.", "_");
-	}
-	
-	public static String getGlobalRegistry(VarAccess var) {
-		if(var instanceof FunctionPrototype && ((FunctionPrototype) var).getModifiers().hasModifier(Modifier.NATIVE))
-			return ((FunctionPrototype) var).getModifiers().getModifier(NativeModifier.class).nativeRef;
-		
-		return getUnitRegistry(var.getSignature().declaringUnit) + "_" + getLocalRegistry(var);
-	}
-	
-	private static String getLocalRegistry(VarAccess var) {
-		if(var instanceof VariablePrototype)
-			return ((VariablePrototype) var).getName();
-		if(var instanceof FunctionPrototype) {
-			FunctionPrototype f = (FunctionPrototype) var;
-			return f.getName() + "_" + f.getType().getSignature();
-		}
-		
-		throw new IllegalArgumentException("Unimplemented registry " + var.getClass());
-	}
-	
-	public String getStructNullRegistry(StructPrototype struct) {
-		String registry = getUnitRegistry(struct.getSignature().declaringUnit) + "@" 
-				+ struct.getSignature().name + "_null";
-		if(!struct.getSignature().declaringUnit.equals(this.unit.fullBase))
-			requireExternLabel(registry);
-		return registry;
-	}
-	
-	public String getFunctionNullRegistry(StructPrototype resultType, int argsCount) {
-		String registry = getUnitRegistry(resultType.getSignature().declaringUnit) + "@" 
-				+ resultType.getSignature().name + "_nulllambda_" + argsCount;
-		if(!resultType.getSignature().declaringUnit.equals(this.unit.fullBase))
-			requireExternLabel(registry);
-		return registry;
-	}
-	
-	public String getFunctionNullRegistry(VarType resultType, int argsCount) {
-		if(resultType == VarType.VOID) {
-			throw new UnimplementedException();
-		} else if(resultType instanceof VarArrayType || resultType == VarType.STR) {
-			throw new UnimplementedException();
-		} else if(resultType instanceof VarNativeType) {
-			throw new UnimplementedException();
-		} else if(resultType instanceof VarStructType) {
-			StructPrototype struct = ((VarStructType) resultType).structure;
-			return getFunctionNullRegistry(struct, argsCount);
-		} else {
-			throw new UnreachableException(resultType.getName());
-		}
-	}
-		
 	public String getLabel(StrLiteral lit) {
 		// beware! strConstants.indexOf cannot be used because the #equals method of StrLiteral
 		// will return true if two literals hold equal strings.
@@ -234,25 +166,29 @@ public class UnitWriter {
 		instructions.section(SectionDeclaration.DATA);
 		instructions.skip();
 		
-		instructions.add(new GlobalDeclaration(getUnitRegistry(unit) + "_init"));
+		instructions.add(new GlobalDeclaration(RegistryManager.getUnitInitFunctionRegistry(unit)));
 		for(VariableDeclaration v : unit.variables) {
 			if(v.modifiers.visibility == DeclarationVisibility.GLOBAL && !v.modifiers.hasModifier(Modifier.NATIVE))
-				instructions.add(new GlobalDeclaration(getGlobalRegistry(v.getPrototype())));
+				instructions.add(new GlobalDeclaration(RegistryManager.getGlobalRegistry(v.getPrototype())));
 		}
 		if(unit.variables.length != 0)
 			instructions.skip();
 		for(FunctionSection f : unit.functions) {
-			if(f.modifiers.visibility == DeclarationVisibility.GLOBAL && !f.modifiers.hasModifier(Modifier.NATIVE))
-				instructions.add(new GlobalDeclaration(getGlobalRegistry(f.getPrototype())));
+			if(f.modifiers.visibility == DeclarationVisibility.GLOBAL &&
+					!f.modifiers.hasModifier(Modifier.NATIVE)) {
+				
+				instructions.add(new GlobalDeclaration(RegistryManager.getGlobalRegistry(f.getPrototype())));
+				instructions.add(new GlobalDeclaration(RegistryManager.getClosureRegistry(f.getPrototype())));
+			}
 		}
 		if(unit.functions.length != 0)
 			instructions.skip();
 		for(StructSection s : unit.structures) {
 			if(s.modifiers.visibility != DeclarationVisibility.GLOBAL)
 				continue;
-			instructions.add(new GlobalDeclaration(getStructNullRegistry(s.getPrototype())));
+			instructions.add(new GlobalDeclaration(registries.getStructNullRegistry(s.getPrototype())));
 			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
-				String label = getFunctionNullRegistry(s.getPrototype(), i);
+				String label = registries.getFunctionNullRegistry(s.getPrototype(), i);
 				instructions.add(new GlobalDeclaration(label));
 			}
 		}
@@ -264,7 +200,7 @@ public class UnitWriter {
 		for(Prototype<?> i : unit.prototype.externalAccesses) {
 			// extern variable or function
 			if(i instanceof VarAccess)
-				requireExternLabel(getGlobalRegistry((VarAccess) i));
+				requireExternLabel(RegistryManager.getGlobalRegistry((VarAccess) i));
 		}
 		if(unit.importations.length != 0)
 			instructions.skip();
@@ -288,13 +224,36 @@ public class UnitWriter {
 		
 		for(VariableDeclaration var : unit.variables) {
 			if(var.modifiers.visibility == DeclarationVisibility.GLOBAL)
-				instructions.label(getGlobalRegistry(var.getPrototype()));
+				instructions.label(RegistryManager.getGlobalRegistry(var.getPrototype()));
 			String value;
 			if(initializedVariables.contains(var))
 				value = getValueString((LiteralExp<?>) var.getDefaultValue());
 			else
 				value = "0";
-			instructions.add(new GlobalVarDeclaration(getLocalRegistry(var.getPrototype()), MemSize.QWORD, value));
+			String label = RegistryManager.getLocalRegistry(var.getPrototype());
+			instructions.add(new GlobalVarDeclaration(label, MemSize.QWORD, value));
+		}
+		if(unit.variables.length != 0)
+			instructions.skip();
+		
+		for(FunctionSection func : unit.functions) {
+			String closure = RegistryManager.getClosureRegistry(func.getPrototype());
+			String address = RegistryManager.getGlobalRegistry(func.getPrototype());
+			instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, address));
+		}
+		if(unit.functions.length != 0)
+			instructions.skip();
+		
+		for(StructSection structure : unit.structures) {
+			String nullLabel = registries.getStructNullRegistry(structure.getPrototype());
+			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
+				String label = registries.getFunctionNullRegistry(structure.getPrototype(), i);
+				instructions.add(new ClosureDefinition(label,
+						requireExternLabel(GlobalLabels.CLOSURE_RUN_CONSTANT_FUNC), i, nullLabel));
+//				instructions.label(label);
+//				instructions.mov(Register.RAX, nullLabel);
+//				instructions.ret(i*MemSize.POINTER_SIZE);
+			}
 		}
 		
 		instructions.skip(2);
@@ -334,7 +293,7 @@ public class UnitWriter {
 		instructions.skip();
 
 		for(StructSection struct : unit.structures) {
-			String nullLabel = getStructNullRegistry(struct.getPrototype());
+			String nullLabel = registries.getStructNullRegistry(struct.getPrototype());
 			instructions.add(new GlobalVarReservation(nullLabel, MemSize.QWORD, struct.members.length));
 		}
 		
@@ -350,13 +309,14 @@ public class UnitWriter {
 		FunctionSection initFunction = new FunctionSection(Invalids.UNIT, 0, 0, 0, DeclarationModifiers.NONE);
 		
 		// write the initialization function
-		instructions.label(getUnitRegistry(unit) + "_init");
+		instructions.label(RegistryManager.getUnitInitFunctionRegistry(unit));
 		instructions.createStackFrame();
 		mem.enterFunction(initFunction, 0);
 		
 		for(StructSection struct : unit.structures) {
 			ConcreteType concreteType = types.getConcreteType(struct);
-			MemAddress nullAddress = new MemAddress(new LabelAddress(getStructNullRegistry(struct.getPrototype())));
+			String nullLabel = registries.getStructNullRegistry(struct.getPrototype());
+			MemAddress nullAddress = new MemAddress(new LabelAddress(nullLabel));
 			instructions.comment("init " + struct.name + " null");
 			for(VariableDeclaration member : struct.members) {
 				ConstructorDefaultValue nullField = struct.getNullField(member.name);
@@ -367,7 +327,7 @@ public class UnitWriter {
 		}
 		for(VariableDeclaration var : initializableVariables) {
 			instructions.comment("init " + var.name);
-			Address address = new MemAddress(new LabelAddress(getRegistry(var.getPrototype())));
+			Address address = new MemAddress(new LabelAddress(RegistryManager.getLocalRegistry(var.getPrototype())));
 			if(var.modifiers.hasModifier(Modifier.NATIVE)) {
 				String nativeLabel = var.modifiers.getModifier(NativeModifier.class).nativeRef;
 				instructions.mov(address, nativeLabel);
@@ -383,23 +343,23 @@ public class UnitWriter {
 		instructions.ret();
 		instructions.skip();
 		
-		for(StructSection structure : unit.structures) {
-			String nullLabel = getStructNullRegistry(structure.getPrototype());
-			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
-				String label = getFunctionNullRegistry(structure.getPrototype(), i);
-				instructions.label(label);
-				instructions.mov(Register.RAX, nullLabel);
-				instructions.ret(i*MemSize.POINTER_SIZE);
-			}
-		}
-		if(unit.structures.length != 0)
-			instructions.skip(2);
+//		for(StructSection structure : unit.structures) {
+//			String nullLabel = registries.getStructNullRegistry(structure.getPrototype());
+//			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
+//				String label = registries.getFunctionNullRegistry(structure.getPrototype(), i);
+//				instructions.label(label);
+//				instructions.mov(Register.RAX, nullLabel);
+//				instructions.ret(i*MemSize.POINTER_SIZE);
+//			}
+//		}
+//		if(unit.structures.length != 0)
+//			instructions.skip(2);
 		
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE))
 				continue;
 			
-			instructions.label(getGlobalRegistry(func.getPrototype()));
+			instructions.label(RegistryManager.getGlobalRegistry(func.getPrototype()));
 			FunctionWriter.writeFunction(this, func, errors);
 			instructions.skip();
 		}

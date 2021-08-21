@@ -155,5 +155,6 @@ public class Tokens {
 			operatorsMap.put(OP_NOT,	Operator.NOT);
 			operatorsMap.put(OP_SHR, 	Operator.SHR);
 			operatorsMap.put(OP_SHL, 	Operator.SHL);
+			operatorsMap.put(OP_POWER,	Operator.POWER);
 	}
 }

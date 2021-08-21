@@ -1,15 +1,10 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.Operator.DIVIDE;
-import static fr.wonder.ahk.compiled.expressions.Operator.EQUALS;
-import static fr.wonder.ahk.compiled.expressions.Operator.LOWER;
-import static fr.wonder.ahk.compiled.expressions.Operator.MOD;
-import static fr.wonder.ahk.compiled.expressions.Operator.MULTIPLY;
-import static fr.wonder.ahk.compiled.expressions.Operator.NEQUALS;
-import static fr.wonder.ahk.compiled.expressions.Operator.SUBSTRACT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.STR;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +26,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.types.Tuple;
 import fr.wonder.commons.utils.Assertions;
 
@@ -67,6 +63,7 @@ public class AsmOperationWriter {
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, MOD, false), AsmOperationWriter::op_intMODint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, SHR, false), AsmOperationWriter::op_intSHRint);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, SHL, false), AsmOperationWriter::op_intSHLint);
+		nativeOperations.put(NativeOperation.getOperation(INT, INT, POWER, false), AsmOperationWriter::op_intPOWERint);
 		
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, ADD, false), AsmOperationWriter::op_floatADDfloat);
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, SUBSTRACT, false), AsmOperationWriter::op_floatSUBfloat);
@@ -74,6 +71,7 @@ public class AsmOperationWriter {
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, MULTIPLY, false), AsmOperationWriter::op_floatMULfloat);
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, DIVIDE, false), AsmOperationWriter::op_floatDIVfloat);
 		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, MOD, false), AsmOperationWriter::op_floatMODfloat);
+		nativeOperations.put(NativeOperation.getOperation(FLOAT, FLOAT, POWER, false), AsmOperationWriter::op_floatPOWEfloat);
 		
 		nativeOperations.put(NativeOperation.getOperation(BOOL, BOOL, EQUALS, false), AsmOperationWriter::op_universalEquality);
 		nativeOperations.put(NativeOperation.getOperation(INT, INT, EQUALS, false), AsmOperationWriter::op_universalEquality);
@@ -260,6 +258,15 @@ public class AsmOperationWriter {
 		asmWriter.writer.instructions.add(OpCode.SHL, Register.RAX, ro);
 	}
 	
+	private static void op_intPOWERint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		if(rightOperand instanceof IntLiteral && ((IntLiteral) rightOperand).value == 2) {
+			asmWriter.writer.expWriter.writeExpression(leftOperand, errors);
+			asmWriter.writer.instructions.add(OpCode.IMUL, Register.RAX, Register.RAX);
+		} else {
+			throw new UnimplementedException("unimplemented power operation"); // TODO int and float power operations
+		}
+	}
+	
 	private static void op_floatADDfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.simpleFPUOperation(leftOperand, rightOperand, true, OpCode.FADDP, errors);
 	}
@@ -289,6 +296,10 @@ public class AsmOperationWriter {
 	private static void op_nullNOTbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
 		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, 1);
+	}
+	
+	private static void op_floatPOWEfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		throw new UnimplementedException("unimplemented power operation");
 	}
 
 	private static void op_strADDstr(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {

@@ -13,7 +13,6 @@ public class MemAddress implements Address {
 	
 	public MemAddress(Address base, Register index, int scale, int offset) {
 		this.base = base;
-//		Assertions.assertTrue(base instanceof LabelAddress || base instanceof Register, "Invalid base " + base);
 		Assertions.assertFalse(index != null && scale == 0, "Scale specified without displacement");
 		this.index = index;
 		this.scale = scale;
@@ -40,10 +39,6 @@ public class MemAddress implements Address {
 		this(base, index, scale, 0);
 	}
 
-	/** Returns [this] */
-	public MemAddress dereference() {
-		return new MemAddress(this);
-	}
 	/** Returns [[this]+...] */
 	public MemAddress then(Register index, int scale, int offset) {
 		return new MemAddress(this, index, scale, offset);

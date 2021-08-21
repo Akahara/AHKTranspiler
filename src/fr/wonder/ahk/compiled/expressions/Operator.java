@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.expressions;
 
 public enum Operator {
 	
+	POWER		(-10, false),
 	NOT			(-10, true),
 
 	SHR			(0, false),

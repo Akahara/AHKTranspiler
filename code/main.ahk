@@ -9,6 +9,7 @@ alias Afunction = func Structure(int);
 alias IntAlias = int;
 alias IntArray = IntAlias[];
 alias ComplexAlias = func Afunction(int, IntArray)[];
+alias GenFunc = func int(int);
 
 int ii = 3;
 
@@ -28,6 +29,13 @@ func int gcd2(int x, int y) {
 		x, y = y, x%y;
 	}
 	return x;
+}
+
+func int gen1(int x) {
+	return x+1;
+}
+func int gen2(int x) {
+	return x*2;
 }
 
 func Structure structGen(int i) {
@@ -87,7 +95,7 @@ global func int main() {
 	Kernel.printlnb(3 != true);
 	Kernel.println("------ Expected composed strings:");
 	Kernel.println("a composed " + "string");
-	Kernel.println("");
+	Kernel.println(""); // TODO str + int
 	Kernel.println("------ Expected 2 37 5 1 65 42 22 65");
 	Cyclic1 cyclic1 = null;
 	cyclic1.a = 2;
@@ -103,5 +111,9 @@ global func int main() {
 	Kernel.printlni(function(42).a);
 	Kernel.printlni((function(10)+function(12)).a);
 	Kernel.printlni(Structs.fff(structure));
+	Kernel.println("------ Expected 9 7");
+	Kernel.printlni(3^2);
+	Kernel.printlni((gen1 << gen2)(3)); // apply gen2 first
+	Kernel.printlni(l);
 	return 5;
 }

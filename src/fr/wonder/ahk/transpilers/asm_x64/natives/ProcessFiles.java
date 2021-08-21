@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.handles.TranspilableHandle;
-import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
+import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.files.FilesUtils;
 import fr.wonder.commons.systems.reflection.ReflectUtils;
@@ -38,11 +38,10 @@ public class ProcessFiles {
 		files.add(copyNative(dir, "asm/natives/memory.fasm", "natives/memory.asm"));
 		files.add(copyNative(dir, "asm/natives/errors.fasm", "natives/errors.asm"));
 		files.add(copyNative(dir, "asm/natives/values.fasm", "natives/values.asm"));
+		files.add(copyNative(dir, "asm/natives/closures.fasm", "natives/closures.asm"));
 		
 		for(Entry<String, FileWriter> unit : AHK_LIB.entrySet()) {
-//			if(handle.requiresNative(unit.getKey())) {
-				files.add(unit.getValue().writeFile(handle, dir, errors));
-//			}
+			files.add(unit.getValue().writeFile(handle, dir, errors));
 		}
 		
 		return files.toArray(String[]::new);
@@ -96,13 +95,13 @@ public class ProcessFiles {
 		String initializationFunctionsExterns = "";
 		String initializationFunctionsCalls = "";
 		for(Unit u : handle.units) {
-			String reg = UnitWriter.getUnitRegistry(u) + "_init";
+			String reg = RegistryManager.getUnitInitFunctionRegistry(u);
 			initializationFunctionsExterns += "extern " + reg + "\n";
 			initializationFunctionsCalls += "call " + reg + "\n  ";
 		}
 		
 		String source = formatNative("asm/natives/entry_point.fasm",
-				"&entry_point", UnitWriter.getGlobalRegistry(handle.manifest.entryPointFunction.getPrototype()),
+				"&entry_point", RegistryManager.getGlobalRegistry(handle.manifest.entryPointFunction.getPrototype()),
 				"&units_initialization_externs", initializationFunctionsExterns,
 				"&units_initialization_calls", initializationFunctionsCalls);
 		return writeFile(dir, source, "natives/entry_point.asm");

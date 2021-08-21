@@ -49,7 +49,7 @@ class Scope {
 				return new MemAddress(Register.RSP, stackSpace-(i+1)*MemSize.POINTER_SIZE+stackOffset);
 		}
 		// search through global variables
-		Address baseAddress = new LabelAddress(writer.getRegistry(var));
+		Address baseAddress = new LabelAddress(writer.registries.getRegistry(var));
 		
 		if(var instanceof FunctionPrototype)
 			return baseAddress;

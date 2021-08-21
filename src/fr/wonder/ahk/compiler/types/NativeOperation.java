@@ -18,7 +18,7 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class NativeOperation extends Operation {
 	
-	private NativeOperation(VarType l, VarType r, Operator o, VarType resultType) {
+	protected NativeOperation(VarType l, VarType r, Operator o, VarType resultType) {
 		super(l, r, o, resultType);
 	}
 
@@ -32,7 +32,9 @@ public class NativeOperation extends Operation {
 	private static final NativeOperation STR_ADD_STR = new NativeOperation(STR, STR, ADD, STR);
 	/** boolean negation "!x" */
 	private static final NativeOperation NOT_BOOL = new NativeOperation(null, BOOL, NOT, BOOL);
+	/** negation "-x" */
 	private static final NativeOperation NEG_FLOAT = new NativeOperation(null, FLOAT, SUBSTRACT, FLOAT);
+	/** negation "-x" */
 	private static final NativeOperation NEG_INT = new NativeOperation(null, INT, SUBSTRACT, INT);
 	
 	/**
@@ -62,7 +64,7 @@ public class NativeOperation extends Operation {
 				O,B,O,
 				O,O,B
 			},
-			{ // / %
+			{ // / % ^
 				X,X,X,
 				X,I,O,
 				X,O,F
@@ -153,13 +155,14 @@ public class NativeOperation extends Operation {
 			return RESULT_TABLES[1];
 		case DIVIDE:
 		case MOD:
+		case POWER:
 			return RESULT_TABLES[2];
 		case SHL:
 		case SHR:
 			return RESULT_TABLES[3];
 		case NOT:
 		default:
-			throw new UnreachableException();
+			throw new UnreachableException(o.toString());
 		}
 	}
 	

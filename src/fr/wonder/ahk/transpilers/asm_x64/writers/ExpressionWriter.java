@@ -21,6 +21,9 @@ import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
+import fr.wonder.ahk.compiler.types.CompositionOperation;
+import fr.wonder.ahk.compiler.types.FunctionOperation;
+import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
@@ -67,7 +70,7 @@ public class ExpressionWriter {
 			throw new UnreachableException("Unknown expression type " + exp.getClass());
 	}
 
-	private void writeFunctionExp(FunctionExpression function,  ErrorWrapper errors) {
+	public void writeFunctionExp(FunctionExpression function,  ErrorWrapper errors) {
 		switch(writer.project.manifest.callingConvention) {
 		case __stdcall: {
 			
@@ -83,10 +86,11 @@ public class ExpressionWriter {
 			}
 			
 			if(function instanceof FunctionExp) {
-				writer.instructions.call(writer.getRegistry(((FunctionExp) function).function));
+				writer.instructions.call(RegistryManager.getFunctionRegistry(((FunctionExp) function).function));
 			} else if(function instanceof FunctionCallExp) {
 				writeExpression(((FunctionCallExp) function).getFunction(), errors);
-				writer.instructions.call(Register.RAX.name);
+				writer.instructions.call(new MemAddress(Register.RAX));
+				// when called, the function will have access to the closure in rax
 			} else {
 				throw new UnreachableException("Invalid function type " + function.getClass());
 			}
@@ -108,8 +112,13 @@ public class ExpressionWriter {
 	}
 	
 	private void writeOperationExp(OperationExp exp, ErrorWrapper errors) {
-		if(exp.getOperation() instanceof OverloadedOperatorPrototype) {
+		Operation operation = exp.getOperation();
+		if(operation instanceof OverloadedOperatorPrototype) {
 			writeFunctionExp(new FunctionExp(exp), errors);
+		} else if(operation instanceof FunctionOperation) {
+			writer.funcOpWriter.writeFuncOperation(exp, errors);
+		} else if(operation instanceof CompositionOperation) {
+			writer.funcOpWriter.writeCompositionOperation(exp, errors);
 		} else {
 			writer.opWriter.writeOperation(exp, errors);
 		}
@@ -227,13 +236,13 @@ public class ExpressionWriter {
 	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
 		VarType actualType = exp.getType();
 		if(actualType instanceof VarStructType) {
-			String nullLabel = writer.getStructNullRegistry(((VarStructType) actualType).structure);
+			String nullLabel = writer.registries.getStructNullRegistry(((VarStructType) actualType).structure);
 			writer.instructions.mov(Register.RAX, nullLabel);
 		} else if(actualType instanceof VarArrayType) {
 			writer.instructions.mov(Register.RAX, writer.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(actualType instanceof VarFunctionType) {
 			VarFunctionType funcType = (VarFunctionType) actualType;
-			String nullLabel = writer.getFunctionNullRegistry(funcType.returnType, funcType.arguments.length);
+			String nullLabel = writer.registries.getFunctionNullRegistry(funcType.returnType, funcType.arguments.length);
 			writer.instructions.mov(Register.RAX, nullLabel);
 		} else {
 			throw new UnreachableException("Unimplemented null: " + actualType);

@@ -21,7 +21,6 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.Operation;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.RepeatedInstruction;
-import fr.wonder.commons.utils.ArrayOperator;
 
 public class InstructionSet {
 	
@@ -44,43 +43,19 @@ public class InstructionSet {
 	}
 	
 	public void add(OpCode instruction, Object... params) {
-		OperationParameter[] ps = ArrayOperator.map(
-				params, 
-				OperationParameter[]::new,
-				InstructionSet::asOperationParameter);
-		add(new Operation(instruction, ps));
+		add(new Operation(instruction, OperationParameter.asOperationParameters(params)));
 	}
 	
 	public void addCasted(OpCode instruction, Object... params) {
-		Object[] ps = ArrayOperator.map(
-				params,
-				InstructionSet::asExtendedOperationParameter);
-		add(new CastedInstruction(instruction, ps));
+		add(new CastedInstruction(instruction, OperationParameter.asExtendedOperationParameters(params)));
 	}
 	
 	public void mov(Address to, Object from) {
-		OperationParameter f = asOperationParameter(from);
+		OperationParameter f = OperationParameter.asOperationParameter(from);
 		if(needsCasting(to, f))
 			add(new MovOperation(to, f, MemSize.QWORD));
 		else
 			add(new MovOperation(to, f));
-	}
-	
-	private static Object asExtendedOperationParameter(Object param) {
-		if(param instanceof MemSize)
-			return param;
-		return asOperationParameter(param);
-	}
-	
-	private static OperationParameter asOperationParameter(Object param) {
-		if(param instanceof OperationParameter)
-			return (OperationParameter) param;
-		if(param instanceof String)
-			return new LabelAddress((String) param);
-		else if(param instanceof Integer)
-			return new ImmediateValue((Integer) param);
-		
-		throw new IllegalArgumentException("Unknown operand type: " + param.getClass() + " " + param);
 	}
 	
 	public void section(String section) { add(new SectionDeclaration(section)); }
@@ -89,6 +64,7 @@ public class InstructionSet {
 	public void ret() { add(RET); }
 	public void ret(int stackSize) { add(RET, stackSize); }
 	public void call(String label) { add(CALL, label); }
+	public void call(OperationParameter target) { add(CALL, target); }
 	public void jmp(String label) { add(JMP, label); }
 	public void push(OperationParameter target) { add(PUSH, target); }
 	public void pop(Address target) { add(POP, target); }

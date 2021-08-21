@@ -68,7 +68,7 @@ class StructureLinker {
 		for(UnitPrototype u : linker.prototypes) {
 			for(StructPrototype struct : u.structures) {
 				for(OverloadedOperatorPrototype oop : struct.overloadedOperators) {
-					OverloadedOperatorPrototype overridden = linker.typesTable.operations.registerOperation(oop);
+					OverloadedOperatorPrototype overridden = linker.typesTable.registerOverloadedOperator(oop);
 					
 					if(overridden != null) {
 						errors.add("Two operators overloads conflict: in " +
