@@ -12,7 +12,6 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
-import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
@@ -45,7 +44,6 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.Instruction;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
-import fr.wonder.ahk.transpilers.common_x64.macros.ClosureDefinition;
 import fr.wonder.ahk.transpilers.common_x64.macros.StringDefinition;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -187,10 +185,6 @@ public class UnitWriter {
 			if(s.modifiers.visibility != DeclarationVisibility.GLOBAL)
 				continue;
 			instructions.add(new GlobalDeclaration(registries.getStructNullRegistry(s.getPrototype())));
-			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
-				String label = registries.getFunctionNullRegistry(s.getPrototype(), i);
-				instructions.add(new GlobalDeclaration(label));
-			}
 		}
 		if(unit.structures.length != 0)
 			instructions.skip();
@@ -240,20 +234,6 @@ public class UnitWriter {
 			String closure = RegistryManager.getClosureRegistry(func.getPrototype());
 			String address = RegistryManager.getGlobalRegistry(func.getPrototype());
 			instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, address));
-		}
-		if(unit.functions.length != 0)
-			instructions.skip();
-		
-		for(StructSection structure : unit.structures) {
-			String nullLabel = registries.getStructNullRegistry(structure.getPrototype());
-			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
-				String label = registries.getFunctionNullRegistry(structure.getPrototype(), i);
-				instructions.add(new ClosureDefinition(label,
-						requireExternLabel(GlobalLabels.CLOSURE_RUN_CONSTANT_FUNC), i, nullLabel));
-//				instructions.label(label);
-//				instructions.mov(Register.RAX, nullLabel);
-//				instructions.ret(i*MemSize.POINTER_SIZE);
-			}
 		}
 		
 		instructions.skip(2);

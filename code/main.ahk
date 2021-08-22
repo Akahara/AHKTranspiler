@@ -111,9 +111,12 @@ global func int main() {
 	Kernel.printlni(function(42).a);
 	Kernel.printlni((function(10)+function(12)).a);
 	Kernel.printlni(Structs.fff(structure));
-	Kernel.println("------ Expected 9 7");
+	Kernel.println("------ Expected 9 7 4 0 4");
 	Kernel.printlni(3^2);
 	Kernel.printlni((gen1 << gen2)(3)); // apply gen2 first
+	Kernel.printlni(l);
+	GenFunc gen = null;
+	Kernel.printlni(gen(3));
 	Kernel.printlni(l);
 	return 5;
 }

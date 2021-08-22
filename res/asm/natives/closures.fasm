@@ -1,0 +1,106 @@
+
+; closure memory block:
+; -----------------------------
+;         u8 memory_block_size
+; ptr --> u8 *closure_func
+;  +8     u8 argument_count
+;      () additional arguments for specific closures
+; -----------------------------
+
+; constant lambda closure memory block:
+; -----------------------------
+;  ...
+;  +16    u8 return_value
+; -----------------------------
+
+; composition closure memory block:
+; -----------------------------
+;  ...
+;  +16    u8 *first_func
+;  +24    u8 *second_func
+; -----------------------------
+
+segment .data
+
+global closure_run_none
+global closure_run_constant
+global closure_run_composed
+
+
+segment .text
+
+
+; used for noop lambdas
+closure_run_none: ;;; FIX : CANNOT BE USED, does not clean the arguments from the stack
+  mov rax,[rax+8]   ; arguments count
+  mov rcx,rsp       ; return address
+  lea rsp,[8*rbx+8] ; "pop" the arguments space and this method's return address
+  
+  xor rax,rax       ; return zero by principle
+  
+  jmp [rcx] ; "return", this method's return address is no longer
+              ; "in" the stack but it still exists where it was
+              ;  originally (its address is lower than rsp)
+
+
+closure_run_constant:
+  mov rbx,[rax+8]       ; arguments count
+  mov rcx,rsp
+  lea rsp,[rsp+8*rbx+8] ; "pop" the arguments space and this method's return address
+  
+  mov rax,[rax+16]  ; return value
+  
+  jmp [rcx] ; "return", this method's return address is no longer
+                    ; "in" the stack but it still exists where it was
+                    ;  originally (its address is lower than rsp)
+  
+
+; when called, $rax must be the pointer to the closure
+; (see the composition closure memory block description)
+closure_run_composed:
+  push rbp
+  mov rbp,rsp
+  
+  ; we cannot call the closure's functions directly
+  ; because the return address pushed by 'call'
+  ; would mess up the stack, instead we copy the
+  ; arguments and take care of removing the original
+  ; arguments from the stack after
+  
+  mov rcx,[rax+8] ; arguments count
+  mov rdx,rcx
+  shl rdx,3       ; arguments space
+  
+  push rdx ; store the arguments space
+  push rax ; store the closure
+  
+  sub rsp,rdx ; arguments space
+  
+  lea rsi,[rbp+rdx+8] ; begining of arguments
+  mov rdi,rsp         ; address of the copy
+  cld
+  rep movsq           ; copy arguments (rcx is the argument count)
+  
+  mov rax,[rax+16] ; retrieve the first closure
+  call [rax]       ; make the first call
+  push rax         ; pass the result of the first call to the second
+  mov rax,[rsp+8]
+  mov rax,[rax+24] ; retrieve the second closure
+  call [rax]       ; make the second call
+  
+  mov rdx,[rsp+8] ; retrieve the arguments space
+  
+  mov rsp,rbp ; end the stack frame
+  pop rbp
+  
+  ; the next instructions are used instead of 'ret' because
+  ; we must pop the arguments from the stack
+  mov rcx,rsp
+  add rsp,rdx ; "pop" the arguments space
+  add rsp,8   ; "pop" this method's return address
+  
+  jmp [rcx]   ; "return", this method's return address is no longer
+              ; "in" the stack but it still exists where it was
+              ;  originally (its address is lower than rsp)
+  
+  

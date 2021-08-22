@@ -242,8 +242,7 @@ public class ExpressionWriter {
 			writer.instructions.mov(Register.RAX, writer.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(actualType instanceof VarFunctionType) {
 			VarFunctionType funcType = (VarFunctionType) actualType;
-			String nullLabel = writer.registries.getFunctionNullRegistry(funcType.returnType, funcType.arguments.length);
-			writer.instructions.mov(Register.RAX, nullLabel);
+			writer.funcOpWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
 		} else {
 			throw new UnreachableException("Unimplemented null: " + actualType);
 		}
