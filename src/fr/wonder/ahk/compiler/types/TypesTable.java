@@ -80,17 +80,29 @@ public class TypesTable {
 				return null;
 			
 			resultOp = getOperation(f1.returnType, f2.returnType, operator);
+			if(resultOp != null && 
+					(!resultOp.loType.equals(f1.returnType) ||
+					 !resultOp.roType.equals(f2.returnType)))
+				return null; // TODO support casts right before closure operations
+							 // (func float() + func int() = func float())
+							 // also remove the same checks below vvv
 			funcTypeArgs = f1.arguments;
 			
 		} else if(leftOp instanceof VarFunctionType) {
 			// func + obj
-			resultOp = getOperation(((VarFunctionType) leftOp).returnType, rightOp, operator);
-			funcTypeArgs = ((VarFunctionType) leftOp).arguments;
+			VarFunctionType f = (VarFunctionType) leftOp;
+			resultOp = getOperation(f.returnType, rightOp, operator);
+			funcTypeArgs = f.arguments;
+			if(resultOp != null && !resultOp.loType.equals(f.returnType))
+				return null;
 		
 		} else if(rightOp instanceof VarFunctionType) {
 			// obj + func
-			resultOp = getOperation(leftOp, ((VarFunctionType) rightOp).returnType, operator);
-			funcTypeArgs = ((VarFunctionType) rightOp).arguments;
+			VarFunctionType f = (VarFunctionType) rightOp;
+			resultOp = getOperation(leftOp, f.returnType, operator);
+			funcTypeArgs = f.arguments;
+			if(resultOp != null && !resultOp.roType.equals(f.returnType))
+				return null;
 			
 		} else {
 			throw new IllegalArgumentException("Not function types");

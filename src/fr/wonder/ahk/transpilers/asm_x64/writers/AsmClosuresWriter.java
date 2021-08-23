@@ -2,22 +2,26 @@ package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
+import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiler.types.CompositionOperation;
 import fr.wonder.ahk.compiler.types.FunctionOperation;
+import fr.wonder.ahk.compiler.types.NativeOperation;
+import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
+import fr.wonder.commons.exceptions.UnreachableException;
 
-public class AsmFuncOperationWriter {
+public class AsmClosuresWriter {
 
 	private final UnitWriter writer;
 	
-	public AsmFuncOperationWriter(UnitWriter writer) {
+	public AsmClosuresWriter(UnitWriter writer) {
 		this.writer = writer;
 	}
 	
@@ -26,13 +30,33 @@ public class AsmFuncOperationWriter {
 		
 		writer.instructions.add(OpCode.SUB, Register.RSP, 16);
 		writer.mem.addStackOffset(16);
-		MemAddress firstFunction = new MemAddress(Register.RSP, 8);
-		MemAddress secondFunction = new MemAddress(Register.RSP, 0);
-		writer.mem.writeTo(firstFunction, exp.getLeftOperand(), errors);
-		writer.mem.writeTo(secondFunction, exp.getRightOperand(), errors);
+		writer.mem.writeTo(new MemAddress(Register.RSP, 0), exp.getLeftOperand(), errors);
+		writer.mem.writeTo(new MemAddress(Register.RSP, 8), exp.getRightOperand(), errors);
 		writer.mem.addStackOffset(-16);
+		writer.callAlloc(5);
 		
-		throw new UnimplementedException();
+		MemAddress closureAddress = new MemAddress(Register.RAX);
+		String operationClosureRegistry = getOperationClosureRegistry(op.resultOperation);
+		int argumentsCount = ((VarFunctionType) op.resultType).arguments.length;
+		
+		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_OPERATION_FUNC));
+		writer.instructions.mov(closureAddress.addOffset(8), argumentsCount);
+		writer.instructions.pop(Register.RBX); // first function
+		writer.instructions.mov(closureAddress.addOffset(16), Register.RBX);
+		writer.instructions.pop(Register.RBX); // second function
+		writer.instructions.mov(closureAddress.addOffset(24), Register.RBX);
+		writer.instructions.mov(closureAddress.addOffset(32), operationClosureRegistry);
+	}
+	
+	private String getOperationClosureRegistry(Operation op) {
+		if(op instanceof NativeOperation) {
+			return RegistryManager.getOperationClosureRegistry((NativeOperation) op);
+		} else if(op instanceof OverloadedOperatorPrototype) {
+			String registry = RegistryManager.getClosureRegistry(((OverloadedOperatorPrototype) op).function);
+			return writer.requireExternLabel(registry);
+		} else {
+			throw new UnreachableException("Invalid operation type " + op.getClass());
+		}
 	}
 
 	public void writeCompositionOperation(OperationExp exp, ErrorWrapper errors) {
@@ -54,10 +78,8 @@ public class AsmFuncOperationWriter {
 		writer.instructions.mov(closureAddress.addOffset(16), Register.RBX);
 		writer.instructions.pop(Register.RBX); // second function
 		writer.instructions.mov(closureAddress.addOffset(24), Register.RBX);
-		
-//		throw new UnimplementedException();
 	}
-
+	
 	public void writeConstantClosure(VarType returnType, int argsCount) {
 		String constantValue;
 		if(returnType instanceof VarStructType)

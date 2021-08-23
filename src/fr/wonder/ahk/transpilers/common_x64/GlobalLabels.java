@@ -27,5 +27,6 @@ public class GlobalLabels {
 	/** TODO0 comment closure_run_composed */
 	public static final String CLOSURE_RUN_COMPOSED_FUNC = "closure_run_composed";
 	public static final String CLOSURE_RUN_CONSTANT_FUNC = "closure_run_constant";
+	public static final String CLOSURE_RUN_OPERATION_FUNC = "closure_run_operation";
 	
 }

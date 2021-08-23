@@ -6,6 +6,7 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 
 public class RegistryManager {
@@ -71,6 +72,10 @@ public class RegistryManager {
 		if(!struct.getSignature().declaringUnit.equals(writer.unit.fullBase))
 			writer.requireExternLabel(registry);
 		return registry;
+	}
+	
+	public static String getOperationClosureRegistry(NativeOperation op) {
+		return "closure_op_" + op.loType + op.operator.name() + op.roType;
 	}
 	
 }

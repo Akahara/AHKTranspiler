@@ -10,7 +10,7 @@ public class RepeatedInstruction implements Instruction {
 	
 	@Override
 	public String toString() {
-		return "rep " + instruction;
+		return "  rep " + instruction;
 	}
 	
 }

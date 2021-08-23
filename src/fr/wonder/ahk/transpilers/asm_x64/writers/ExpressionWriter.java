@@ -87,7 +87,7 @@ public class ExpressionWriter {
 			
 			if(function instanceof FunctionExp) {
 				writer.instructions.call(RegistryManager.getFunctionRegistry(((FunctionExp) function).function));
-			} else if(function instanceof FunctionCallExp) {
+			} else if(function instanceof FunctionCallExp) { // FIX compute the function BEFORE the arguments
 				writeExpression(((FunctionCallExp) function).getFunction(), errors);
 				writer.instructions.call(new MemAddress(Register.RAX));
 				// when called, the function will have access to the closure in rax
@@ -116,9 +116,9 @@ public class ExpressionWriter {
 		if(operation instanceof OverloadedOperatorPrototype) {
 			writeFunctionExp(new FunctionExp(exp), errors);
 		} else if(operation instanceof FunctionOperation) {
-			writer.funcOpWriter.writeFuncOperation(exp, errors);
+			writer.closureWriter.writeFuncOperation(exp, errors);
 		} else if(operation instanceof CompositionOperation) {
-			writer.funcOpWriter.writeCompositionOperation(exp, errors);
+			writer.closureWriter.writeCompositionOperation(exp, errors);
 		} else {
 			writer.opWriter.writeOperation(exp, errors);
 		}
@@ -242,7 +242,7 @@ public class ExpressionWriter {
 			writer.instructions.mov(Register.RAX, writer.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(actualType instanceof VarFunctionType) {
 			VarFunctionType funcType = (VarFunctionType) actualType;
-			writer.funcOpWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
+			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
 		} else {
 			throw new UnreachableException("Unimplemented null: " + actualType);
 		}

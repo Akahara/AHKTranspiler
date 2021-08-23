@@ -4,6 +4,32 @@ import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.commons.utils.Assertions;
 
+/**
+ * Compositions are the way to get a single
+ * function from two, by applying one after
+ * the other.
+ * 
+ * <p>
+ * Compositions can be made using the << and
+ * >> operators, the first function applied
+ * is the left one for >>, the right one for
+ * <<.
+ * 
+ * <pre>
+ * <blockquote>
+ * func int f(int x) {
+ *   return 2*x;
+ * }
+ * 
+ * func int g(int x) {
+ *   return 3;
+ * }
+ * 
+ * (f >> g)(0) // applies f then g, returns 3
+ * (g << f)(0) // applies g then f, returns 6
+ * </blockquote>
+ * </pre>
+ */
 public class CompositionOperation extends Operation {
 	
 	public CompositionOperation(VarFunctionType l, VarFunctionType r, Operator o) {

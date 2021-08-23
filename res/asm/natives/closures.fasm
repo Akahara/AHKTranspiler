@@ -20,11 +20,27 @@
 ;  +24    u8 *second_func
 ; -----------------------------
 
+; operation composition closure memory block:
+; -----------------------------
+;  ...
+;  +16    u8 *first_func
+;  +24    u8 *second_func
+;  +32    u8 *operation_closure
+; -----------------------------
+
 segment .data
 
 global closure_run_none
 global closure_run_constant
 global closure_run_composed
+global closure_run_operation
+
+; extern labels required by native operation closures
+extern global_fsignbit
+extern mem_alloc_block
+extern error_throw
+
+&native_operation_closures_globals
 
 
 segment .text
@@ -103,4 +119,62 @@ closure_run_composed:
               ; "in" the stack but it still exists where it was
               ;  originally (its address is lower than rsp)
   
+  
+closure_run_operation:
+  push rbp
+  mov rbp,rsp
+  
+  mov rcx,[rax+8]
+  mov rdx,rcx
+  shl rdx,3
+  
+  push rdx
+  push rax
+  
+  ; copy args
+  sub rsp,rdx
+  lea rsi,[rbp+rdx+8]
+  mov rdi,rsp
+  cld
+  rep movsq
+  
+  ; call the first closure
+  mov rax,[rax+16]
+  call [rax]
+  push rax
+  
+  ; copy args
+  mov rdx,[rsp+16]
+  mov rcx,rdx
+  sub rsp,rcx
+  shr rcx,3
+  lea rsi,[rbp+rdx+8]
+  mov rdi,rsp
+  cld
+  rep movsq
+  
+  ; call the second closure
+  mov rax,[rsp+rdx+8]
+  mov rax,[rax+24]
+  call [rax]
+  push rax
+  
+  ; call the operation
+  mov rax,[rsp+8]
+  mov rax,[rax+32]
+  call [rax]
+  
+  mov rdx,[rsp+8]
+  
+  mov rsp,rbp
+  pop rbp
+  
+  mov rcx,rsp
+  add rsp,rdx
+  add rsp,8
+  
+  jmp [rcx]
+  
+  
+  &native_operation_closures
   

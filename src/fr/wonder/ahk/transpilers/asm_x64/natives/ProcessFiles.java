@@ -12,9 +12,11 @@ import java.util.Map.Entry;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.files.FilesUtils;
 import fr.wonder.commons.systems.reflection.ReflectUtils;
+import fr.wonder.commons.types.Tuple;
 
 public class ProcessFiles {
 	
@@ -35,10 +37,10 @@ public class ProcessFiles {
 		
 		files.add(writeIntrinsic(handle, dir, errors));
 		files.add(writeEntryPoint(handle, dir, errors));
+		files.add(writeClosures(dir));
 		files.add(copyNative(dir, "asm/natives/memory.fasm", "natives/memory.asm"));
 		files.add(copyNative(dir, "asm/natives/errors.fasm", "natives/errors.asm"));
 		files.add(copyNative(dir, "asm/natives/values.fasm", "natives/values.asm"));
-		files.add(copyNative(dir, "asm/natives/closures.fasm", "natives/closures.asm"));
 		
 		for(Entry<String, FileWriter> unit : AHK_LIB.entrySet()) {
 			files.add(unit.getValue().writeFile(handle, dir, errors));
@@ -105,6 +107,14 @@ public class ProcessFiles {
 				"&units_initialization_externs", initializationFunctionsExterns,
 				"&units_initialization_calls", initializationFunctionsCalls);
 		return writeFile(dir, source, "natives/entry_point.asm");
+	}
+	
+	private static String writeClosures(File dir) throws IOException {
+		Tuple<String, String> closures = AsmOperationWriter.writeOperationsAsClosures();
+		String source = formatNative("asm/natives/closures.fasm",
+				"&native_operation_closures_globals", closures.a,
+				"&native_operation_closures", closures.b);
+		return writeFile(dir, source, "natives/closures.asm");
 	}
 	
 }

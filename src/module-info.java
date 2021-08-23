@@ -16,6 +16,7 @@ module AHKTranspiler {
 	exports fr.wonder.ahk.compiler;
 	exports fr.wonder.ahk.compiled.expressions.types;
 	exports fr.wonder.ahk.transpilers.asm_x64;
+	exports fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 	exports fr.wonder.ahk.compiled.units.sections;
 	exports fr.wonder.ahk.handles;
 	exports fr.wonder.ahk.compiled.units.prototypes;

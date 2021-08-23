@@ -10,6 +10,7 @@ alias IntAlias = int;
 alias IntArray = IntAlias[];
 alias ComplexAlias = func Afunction(int, IntArray)[];
 alias GenFunc = func int(int);
+alias SGenFunc = func Structure(int);
 
 int ii = 3;
 
@@ -111,12 +112,22 @@ global func int main() {
 	Kernel.printlni(function(42).a);
 	Kernel.printlni((function(10)+function(12)).a);
 	Kernel.printlni(Structs.fff(structure));
-	Kernel.println("------ Expected 9 7 4 0 4");
+	Kernel.println("------ Expected 9 7 0");
 	Kernel.printlni(3^2);
 	Kernel.printlni((gen1 << gen2)(3)); // apply gen2 first
-	Kernel.printlni(l);
 	GenFunc gen = null;
 	Kernel.printlni(gen(3));
-	Kernel.printlni(l);
+	Kernel.println("------ Expected 65 and 130 three times");
+	SGenFunc sgen = null;
+	Kernel.printlni(sgen(0).a);
+	Kernel.printlni(sgen(0).a+sgen(0).a);
+	Kernel.printlni((sgen(0)+sgen(0)).a);
+	Kernel.printlni(sgen(0).a);
+	Kernel.printlni((sgen+sgen)(0).a);
+	
+	
+	Kernel.println("----- Expected 4");
+	Kernel.printlni(l); // if the stack was not messed up, this should print 4
+	
 	return 5;
 }

@@ -26,6 +26,7 @@ import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -84,7 +85,7 @@ public class UnitWriter {
 	public final RegistryManager registries;
 	public final ExpressionWriter expWriter;
 	public final AsmOperationWriter opWriter;
-	public final AsmFuncOperationWriter funcOpWriter;
+	public final AsmClosuresWriter closureWriter;
 	
 	public final ConcreteTypesTable types;
 	
@@ -103,7 +104,7 @@ public class UnitWriter {
 		this.registries = new RegistryManager(this);
 		this.expWriter = new ExpressionWriter(this);
 		this.opWriter = new AsmOperationWriter(this);
-		this.funcOpWriter = new AsmFuncOperationWriter(this);
+		this.closureWriter = new AsmClosuresWriter(this);
 		this.types = types;
 	}
 	
@@ -356,7 +357,7 @@ public class UnitWriter {
 	public void testThrowError() {
 		String label = getSpecialLabel();
 		instructions.test(Register.RAX, Register.RAX);
-		instructions.add(OpCode.JNZ, new LabelAddress(label));
+		instructions.add(OpCode.JNZ, label);
 		instructions.call(requireExternLabel(GlobalLabels.SPECIAL_THROW));
 		instructions.label(label);
 	}

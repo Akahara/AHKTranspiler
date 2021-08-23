@@ -25,24 +25,11 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
  * 
  * Any operator other than << and >> will be used to combine 
  * the result of the function operands. The << operator is used
- * to compose functions:
+ * to {@link CompositionOperation compose functions}.
  * 
- * <pre>
- * <blockquote>
- * func int f(int x) {
- *   return 2*x;
- * }
- * func int g(int x) {
- *   return 3;
- * }
- * 
- * (f >> g)(0) // applies f then g, returns 3
- * (g << f)(0) // applies g then f, returns 6
- * </blockquote>
- * </pre>
  */
 public class FunctionOperation extends Operation {
-
+	
 	public final Operation resultOperation;
 	
 	public FunctionOperation(VarType l, VarType r, Operation resultOperation, VarFunctionType funcType) {
