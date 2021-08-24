@@ -160,7 +160,7 @@ closure_run_operation:
   push rax
   
   ; call the operation
-  mov rax,[rsp+8]
+  mov rax,[rsp+16]
   mov rax,[rax+32]
   call [rax]
   

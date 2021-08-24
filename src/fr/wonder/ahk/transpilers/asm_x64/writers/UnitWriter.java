@@ -17,12 +17,10 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
-import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
-import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.handles.TranspilableHandle;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
@@ -287,7 +285,7 @@ public class UnitWriter {
 		instructions.section(SectionDeclaration.TEXT);
 		instructions.skip();
 		
-		FunctionSection initFunction = new FunctionSection(Invalids.UNIT, 0, 0, 0, DeclarationModifiers.NONE);
+		FunctionSection initFunction = FunctionSection.dummyFunction();
 		
 		// write the initialization function
 		instructions.label(RegistryManager.getUnitInitFunctionRegistry(unit));
@@ -362,8 +360,8 @@ public class UnitWriter {
 		instructions.label(label);
 	}
 	
-	public void callAlloc(int size) {
-		callAlloc(new ImmediateValue(size, MemSize.QWORD));
+	public void callAlloc(int byteCount) {
+		callAlloc(new ImmediateValue(byteCount, MemSize.QWORD));
 	}
 	
 	public void callAlloc(OperationParameter size) {

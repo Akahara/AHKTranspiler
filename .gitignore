@@ -23,5 +23,7 @@
 hs_err_pid*
 
 .DS_Store
+.pydevproject
 bin/
 exported_*/
+

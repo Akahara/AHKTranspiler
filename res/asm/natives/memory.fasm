@@ -166,6 +166,8 @@ grow_heap:
 ; If the address + the size of the block is greater than the
 ; current heap break (memory overflow) the heap is grown until
 ; the data fits.
+;   parameters:
+;     u8 size - the size (in bytes) to allocate
 ;   return value: The allocated block address
 ; ==============================================================
 mem_alloc_block:

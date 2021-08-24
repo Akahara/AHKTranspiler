@@ -7,6 +7,7 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceObject;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -32,6 +33,10 @@ public class FunctionSection extends SourceObject {
 		this.unit = unit;
 		this.declarationStop = declarationStop;
 		this.modifiers = modifiers;
+	}
+	
+	public static FunctionSection dummyFunction() {
+		return new FunctionSection(Invalids.UNIT, 0, 0, 0, DeclarationModifiers.NONE);
 	}
 	
 	@Override

@@ -124,6 +124,7 @@ global func int main() {
 	Kernel.printlni((sgen(0)+sgen(0)).a);
 	Kernel.printlni(sgen(0).a);
 	Kernel.printlni((sgen+sgen)(0).a);
+	Kernel.printlni((sgen+sgen(0))(0).a);
 	
 	
 	Kernel.println("----- Expected 4");

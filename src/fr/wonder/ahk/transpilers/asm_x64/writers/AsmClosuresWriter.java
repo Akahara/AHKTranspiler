@@ -33,7 +33,7 @@ public class AsmClosuresWriter {
 		writer.mem.writeTo(new MemAddress(Register.RSP, 0), exp.getLeftOperand(), errors);
 		writer.mem.writeTo(new MemAddress(Register.RSP, 8), exp.getRightOperand(), errors);
 		writer.mem.addStackOffset(-16);
-		writer.callAlloc(5);
+		writer.callAlloc(5*8);
 		
 		MemAddress closureAddress = new MemAddress(Register.RAX);
 		String operationClosureRegistry = getOperationClosureRegistry(op.resultOperation);
@@ -70,7 +70,7 @@ public class AsmClosuresWriter {
 		writer.mem.writeTo(new MemAddress(Register.RSP, 8), secondFunctionExp, errors);
 		writer.mem.addStackOffset(-16);
 		
-		writer.callAlloc(4);
+		writer.callAlloc(4*8);
 		MemAddress closureAddress = new MemAddress(Register.RAX);
 		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_COMPOSED_FUNC));
 		writer.instructions.mov(closureAddress.addOffset(8), op.getFirstApplied().arguments.length);
@@ -87,7 +87,7 @@ public class AsmClosuresWriter {
 		else
 			constantValue = "0";
 		
-		writer.callAlloc(3);
+		writer.callAlloc(3*8);
 		MemAddress closureAddress = new MemAddress(Register.RAX);
 		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_CONSTANT_FUNC));
 		writer.instructions.mov(closureAddress.addOffset(8), argsCount);

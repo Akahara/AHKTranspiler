@@ -131,7 +131,7 @@ public class ExpressionWriter {
 	}
 	
 	private void writeArrayExp(ArrayExp exp, ErrorWrapper errors) {
-		writer.callAlloc(exp.getLength()*MemSize.POINTER_SIZE);
+		writer.callAlloc(exp.getLength() * MemSize.POINTER_SIZE);
 		if(exp.getLength() != 0) {
 			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 			writer.instructions.push(Register.RAX);

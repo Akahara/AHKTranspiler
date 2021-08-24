@@ -7,6 +7,7 @@ import fr.wonder.ahk.transpilers.common_x64.MemSize;
 
 public class ConcreteType {
 	
+	/** The size in bytes of this type */
 	public final int size;
 	private final VariablePrototype[] members;
 	

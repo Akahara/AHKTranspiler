@@ -38,10 +38,10 @@ public class AHKTranspiler {
 	public static void main(String[] args) throws IOException {
 		File codeDir = new File("code");
 		ProjectHandle project = createProject(codeDir);
-//		Transpiler transpiler = new PythonTranspiler();
-//		File dir = new File("exported_py");
 		Transpiler transpiler = new AsmX64Transpiler();
-		File dir = new File("exported_x64");
+		File dir = new File("exported/exported_x64");
+		dir.mkdirs();
+		FilesUtils.deleteContents(dir);
 		Manifest man = ManifestUtils.parseManifest(new File(codeDir, "manifest.txt"));
 		AHKManifest manifest = ManifestUtils.buildManifestFromValues(man, AHKManifest.class,
 				ManifestUtils.CONVENTION_SCREAMING_SNAKE_CASE);

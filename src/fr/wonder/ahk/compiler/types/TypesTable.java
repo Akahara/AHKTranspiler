@@ -28,12 +28,19 @@ public class TypesTable {
 	public Operation getOperation(VarType leftOp, VarType rightOp, Operator operator) {
 		// only the left operand may be null
 		
+		// if both operands are primitives, only search through native operations
 		if((leftOp instanceof VarNativeType || leftOp == null) && rightOp instanceof VarNativeType)
 			return NativeOperation.getOperation(leftOp, rightOp, operator, true);
 		
-		if(leftOp instanceof VarStructType || rightOp instanceof VarStructType)
-			return getKnownOperation(leftOp, rightOp, operator);
+		// if at least one operand is a struct, search through overloaded operators
+		// if none match keep searching
+		if(leftOp instanceof VarStructType || rightOp instanceof VarStructType) {
+			Operation op = getKnownOperation(leftOp, rightOp, operator);
+			if(op != null)
+				return op;
+		}
 		
+		// if at least one operand is a function, check if the operator can be applied
 		if(leftOp instanceof VarFunctionType || rightOp instanceof VarFunctionType)
 			return getFunctionOperation(leftOp, rightOp, operator);
 		

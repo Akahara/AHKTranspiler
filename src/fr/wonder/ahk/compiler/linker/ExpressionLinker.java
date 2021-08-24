@@ -146,6 +146,7 @@ class ExpressionLinker {
 		
 		if(op == null) {
 			errors.add("Unimplemented operation! " + exp.operationString() + exp.getErr());
+			typesTable.getOperation(exp);
 			op = Invalids.OPERATION;
 		} else if(op instanceof OverloadedOperatorPrototype) {
 			OverloadedOperatorPrototype oop = (OverloadedOperatorPrototype) op;
