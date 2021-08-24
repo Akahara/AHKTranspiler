@@ -12,6 +12,7 @@ import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -28,35 +29,51 @@ public class AsmClosuresWriter {
 	public void writeFuncOperation(OperationExp exp, ErrorWrapper errors) {
 		FunctionOperation op = (FunctionOperation) exp.getOperation();
 		
-		writer.instructions.add(OpCode.SUB, Register.RSP, 16);
-		writer.mem.addStackOffset(16);
-		writer.mem.writeTo(new MemAddress(Register.RSP, 0), exp.getLeftOperand(), errors);
-		writer.mem.writeTo(new MemAddress(Register.RSP, 8), exp.getRightOperand(), errors);
-		writer.mem.addStackOffset(-16);
-		writer.callAlloc(5*8);
-		
-		MemAddress closureAddress = new MemAddress(Register.RAX);
-		String operationClosureRegistry = getOperationClosureRegistry(op.resultOperation);
 		int argumentsCount = ((VarFunctionType) op.resultType).arguments.length;
 		
+		writer.instructions.add(OpCode.SUB, Register.RSP, 16);
+		writer.mem.addStackOffset(16);
+		MemAddress firstOperandLoc = new MemAddress(Register.RSP, 0);
+		MemAddress secondOperandLoc = new MemAddress(Register.RSP, 8);
+		writer.mem.writeTo(firstOperandLoc, exp.getLeftOperand(), errors);
+		writer.mem.writeTo(secondOperandLoc, exp.getRightOperand(), errors);
+		if(!(exp.getLeftOperand().getType() instanceof VarFunctionType)) {
+			Address constantAddressInClosure = writeConstantClosure(argumentsCount);
+			writer.instructions.mov(Register.RBX, firstOperandLoc);
+			writer.instructions.mov(constantAddressInClosure, Register.RBX);
+			writer.instructions.mov(firstOperandLoc, Register.RAX);
+		}
+		if(!(exp.getRightOperand().getType() instanceof VarFunctionType)) {
+			Address constantAddressInClosure = writeConstantClosure(argumentsCount);
+			writer.instructions.mov(Register.RBX, secondOperandLoc);
+			writer.instructions.mov(constantAddressInClosure, Register.RBX);
+			writer.instructions.mov(secondOperandLoc, Register.RAX);
+		}
+		writer.mem.addStackOffset(-16);
+		
+		MemAddress closureAddress = new MemAddress(Register.RAX);
+		String operationRegistry = getOperationRegistry(op.resultOperation);
+		
+		writer.callAlloc(5*8);
 		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_OPERATION_FUNC));
 		writer.instructions.mov(closureAddress.addOffset(8), argumentsCount);
 		writer.instructions.pop(Register.RBX); // first function
 		writer.instructions.mov(closureAddress.addOffset(16), Register.RBX);
 		writer.instructions.pop(Register.RBX); // second function
 		writer.instructions.mov(closureAddress.addOffset(24), Register.RBX);
-		writer.instructions.mov(closureAddress.addOffset(32), operationClosureRegistry);
+		writer.instructions.mov(closureAddress.addOffset(32), operationRegistry);
 	}
 	
-	private String getOperationClosureRegistry(Operation op) {
+	private String getOperationRegistry(Operation op) {
+		String registry;
 		if(op instanceof NativeOperation) {
-			return RegistryManager.getOperationClosureRegistry((NativeOperation) op);
+			registry = RegistryManager.getOperationClosureRegistry((NativeOperation) op);
 		} else if(op instanceof OverloadedOperatorPrototype) {
-			String registry = RegistryManager.getClosureRegistry(((OverloadedOperatorPrototype) op).function);
-			return writer.requireExternLabel(registry);
+			registry = RegistryManager.getFunctionRegistry(((OverloadedOperatorPrototype) op).function);
 		} else {
 			throw new UnreachableException("Invalid operation type " + op.getClass());
 		}
+		return writer.requireExternLabel(registry);
 	}
 
 	public void writeCompositionOperation(OperationExp exp, ErrorWrapper errors) {
@@ -86,12 +103,20 @@ public class AsmClosuresWriter {
 			constantValue = writer.registries.getStructNullRegistry(((VarStructType) returnType).structure);
 		else
 			constantValue = "0";
-		
+		Address constantAddressInClosure = writeConstantClosure(argsCount);
+		writer.instructions.mov(constantAddressInClosure, constantValue);
+	}
+	
+	/**
+	 * Creates a constant closure (see closures.fasm) and returns
+	 * the address in which to put the constant.
+	 */
+	private MemAddress writeConstantClosure(int argsCount) {
 		writer.callAlloc(3*8);
 		MemAddress closureAddress = new MemAddress(Register.RAX);
 		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_CONSTANT_FUNC));
 		writer.instructions.mov(closureAddress.addOffset(8), argsCount);
-		writer.instructions.mov(closureAddress.addOffset(16), constantValue);
+		return closureAddress.addOffset(16);
 	}
 	
 }

@@ -117,15 +117,14 @@ global func int main() {
 	Kernel.printlni((gen1 << gen2)(3)); // apply gen2 first
 	GenFunc gen = null;
 	Kernel.printlni(gen(3));
-	Kernel.println("------ Expected 65 and 130 three times");
+	Kernel.println("------ Expected 65, 130 four times, 9");
 	SGenFunc sgen = null;
-	Kernel.printlni(sgen(0).a);
-	Kernel.printlni(sgen(0).a+sgen(0).a);
-	Kernel.printlni((sgen(0)+sgen(0)).a);
-	Kernel.printlni(sgen(0).a);
-	Kernel.printlni((sgen+sgen)(0).a);
-	Kernel.printlni((sgen+sgen(0))(0).a);
-	
+	Kernel.printlni(sgen(0).a);				// simply call the function
+	Kernel.printlni(sgen(0).a+sgen(0).a);	// simple call the function twice and add results members
+	Kernel.printlni((sgen(0)+sgen(0)).a);	// add results and retrieve member
+	Kernel.printlni((sgen+sgen)(0).a);		// add functions and then call, and retrieve member
+	Kernel.printlni((sgen+sgen(0))(0).a);	// add function and structure, call and retrieve member
+	Kernel.printlni((gen1+5)(3)); // gen1 adds 1, gen1(3)+5 = 9
 	
 	Kernel.println("----- Expected 4");
 	Kernel.printlni(l); // if the stack was not messed up, this should print 4

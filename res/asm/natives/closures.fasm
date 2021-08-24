@@ -23,9 +23,9 @@
 ; operation composition closure memory block:
 ; -----------------------------
 ;  ...
-;  +16    u8 *first_func
-;  +24    u8 *second_func
-;  +32    u8 *operation_closure
+;  +16    u8 *first_closure
+;  +24    u8 *second_closure
+;  +32    u8 *operation_func - function pointer, NOT a closure
 ; -----------------------------
 
 segment .data
@@ -161,8 +161,7 @@ closure_run_operation:
   
   ; call the operation
   mov rax,[rsp+16]
-  mov rax,[rax+32]
-  call [rax]
+  call [rax+32]
   
   mov rdx,[rsp+8]
   
