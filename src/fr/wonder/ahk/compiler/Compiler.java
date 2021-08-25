@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiler;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiler.optimization.UnitOptimizer;
 import fr.wonder.ahk.compiler.parser.AliasDeclarationParser;
 import fr.wonder.ahk.compiler.parser.Tokenizer;
 import fr.wonder.ahk.compiler.parser.TokensFactory;
@@ -51,9 +52,10 @@ public class Compiler {
 			Token[][] unitTokens = unitsTokens[i];
 			
 			UnitParser.parseUnit(u, unitTokens, errors);
+			UnitOptimizer.optimize(project, u, errors);
 		}
 
-		return new CompiledHandle(units);
+		return new CompiledHandle(units, project.manifest);
 	}
 
 	public static void assertNoMissingImportation(Unit[] units, ErrorWrapper errors) throws WrappedException {

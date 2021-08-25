@@ -21,7 +21,7 @@ public enum Operator {
 	LEQUALS		(50, false),
 	NEQUALS		(50, false),
 	/** Strict egality check '===' */
-	SEQUALS		(60, false),
+	STRICTEQUALS		(60, false),
 	
 	;
 	

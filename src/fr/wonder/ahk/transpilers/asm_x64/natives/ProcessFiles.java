@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.handles.TranspilableHandle;
+import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -24,7 +24,7 @@ public class ProcessFiles {
 	
 	private static interface FileWriter {
 		
-		String writeFile(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException;
+		String writeFile(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException;
 		
 	}
 	
@@ -32,7 +32,7 @@ public class ProcessFiles {
 		AHK_LIB.put("ahk.Kernel", (h, d, e) -> copyNative(d, "asm/natives/kernel.fasm", "natives/kernel.asm"));
 	}
 	
-	public static String[] writeFiles(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	public static String[] writeFiles(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		List<String> files = new ArrayList<>();
 		
 		files.add(writeIntrinsic(handle, dir, errors));
@@ -79,7 +79,7 @@ public class ProcessFiles {
 		return writeFile(dir, readNative(path), name);
 	}
 	
-	private static String writeIntrinsic(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	private static String writeIntrinsic(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		OSInstrinsic osInstrinsic = OSInstrinsic.getOS(handle.manifest.BUILD_TARGET);
 		String syscalls = ReflectUtils.accumulateOnClassFields(OSInstrinsic.class, (f, directives) -> {
 			try {
@@ -93,7 +93,7 @@ public class ProcessFiles {
 		return writeFile(dir, source, "intrinsic.asm");
 	}
 	
-	private static String writeEntryPoint(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	private static String writeEntryPoint(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		String initializationFunctionsExterns = "";
 		String initializationFunctionsCalls = "";
 		for(Unit u : handle.units) {

@@ -8,7 +8,7 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.handles.ExecutableHandle;
-import fr.wonder.ahk.handles.TranspilableHandle;
+import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
@@ -22,7 +22,7 @@ public class PythonTranspiler implements Transpiler {
 	}
 	
 	@Override
-	public ExecutableHandle exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) 
+	public ExecutableHandle exportProject(LinkedHandle handle, File dir, ErrorWrapper errors) 
 			throws IOException, WrappedException {
 		handle.manifest.validate(handle, errors, false);
 		errors.assertNoErrors();
@@ -52,11 +52,11 @@ public class PythonTranspiler implements Transpiler {
 	}
 
 	@Override
-	public void exportAPI(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	public void exportAPI(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		throw new IOException("Unsupported in python");
 	}
 	
-	private static void refactorUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
+	private static void refactorUnit(LinkedHandle handle, Unit unit, ErrorWrapper errors) {
 		for(int i = unit.functions.length-1; i >= 0; i--) {
 			FunctionSection func = unit.functions[i];
 			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
@@ -73,7 +73,7 @@ public class PythonTranspiler implements Transpiler {
 		}
 	}
 	
-	private static void exportUnit(TranspilableHandle handle, Unit unit, File file, ErrorWrapper errors) 
+	private static void exportUnit(LinkedHandle handle, Unit unit, File file, ErrorWrapper errors) 
 			throws IOException, WrappedException {
 		FilesUtils.create(file);
 		

@@ -16,6 +16,74 @@ import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Triplet;
 import fr.wonder.commons.utils.ArrayOperator;
 
+/**
+ * Native operations are operations that can be made on native types (bool, int,
+ * float and str)
+ * 
+ * <p>
+ * There are only a few well defined operations, most other report themselves to
+ * well defined one, using implicit conversions (bool converts to int and int
+ * converts to float).
+ * 
+ * <p>
+ * Additionally some more special operations are defined, either taking a single
+ * operand (always the right one) or applying to strings:
+ * <p>
+ * <ul>
+ * <li>STR + STR</li>
+ * <li>- INT</li>
+ * <li>- FLOAT</li>
+ * <li>! BOOL</li>
+ * </ul>
+ * </p>
+ * 
+ * There are no other operations taking a single operand or involving strings.
+ * 
+ * <p>
+ * Operators are classed in categories, depending on the operations they are
+ * involved in. The category of an operator can be retrieved using
+ * {@link #getOperatorCategory(Operator)},
+ * 
+ * 
+ * <p>
+ * For transpilers, there is the complete list of defined operations for each
+ * operator:
+ * <ul>
+ * <li>Operators + - * (category 0)
+ * <ul>
+ * <li>INT with INT returns INT</li>
+ * <li>FLOAT with FLOAT returns FLOAT</li>
+ * </ul>
+ * </li>
+ * 
+ * <li>Operators == != < > <= >= === (category 1)
+ * <ul>
+ * <li>BOOL with BOOL returns BOOL</li>
+ * <li>INT with INT returns BOOL</li>
+ * <li>FLOAT with FLOAT returns BOOL</li>
+ * </ul>
+ * </li>
+ * 
+ * <li>Operators / % ^ (category 2)
+ * <ul>
+ * <li>INT with INT returns INT</li>
+ * <li>FLOAT with FLOAT returns FLOAT</li>
+ * <li>operations involving booleans are undefined</li>
+ * </ul>
+ * </li>
+ * 
+ * <li>Operators << >> (category 3)
+ * <ul>
+ * <li>INT with INT returns INT</li>
+ * <li>this is the only defined operation, no implicit casts are allowed</li>
+ * </ul>
+ * </li>
+ * 
+ * <li>Operator ! (category 4)
+ * <ul>
+ * <li>The ! operator cannot be used with 2 operands</li>
+ * </ul>
+ */
 public class NativeOperation extends Operation {
 	
 	protected NativeOperation(VarType l, VarType r, Operator o, VarType resultType) {
@@ -29,20 +97,21 @@ public class NativeOperation extends Operation {
 		return ArrayOperator.indexOf(nativeOrder, t);
 	}
 	
-	private static final NativeOperation STR_ADD_STR = new NativeOperation(STR, STR, ADD, STR);
+	public static final NativeOperation STR_ADD_STR = new NativeOperation(STR, STR, ADD, STR);
 	/** boolean negation "!x" */
-	private static final NativeOperation NOT_BOOL = new NativeOperation(null, BOOL, NOT, BOOL);
+	public static final NativeOperation NOT_BOOL = new NativeOperation(null, BOOL, NOT, BOOL);
 	/** negation "-x" */
-	private static final NativeOperation NEG_FLOAT = new NativeOperation(null, FLOAT, SUBSTRACT, FLOAT);
+	public static final NativeOperation NEG_FLOAT = new NativeOperation(null, FLOAT, SUBSTRACT, FLOAT);
 	/** negation "-x" */
-	private static final NativeOperation NEG_INT = new NativeOperation(null, INT, SUBSTRACT, INT);
+	public static final NativeOperation NEG_INT = new NativeOperation(null, INT, SUBSTRACT, INT);
 	
 	/**
-	 * I for int, B for bool, F for float, O for check order: check for the same
+	 * B for bool, I for int, F for float, O for check order: check for the same
 	 * operation with higher order types (bool+int refers to int+int for example),
 	 * X for none.
 	 */
-	private static final int I=1,B=0,F=2,O=-1,X=-2;
+	private static final int B=0,I=1,F=2,O=-1,X=-2;
+	
 	/**
 	 * These tables contain the result for operations between native types:
 	 * the column represents the left operand type: B, I or F (in this order),
@@ -70,8 +139,8 @@ public class NativeOperation extends Operation {
 				X,O,F
 			},
 			{ // << >>
-				X,O,X,
-				O,I,X,
+				X,X,X,
+				X,I,X,
 				X,X,X
 			}
 	};
@@ -140,30 +209,39 @@ public class NativeOperation extends Operation {
 	}
 	
 	private static int[] getOperatorTable(Operator o) {
+		return RESULT_TABLES[getOperatorCategory(o)];
+	}
+	
+	/**
+	 * Returns the category of the given operator.
+	 * 
+	 * @see NativeOperation
+	 */
+	public static int getOperatorCategory(Operator o) {
 		switch(o) {
 		case ADD:
 		case SUBSTRACT:
 		case MULTIPLY:
-			return RESULT_TABLES[0];
+			return 0;
 		case EQUALS:
 		case GEQUALS:
 		case GREATER:
 		case LEQUALS:
 		case LOWER:
 		case NEQUALS:
-		case SEQUALS:
-			return RESULT_TABLES[1];
+		case STRICTEQUALS:
+			return 1;
 		case DIVIDE:
 		case MOD:
 		case POWER:
-			return RESULT_TABLES[2];
+			return 2;
 		case SHL:
 		case SHR:
-			return RESULT_TABLES[3];
+			return 3;
 		case NOT:
-		default:
-			throw new UnreachableException(o.toString());
+			return 4;
 		}
+		throw new UnreachableException(o.toString());
 	}
 	
 }

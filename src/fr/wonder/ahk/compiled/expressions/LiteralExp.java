@@ -35,6 +35,11 @@ public abstract class LiteralExp<T> extends Expression {
 			return VarType.INT;
 		}
 		
+		@Override
+		public VarType getType() {
+			return VarType.INT;
+		}
+		
 	}
 	
 	public static class FloatLiteral extends LiteralExp<Double> {
@@ -45,6 +50,11 @@ public abstract class LiteralExp<T> extends Expression {
 
 		@Override
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
+			return VarType.FLOAT;
+		}
+		
+		@Override
+		public VarType getType() {
 			return VarType.FLOAT;
 		}
 		
@@ -61,6 +71,11 @@ public abstract class LiteralExp<T> extends Expression {
 			return VarType.BOOL;
 		}
 		
+		@Override
+		public VarType getType() {
+			return VarType.BOOL;
+		}
+		
 	}
 	
 	public static class StrLiteral extends LiteralExp<String> {
@@ -71,6 +86,11 @@ public abstract class LiteralExp<T> extends Expression {
 
 		@Override
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
+			return VarType.STR;
+		}
+		
+		@Override
+		public VarType getType() {
 			return VarType.STR;
 		}
 		

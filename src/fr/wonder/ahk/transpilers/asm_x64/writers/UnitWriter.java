@@ -22,7 +22,7 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
-import fr.wonder.ahk.handles.TranspilableHandle;
+import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
@@ -48,7 +48,7 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitWriter {
 	
-	public static InstructionSet writeUnit(TranspilableHandle handle,
+	public static InstructionSet writeUnit(LinkedHandle handle,
 			Unit unit, ConcreteTypesTable types, ErrorWrapper errors) {
 		
 		UnitWriter uw = new UnitWriter(handle, unit, types);
@@ -76,7 +76,7 @@ public class UnitWriter {
 	
 	public final InstructionSet instructions = new InstructionSet();
 	
-	public final TranspilableHandle project;
+	public final LinkedHandle project;
 	public final Unit unit;
 	
 	public final MemoryManager mem;
@@ -95,7 +95,7 @@ public class UnitWriter {
 	private final Set<String> requiredExternDeclarations = new HashSet<>();
 	private int externDeclarationsIndex;
 	
-	private UnitWriter(TranspilableHandle handle, Unit unit, ConcreteTypesTable types) {
+	private UnitWriter(LinkedHandle handle, Unit unit, ConcreteTypesTable types) {
 		this.project = handle;
 		this.unit = unit;
 		this.mem = new MemoryManager(this);

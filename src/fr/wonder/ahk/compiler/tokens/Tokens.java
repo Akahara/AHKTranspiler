@@ -145,7 +145,7 @@ public class Tokens {
 			operatorsMap.put(OP_MUL,	Operator.MULTIPLY);
 			operatorsMap.put(OP_DIV,	Operator.DIVIDE);
 			operatorsMap.put(OP_EQUALS,	Operator.EQUALS);
-			operatorsMap.put(OP_SEQUALS,Operator.SEQUALS);
+			operatorsMap.put(OP_SEQUALS,Operator.STRICTEQUALS);
 			operatorsMap.put(OP_LEQUALS,Operator.LEQUALS);
 			operatorsMap.put(OP_LOWER,	Operator.LOWER);
 			operatorsMap.put(OP_GREATER,Operator.GREATER);

@@ -10,7 +10,7 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.handles.ExecutableHandle;
-import fr.wonder.ahk.handles.TranspilableHandle;
+import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
 import fr.wonder.ahk.transpilers.asm_x64.natives.ProcessFiles;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
@@ -31,7 +31,7 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 
 	@Override
-	public ExecutableHandle exportProject(TranspilableHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
+	public ExecutableHandle exportProject(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
 		validateProject(handle, errors);
 		errors.assertNoErrors();
 		
@@ -60,13 +60,13 @@ public class AsmX64Transpiler implements Transpiler {
 		
 		private final AHKManifest manifest;
 		
-		private ExecutableHandleImpl(TranspilableHandle handle) {
+		private ExecutableHandleImpl(LinkedHandle handle) {
 			this.manifest = handle.manifest;
 		}
 		
 	}
 	
-	private void validateProject(TranspilableHandle handle, ErrorWrapper errors) {
+	private void validateProject(LinkedHandle handle, ErrorWrapper errors) {
 		handle.manifest.validate(handle, errors.subErrrors("Invalid manifest"), false);
 		handle.manifest.validateAsm(errors.subErrrors("Invalid manifest"));
 		
@@ -74,7 +74,7 @@ public class AsmX64Transpiler implements Transpiler {
 			validateUnit(handle, u, errors.subErrrors("Unable to validate unit " + u.fullBase));
 	}
 
-	private void validateUnit(TranspilableHandle handle, Unit unit, ErrorWrapper errors) {
+	private void validateUnit(LinkedHandle handle, Unit unit, ErrorWrapper errors) {
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
 				if(!func.modifiers.getModifier(Modifier.NATIVE).validateArgs(func.getPrototype(), (f,m) -> NativeModifier.parseModifier(m)))
@@ -89,7 +89,7 @@ public class AsmX64Transpiler implements Transpiler {
 		}
 	}
 
-	private static String writeUnit(TranspilableHandle handle, Unit unit, ConcreteTypesTable types, File dir, ErrorWrapper errors) throws IOException {
+	private static String writeUnit(LinkedHandle handle, Unit unit, ConcreteTypesTable types, File dir, ErrorWrapper errors) throws IOException {
 		String file = unit.fullBase.replaceAll("\\.", "/")+".asm";
 		InstructionSet instructions = UnitWriter.writeUnit(handle, unit, types, errors);
 		File f = new File(dir, file);
@@ -98,7 +98,7 @@ public class AsmX64Transpiler implements Transpiler {
 		return file;
 	}
 	
-	private static void runExternalCompiler(TranspilableHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException, WrappedException {
+	private static void runExternalCompiler(LinkedHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException, WrappedException {
 		if(files.length == 0)
 			return;
 		

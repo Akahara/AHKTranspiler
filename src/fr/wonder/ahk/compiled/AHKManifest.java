@@ -8,7 +8,7 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.types.FunctionArguments;
-import fr.wonder.ahk.handles.TranspilableHandle;
+import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.ahk.transpilers.asm_x64.natives.CallingConvention;
 import fr.wonder.ahk.transpilers.asm_x64.natives.OSInstrinsic;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -19,7 +19,7 @@ public class AHKManifest {
 	 * @param unitaryComp if false, some checks will not be made like finding the
 	 *                    entry point of the program
 	 */
-	public void validate(TranspilableHandle handle, ErrorWrapper errors, boolean unitaryComp) {
+	public void validate(LinkedHandle handle, ErrorWrapper errors, boolean unitaryComp) {
 		if (!unitaryComp) {
 			if (ENTRY_POINT == null || ENTRY_POINT.isBlank()) {
 				errors.add("The entry point must be specified");
@@ -57,8 +57,12 @@ public class AHKManifest {
 	}
 
 	/* -------------------------- Common section -------------------------- */
+	/** full base of the entry point unit */
 	public String ENTRY_POINT;
+	/** include debug symbols in generated output (transpiler implementation dependent) */
 	public boolean DEBUG_SYMBOLS;
+	/** optimize literal operations (replace 3+4 by 7) */
+	public boolean LITERAL_OPTIMIZATION = true;
 
 	/* set by #checkEntryPoint */
 	public Unit entryPointUnit;

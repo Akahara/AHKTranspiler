@@ -32,6 +32,7 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class Linker {
 	
+	final CompiledHandle projectHandle;
 	final Unit[] units;
 	final TypesTable typesTable = new TypesTable();
 	
@@ -47,6 +48,7 @@ public class Linker {
 	
 	
 	public Linker(CompiledHandle handle) {
+		this.projectHandle = handle;
 		this.units = handle.units;
 		this.prelinker = new Prelinker(this);
 		this.expressions = new ExpressionLinker(this);
@@ -69,7 +71,7 @@ public class Linker {
 		}
 		errors.assertNoErrors();
 		
-		return new LinkedHandle(units);
+		return new LinkedHandle(units, projectHandle.manifest);
 	}
 
 	private void prelinkUnits(ErrorWrapper errors) throws WrappedException {
