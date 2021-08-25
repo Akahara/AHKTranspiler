@@ -38,6 +38,9 @@ func int gen1(int x) {
 func int gen2(int x) {
 	return x*2;
 }
+func bool genb(bool b) {
+	return !b;
+}
 
 func Structure structGen(int i) {
 	return Structure(i);
@@ -117,7 +120,7 @@ global func int main() {
 	Kernel.printlni((gen1 << gen2)(3)); // apply gen2 first
 	GenFunc gen = null;
 	Kernel.printlni(gen(3));
-	Kernel.println("------ Expected 65, 130 four times, 9");
+	Kernel.println("------ Expected 65, 130 four times, 9 -6 -4 true");
 	SGenFunc sgen = null;
 	Kernel.printlni(sgen(0).a);				// simply call the function
 	Kernel.printlni(sgen(0).a+sgen(0).a);	// simple call the function twice and add results members
@@ -125,6 +128,8 @@ global func int main() {
 	Kernel.printlni((sgen+sgen)(0).a);		// add functions and then call, and retrieve member
 	Kernel.printlni((sgen+sgen(0))(0).a);	// add function and structure, call and retrieve member
 	Kernel.printlni((gen1+5)(3)); // gen1 adds 1, gen1(3)+5 = 9
+	Kernel.printlni((-gen1)(5));
+	Kernel.printlnb((!genb)(true)); // genb returns the oposite of the argument
 	
 	Kernel.println("----- Expected 4");
 	Kernel.printlni(l); // if the stack was not messed up, this should print 4

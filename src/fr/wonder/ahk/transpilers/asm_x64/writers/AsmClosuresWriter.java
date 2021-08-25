@@ -27,6 +27,13 @@ public class AsmClosuresWriter {
 	}
 	
 	public void writeFuncOperation(OperationExp exp, ErrorWrapper errors) {
+		if(exp.getOperation().hasLeftOperand())
+			writeFuncOperation2Operands(exp, errors);
+		else
+			writeFuncOperation1Operand(exp, errors);
+	}
+
+	private void writeFuncOperation2Operands(OperationExp exp, ErrorWrapper errors) {
 		FunctionOperation op = (FunctionOperation) exp.getOperation();
 		
 		int argumentsCount = ((VarFunctionType) op.resultType).arguments.length;
@@ -37,13 +44,13 @@ public class AsmClosuresWriter {
 		MemAddress secondOperandLoc = new MemAddress(Register.RSP, 8);
 		writer.mem.writeTo(firstOperandLoc, exp.getLeftOperand(), errors);
 		writer.mem.writeTo(secondOperandLoc, exp.getRightOperand(), errors);
-		if(!(exp.getLeftOperand().getType() instanceof VarFunctionType)) {
+		if(!(exp.getLOType() instanceof VarFunctionType)) {
 			Address constantAddressInClosure = writeConstantClosure(argumentsCount);
 			writer.instructions.mov(Register.RBX, firstOperandLoc);
 			writer.instructions.mov(constantAddressInClosure, Register.RBX);
 			writer.instructions.mov(firstOperandLoc, Register.RAX);
 		}
-		if(!(exp.getRightOperand().getType() instanceof VarFunctionType)) {
+		if(!(exp.getROType() instanceof VarFunctionType)) {
 			Address constantAddressInClosure = writeConstantClosure(argumentsCount);
 			writer.instructions.mov(Register.RBX, secondOperandLoc);
 			writer.instructions.mov(constantAddressInClosure, Register.RBX);
@@ -55,13 +62,41 @@ public class AsmClosuresWriter {
 		String operationRegistry = getOperationRegistry(op.resultOperation);
 		
 		writer.callAlloc(5*8);
-		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_OPERATION_FUNC));
+		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_OPERATION_2));
 		writer.instructions.mov(closureAddress.addOffset(8), argumentsCount);
 		writer.instructions.pop(Register.RBX); // first function
 		writer.instructions.mov(closureAddress.addOffset(16), Register.RBX);
 		writer.instructions.pop(Register.RBX); // second function
 		writer.instructions.mov(closureAddress.addOffset(24), Register.RBX);
 		writer.instructions.mov(closureAddress.addOffset(32), operationRegistry);
+	}
+	
+	private void writeFuncOperation1Operand(OperationExp exp, ErrorWrapper errors) {
+		FunctionOperation op = (FunctionOperation) exp.getOperation();
+		
+		int argumentsCount = ((VarFunctionType) op.resultType).arguments.length;
+		
+		writer.instructions.add(OpCode.SUB, Register.RSP, 8);
+		writer.mem.addStackOffset(8);
+		MemAddress operandLoc = new MemAddress(Register.RSP, 0);
+		writer.mem.writeTo(operandLoc, exp.getRightOperand(), errors);
+		if(!(exp.getROType() instanceof VarFunctionType)) {
+			Address constantAddressInClosure = writeConstantClosure(argumentsCount);
+			writer.instructions.mov(Register.RBX, operandLoc);
+			writer.instructions.mov(constantAddressInClosure, Register.RBX);
+			writer.instructions.mov(operandLoc, Register.RAX);
+		}
+		writer.mem.addStackOffset(-8);
+		
+		MemAddress closureAddress = new MemAddress(Register.RAX);
+		String operationRegistry = getOperationRegistry(op.resultOperation);
+		
+		writer.callAlloc(4*8);
+		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_OPERATION_1));
+		writer.instructions.mov(closureAddress.addOffset(8), argumentsCount);
+		writer.instructions.pop(Register.RBX); // function
+		writer.instructions.mov(closureAddress.addOffset(16), Register.RBX);
+		writer.instructions.mov(closureAddress.addOffset(24), operationRegistry);
 	}
 	
 	private String getOperationRegistry(Operation op) {
@@ -89,7 +124,7 @@ public class AsmClosuresWriter {
 		
 		writer.callAlloc(4*8);
 		MemAddress closureAddress = new MemAddress(Register.RAX);
-		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_COMPOSED_FUNC));
+		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_COMPOSED));
 		writer.instructions.mov(closureAddress.addOffset(8), op.getFirstApplied().arguments.length);
 		writer.instructions.pop(Register.RBX); // first function
 		writer.instructions.mov(closureAddress.addOffset(16), Register.RBX);
@@ -114,7 +149,7 @@ public class AsmClosuresWriter {
 	private MemAddress writeConstantClosure(int argsCount) {
 		writer.callAlloc(3*8);
 		MemAddress closureAddress = new MemAddress(Register.RAX);
-		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_CONSTANT_FUNC));
+		writer.instructions.mov(closureAddress, writer.requireExternLabel(GlobalLabels.CLOSURE_RUN_CONSTANT));
 		writer.instructions.mov(closureAddress.addOffset(8), argsCount);
 		return closureAddress.addOffset(16);
 	}

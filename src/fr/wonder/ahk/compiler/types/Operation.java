@@ -21,7 +21,11 @@ public abstract class Operation {
 	}
 
 	public int argCount() {
-		return loType == null ? 1 : 2;
+		return hasLeftOperand() ? 2 : 1;
+	}
+
+	public boolean hasLeftOperand() {
+		return loType != null;
 	}
 	
 	@Override
