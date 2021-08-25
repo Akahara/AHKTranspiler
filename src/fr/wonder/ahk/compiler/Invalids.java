@@ -10,6 +10,7 @@ import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
@@ -35,6 +36,7 @@ public class Invalids {
 	public static final String STRING = "INVALID";
 	
 	public static final UnitSource SOURCE = new UnitSource(STRING, "");
+	public static final SourceReference SOURCE_REF = new SourceReference(SOURCE, 0, 0);
 	public static final Unit UNIT = new Unit(SOURCE, STRING, STRING, new String[0], 0);
 	
 	static {
@@ -56,25 +58,25 @@ public class Invalids {
 	
 	public static final Operation OPERATION = new Operation(TYPE, TYPE, Operator.ADD, TYPE) {};
 
-	public static final Expression EXPRESSION = new Expression(SOURCE, 0, 0) {
+	public static final Expression EXPRESSION = new Expression(SOURCE_REF) {
 		public String toString() { return STRING; }
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return TYPE; }
 	};
 	
-	public static final Statement STATEMENT = new Statement(SOURCE, 0, 0) {
+	public static final Statement STATEMENT = new Statement(SOURCE_REF) {
 		public String toString() { return STRING; }
 	};
 
-	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(UNIT, 0, 0,
+	public static final VariableDeclaration VARIABLE_DECLARATION = new VariableDeclaration(UNIT, SOURCE_REF,
 			STRING, TYPE, MODIFIERS, EXPRESSION);
-	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(SOURCE, 0, 0,
+	public static final AffectationSt AFFECTATION_STATEMENT = new AffectationSt(SOURCE_REF,
 			EXPRESSION, EXPRESSION);
 
-	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(SOURCE, 0, 0, null) {
+	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(SOURCE_REF, null) {
 		protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) { return TYPE; }
 	};
 
-	public static final StructSection STRUCTURE = new StructSection(UNIT, 0, 0, STRING, MODIFIERS);
+	public static final StructSection STRUCTURE = new StructSection(UNIT, SOURCE_REF, STRING, MODIFIERS);
 	
 	static {
 		STRUCTURE.members = new VariableDeclaration[0];
@@ -85,7 +87,7 @@ public class Invalids {
 	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(new VariablePrototype[0],
 			new ConstructorPrototype[0], new OverloadedOperatorPrototype[0], MODIFIERS, SIGNATURE);
 	
-	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, 0, 0, MODIFIERS, new FunctionArgument[0]);
+	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, SOURCE_REF, MODIFIERS, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], MODIFIERS, SIGNATURE);
 
 	public static final VarFunctionType FUNCTION_TYPE = new VarFunctionType(TYPE, new VarType[0]);
@@ -93,10 +95,10 @@ public class Invalids {
 
 	public static final VariablePrototype VARIABLE_PROTO = new VariablePrototype(SIGNATURE, TYPE, MODIFIERS);
 
-	public static final Alias ALIAS = new Alias(SOURCE, 0, 0, STRING, FUNCTION_TYPE);
+	public static final Alias ALIAS = new Alias(SOURCE_REF, STRING, FUNCTION_TYPE);
 
-	public static final FunctionSection FUNCTION = new FunctionSection(UNIT, 0, 0, 0, MODIFIERS);
+	public static final FunctionSection FUNCTION = new FunctionSection(UNIT, SOURCE_REF, MODIFIERS);
 
-	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(STRUCTURE, Operator.ADD, TYPE, TYPE, TYPE, STRING, 0, 0);
+	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(STRUCTURE, SOURCE_REF, Operator.ADD, TYPE, TYPE, TYPE, STRING);
 	
 }

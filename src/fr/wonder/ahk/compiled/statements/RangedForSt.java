@@ -5,6 +5,7 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiler.types.NativeOperation;
@@ -21,10 +22,10 @@ public class RangedForSt extends LabeledStatement {
 
 	private final VariableDeclaration variable;
 	
-	public RangedForSt(Unit unit, int sourceStart, int sourceStop, boolean singleLine,
+	public RangedForSt(Unit unit, SourceReference sourceRef, boolean singleLine,
 			String varName, Expression min, Expression max, Expression step) {
-		super(unit.source, sourceStart, sourceStop, singleLine, min, max, step);
-		this.variable = new VariableDeclaration(unit, sourceStart, sourceStop,
+		super(sourceRef, singleLine, min, max, step);
+		this.variable = new VariableDeclaration(unit, sourceRef,
 				varName, VarType.INT, DeclarationModifiers.NONE, getMin());
 	}
 
@@ -45,15 +46,15 @@ public class RangedForSt extends LabeledStatement {
 	}
 	
 	public ForSt toComplexFor() {
-		VarExp var = new VarExp(getSource(), sourceStart, sourceStop, variable.name);
+		VarExp var = new VarExp(sourceRef, variable.name);
 		var.declaration = variable.getPrototype();
 		var.computeValueType(null, null);
-		OperationExp condition = new OperationExp(getSource(), sourceStart, sourceStop, Operator.LOWER, var, getMax());
+		OperationExp condition = new OperationExp(sourceRef, Operator.LOWER, var, getMax());
 		condition.setOperation(NativeOperation.getOperation(VarType.INT, VarType.INT, Operator.LOWER, false));
-		OperationExp affectationValue = new OperationExp(getSource(), sourceStart, sourceStop, Operator.ADD, var, getStep());
+		OperationExp affectationValue = new OperationExp(sourceRef, Operator.ADD, var, getStep());
 		affectationValue.setOperation(NativeOperation.getOperation(VarType.INT, VarType.INT, Operator.ADD, false));
-		AffectationSt affectation = new AffectationSt(getSource(), sourceStart, sourceStop, var, affectationValue);
-		ForSt st = new ForSt(getSource(), sourceStart, sourceStop, singleLine, variable, condition, affectation);
+		AffectationSt affectation = new AffectationSt(sourceRef, var, affectationValue);
+		ForSt st = new ForSt(sourceRef, singleLine, variable, condition, affectation);
 		st.sectionEnd = this.sectionEnd;
 		return st;
 	}

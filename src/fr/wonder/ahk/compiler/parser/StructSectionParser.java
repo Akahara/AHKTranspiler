@@ -7,6 +7,7 @@ import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
@@ -32,8 +33,7 @@ class StructSectionParser extends AbstractParser {
 		
 		StructSection structure = new StructSection(
 				unit,
-				declaration[0].sourceStart,
-				declaration[declaration.length-1].sourceStop,
+				SourceReference.fromLine(declaration),
 				structName,
 				structModifiers);
 		
@@ -75,8 +75,7 @@ class StructSectionParser extends AbstractParser {
 		if(constructors.isEmpty()) {
 			constructors.add(new StructConstructor(
 					structure,
-					declaration[0].sourceStart,
-					declaration[declaration.length-1].sourceStop,
+					SourceReference.fromLine(declaration),
 					DeclarationModifiers.NONE,
 					new FunctionArgument[0]));
 		}
@@ -111,8 +110,7 @@ class StructSectionParser extends AbstractParser {
 			
 			return new StructConstructor(
 					structure,
-					line[0].sourceStart,
-					line[line.length-1].sourceStop,
+					SourceReference.fromLine(line),
 					modifiers,
 					arguments);
 			
@@ -161,9 +159,7 @@ class StructSectionParser extends AbstractParser {
 		}
 		Expression value = ExpressionParser.parseExpression(unit, line, prevComa+2, i, errors);
 		return new ConstructorDefaultValue(
-				unit.source,
-				line[prevComa].sourceStart,
-				line[i-1].sourceStop,
+				SourceReference.fromLine(line, prevComa, i-1),
 				line[prevComa].text,
 				value);
 	}
@@ -190,9 +186,8 @@ class StructSectionParser extends AbstractParser {
 			VarType resultType = parseType(unit, line, p, errors);
 			assertNoRemainingTokens(line, p, errors);
 			
-			return new OverloadedOperator(structure, op,
-					resultType, leftOperand, rightOperand, funcName,
-					line[0].sourceStart, line[line.length-1].sourceStop);
+			return new OverloadedOperator(structure, SourceReference.fromLine(line),
+					op, resultType, leftOperand, rightOperand, funcName);
 		} catch (ParsingException e) {
 			return Invalids.OVERLOADED_OPERATOR;
 		}

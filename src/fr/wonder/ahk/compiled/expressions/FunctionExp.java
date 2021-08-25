@@ -22,8 +22,7 @@ public class FunctionExp extends FunctionExpression {
 	public final FunctionPrototype function;
 
 	public FunctionExp(FunctionCallExp funcCall, FunctionPrototype function) {
-		super(funcCall.getSource(), funcCall.sourceStart,
-				funcCall.sourceStop, funcCall.getArguments());
+		super(funcCall.sourceRef, funcCall.getArguments());
 		this.function = function;
 	}
 	
@@ -32,8 +31,7 @@ public class FunctionExp extends FunctionExpression {
 	 * operators.
 	 */
 	public FunctionExp(OperationExp operation) {
-		super(operation.getSource(), operation.sourceStart,
-				operation.sourceStop, operation.getOperands());
+		super(operation.sourceRef, operation.getOperands());
 		this.function = ((OverloadedOperatorPrototype) operation.getOperation()).function;
 	}
 	

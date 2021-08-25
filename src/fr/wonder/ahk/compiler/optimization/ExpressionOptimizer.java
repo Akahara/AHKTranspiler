@@ -59,7 +59,7 @@ public class ExpressionOptimizer {
 		
 		// take care of non-native types (only string actually)
 		if(op == NativeOperation.STR_ADD_STR)
-			return new StrLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, l.toString() + r.toString());
+			return new StrLiteral(exp.sourceRef, l.toString() + r.toString());
 		
 		Number ln = l instanceof Boolean ? ((Boolean)l ? 1 : 0) : (Number) l;
 		Number rn = r instanceof Boolean ? ((Boolean)r ? 1 : 0) : (Number) r;
@@ -67,46 +67,46 @@ public class ExpressionOptimizer {
 		
 		// take care of single operand operations
 		if(op == NativeOperation.NOT_BOOL)
-			return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, !(Boolean)r);
+			return new BoolLiteral(exp.sourceRef, !(Boolean)r);
 		else if(op == NativeOperation.NEG_INT)
-			return new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, -rn.longValue());
+			return new IntLiteral(exp.sourceRef, -rn.longValue());
 		else if(op == NativeOperation.NEG_FLOAT)
-			return new FloatLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, -rn.doubleValue());
+			return new FloatLiteral(exp.sourceRef, -rn.doubleValue());
 		
 		
 		switch(o) {
 		case ADD: return isFloatPrecision ? 
-				new FloatLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.doubleValue() + rn.doubleValue()) :
-				new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.longValue() + rn.longValue());
+				new FloatLiteral(exp.sourceRef, ln.doubleValue() + rn.doubleValue()) :
+				new IntLiteral(exp.sourceRef, ln.longValue() + rn.longValue());
 		case SUBSTRACT: return isFloatPrecision ? 
-				new FloatLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.doubleValue() - rn.doubleValue()) :
-				new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.longValue() - rn.longValue());
+				new FloatLiteral(exp.sourceRef, ln.doubleValue() - rn.doubleValue()) :
+				new IntLiteral(exp.sourceRef, ln.longValue() - rn.longValue());
 		case DIVIDE: return isFloatPrecision ? 
-				new FloatLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.doubleValue() / rn.doubleValue()) :
-				new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.longValue() / rn.longValue());
+				new FloatLiteral(exp.sourceRef, ln.doubleValue() / rn.doubleValue()) :
+				new IntLiteral(exp.sourceRef, ln.longValue() / rn.longValue());
 		case MOD: return isFloatPrecision ? 
-				new FloatLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.doubleValue() % rn.doubleValue()) :
-				new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.longValue() % rn.longValue());
+				new FloatLiteral(exp.sourceRef, ln.doubleValue() % rn.doubleValue()) :
+				new IntLiteral(exp.sourceRef, ln.longValue() % rn.longValue());
 		case MULTIPLY: return isFloatPrecision ? 
-				new FloatLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.doubleValue() * rn.doubleValue()) :
-				new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.longValue() * rn.longValue());
+				new FloatLiteral(exp.sourceRef, ln.doubleValue() * rn.doubleValue()) :
+				new IntLiteral(exp.sourceRef, ln.longValue() * rn.longValue());
 		case POWER:
 			return null; // TODO implement the POWER operation optimization
-		case SHL: return new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.longValue() << rn.longValue());
-		case SHR: return new IntLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop, ln.longValue() >> rn.longValue());
-		case EQUALS: return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop,
+		case SHL: return new IntLiteral(exp.sourceRef, ln.longValue() << rn.longValue());
+		case SHR: return new IntLiteral(exp.sourceRef, ln.longValue() >> rn.longValue());
+		case EQUALS: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() == rn.doubleValue() : ln.longValue() == rn.longValue());
-		case NEQUALS: return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop,
+		case NEQUALS: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() != rn.doubleValue() : ln.longValue() != rn.longValue());
-		case GEQUALS: return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop,
+		case GEQUALS: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() >= rn.doubleValue() : ln.longValue() >= rn.longValue());
-		case GREATER: return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop,
+		case GREATER: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() > rn.doubleValue() : ln.longValue() > rn.longValue());
-		case LEQUALS: return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop,
+		case LEQUALS: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() <= rn.doubleValue() : ln.longValue() <= rn.longValue());
-		case LOWER: return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop,
+		case LOWER: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() < rn.doubleValue() : ln.longValue() < rn.longValue());
-		case STRICTEQUALS: return new BoolLiteral(exp.getSource(), exp.sourceStart, exp.sourceStop,
+		case STRICTEQUALS: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() == rn.doubleValue() : ln.longValue() == rn.longValue());
 		case NOT:
 			throw new UnreachableException();

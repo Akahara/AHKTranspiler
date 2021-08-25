@@ -2,6 +2,7 @@ package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -30,7 +31,7 @@ public class NoneExp extends Expression {
 	
 	/** @see NoneExp */
 	public NoneExp() {
-		super(null, 0, 0);
+		super(Invalids.SOURCE_REF);
 		this.type = NoneType.INSTANCE;
 	}
 

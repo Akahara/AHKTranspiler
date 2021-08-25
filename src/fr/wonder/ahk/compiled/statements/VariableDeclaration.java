@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiled.statements;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
@@ -10,16 +11,16 @@ import fr.wonder.commons.annotations.Nullable;
 
 public class VariableDeclaration extends Statement {
 	
-	public final Unit unit;
+	public final Unit unit; // TODO check why the unit is kept here
 	public final String name;
 	private final VarType type;
 	public final DeclarationModifiers modifiers;
 	
 	private VariablePrototype prototype;
 	
-	public VariableDeclaration(Unit unit, int sourceStart, int sourceStop,
+	public VariableDeclaration(Unit unit, SourceReference sourceRef,
 			String name, VarType type, DeclarationModifiers modifiers, Expression defaultValue) {
-		super(unit.source, sourceStart, sourceStop, defaultValue);
+		super(sourceRef, defaultValue);
 		this.unit = unit;
 		this.name = name;
 		this.type = type;

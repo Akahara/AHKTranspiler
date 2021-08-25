@@ -1,6 +1,7 @@
 package fr.wonder.ahk;
 
 import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.utils.Utils;
 
 public class UnitSource {
@@ -55,8 +56,8 @@ public class UnitSource {
 		return source.substring(charL, charR);
 	}
 
-	public String getLine(SourceElement s) {
-		return getLine(getLineIdx(s.getSourceStart()));
+	public String getLine(SourceReference s) {
+		return getLine(getLineIdx(s.start));
 	}
 	
 	public String getErr(int chrIdx) {
@@ -91,8 +92,8 @@ public class UnitSource {
 		return error;
 	}
 	
-	public String getErr(SourceElement s) {
-		return getErr(s.getSourceStart(), s.getSourceStop());
+	public String getErr(SourceReference s) {
+		return getErr(s.start, s.stop);
 	}
 	
 	public <T extends SourceElement> String getErr(T[] t) {
@@ -100,7 +101,7 @@ public class UnitSource {
 	}
 	
 	public <T extends SourceElement> String getErr(T[] t, int start, int stop) {
-		return getErr(t[start].getSourceStart(), t[stop-1].getSourceStop());
+		return getErr(t[start].getSourceReference().start, t[stop-1].getSourceReference().stop);
 	}
 	
 }

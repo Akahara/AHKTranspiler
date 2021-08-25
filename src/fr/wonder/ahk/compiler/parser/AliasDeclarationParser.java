@@ -7,6 +7,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiler.Invalids;
@@ -66,12 +67,8 @@ public class AliasDeclarationParser extends AbstractParser {
 			unit.unit.accessibleAliases = new Alias[accessibleAliasCount];
 			for(int i = 0; i < unit.aliases.size(); i++) {
 				AliasParser alias = unit.aliases.get(i);
-				unit.unit.accessibleAliases[i] = new Alias(
-						alias.unit.unit.source,
-						alias.line[0].sourceStart,
-						alias.line[alias.line.length-1].sourceStop,
-						alias.name,
-						alias.resolvedType);
+				SourceReference sourceRef = SourceReference.fromLine(alias.line);
+				unit.unit.accessibleAliases[i] = new Alias(sourceRef, alias.name, alias.resolvedType);
 			}
 		}
 		

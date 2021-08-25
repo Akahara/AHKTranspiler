@@ -1,17 +1,17 @@
 package fr.wonder.ahk.compiled.units.sections;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 
-public class ConstructorDefaultValue extends SourceObject implements ExpressionHolder {
+public class ConstructorDefaultValue implements ExpressionHolder {
 
+	public final SourceReference sourceRef;
 	public final String name;
 	private final Expression[] valueArray;
 	
-	public ConstructorDefaultValue(UnitSource source, int sourceStart, int sourceStop, String name, Expression value) {
-		super(source, sourceStart, sourceStop);
+	public ConstructorDefaultValue(SourceReference sourceRef, String name, Expression value) {
+		this.sourceRef = sourceRef;
 		this.name = name;
 		this.valueArray = new Expression[] { value };
 	}
@@ -23,6 +23,11 @@ public class ConstructorDefaultValue extends SourceObject implements ExpressionH
 	@Override
 	public Expression[] getExpressions() {
 		return valueArray;
+	}
+	
+	@Override
+	public SourceReference getSourceReference() {
+		return sourceRef;
 	}
 	
 	@Override

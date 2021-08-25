@@ -1,28 +1,29 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.annotations.NonNull;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
-public abstract class Expression extends SourceObject implements ExpressionHolder {
+public abstract class Expression implements ExpressionHolder, SourceElement {
 	
+	public final SourceReference sourceRef;
 	public final Expression[] expressions;
 	
 	/** Set by the linker using {@link #computeValueType(TypesTable, ErrorWrapper)} before linking statements */
 	protected VarType type;
 	
-	public Expression(UnitSource source, int sourceStart, int sourceStop, Expression... expressions) {
-		super(source, sourceStart, sourceStop);
+	public Expression(SourceReference sourceRef, Expression... expressions) {
+		this.sourceRef = sourceRef;
 		this.expressions = expressions;
 	}
 	
-	public Expression(UnitSource source, int sourceStart, int sourceStop, Expression e, Expression[] expressions) {
-		super(source, sourceStart, sourceStop);
+	public Expression(SourceReference sourceRef, Expression e, Expression[] expressions) {
+		this.sourceRef = sourceRef;
 		Expression[] exps = new Expression[1 + expressions.length];
 		exps[0] = e;
 		for(int i = 0; i < expressions.length; i++)
@@ -41,6 +42,11 @@ public abstract class Expression extends SourceObject implements ExpressionHolde
 	
 	public VarType getType() {
 		return type;
+	}
+	
+	@Override
+	public SourceReference getSourceReference() {
+		return sourceRef;
 	}
 	
 	@NonNull

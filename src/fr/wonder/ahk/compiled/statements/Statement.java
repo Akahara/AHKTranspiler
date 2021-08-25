@@ -1,17 +1,23 @@
 package fr.wonder.ahk.compiled.statements;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
-import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 
-public abstract class Statement extends SourceObject implements ExpressionHolder {
+public abstract class Statement implements ExpressionHolder, SourceElement {
 	
+	public final SourceReference sourceRef;
 	protected final Expression[] expressions;
 	
-	public Statement(UnitSource source, int sourceStart, int sourceStop, Expression... expressions) {
-		super(source, sourceStart, sourceStop);
+	public Statement(SourceReference sourceRef, Expression... expressions) {
+		this.sourceRef = sourceRef;
 		this.expressions = expressions;
+	}
+	
+	@Override
+	public SourceReference getSourceReference() {
+		return sourceRef;
 	}
 	
 	@Override

@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.commons.utils.ArrayOperator;
 
 /**
@@ -18,13 +18,13 @@ import fr.wonder.commons.utils.ArrayOperator;
 public abstract class FunctionExpression extends Expression {
 
 	/** {@link FunctionCallExp} constructor */
-	public FunctionExpression(UnitSource source, int sourceStart, int sourceStop, Expression function, Expression[] arguments) {
-		super(source, sourceStart, sourceStop, function, arguments);
+	public FunctionExpression(SourceReference sourceRef, Expression function, Expression[] arguments) {
+		super(sourceRef, function, arguments);
 	}
 	
 	/** {@link FunctionExp} constructor */
-	public FunctionExpression(UnitSource source, int sourceStart, int sourceStop, Expression[] arguments) {
-		super(source, sourceStart, sourceStop, arguments);
+	public FunctionExpression(SourceReference sourceRef, Expression[] arguments) {
+		super(sourceRef, arguments);
 	}
 	
 	public abstract int argumentCount();

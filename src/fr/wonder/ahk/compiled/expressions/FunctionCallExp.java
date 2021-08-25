@@ -2,9 +2,9 @@ package fr.wonder.ahk.compiled.expressions;
 
 import java.util.Arrays;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -24,8 +24,8 @@ public class FunctionCallExp extends FunctionExpression {
 	// set by the linker
 	public VarFunctionType functionType;
 	
-	public FunctionCallExp(UnitSource source, int sourceStart, int sourceEnd, Expression function, Expression[] arguments) {
-		super(source, sourceStart, sourceEnd, ArrayOperator.add(arguments, function));
+	public FunctionCallExp(SourceReference sourceRef, Expression function, Expression[] arguments) {
+		super(sourceRef, ArrayOperator.add(arguments, function));
 	}
 	
 	public Expression getFunction() {

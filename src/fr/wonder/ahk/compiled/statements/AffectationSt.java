@@ -1,13 +1,13 @@
 package fr.wonder.ahk.compiled.statements;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.units.SourceReference;
 
 public class AffectationSt extends Statement {
 	
-	public AffectationSt(UnitSource source, int sourceStart, int sourceStop,
+	public AffectationSt(SourceReference sourceRef,
 			Expression variable, Expression value) {
-		super(source, sourceStart, sourceStop, variable, value);
+		super(sourceRef, variable, value);
 	}
 	
 	public Expression getVariable() {

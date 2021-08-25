@@ -1,17 +1,17 @@
 package fr.wonder.ahk.compiled.statements;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.commons.annotations.Nullable;
 
 public class ReturnSt extends Statement {
 	
-	public ReturnSt(UnitSource source, int sourceStart, int sourceStop, Expression expression) {
-		super(source, sourceStart, sourceStop, expression);
+	public ReturnSt(SourceReference sourceRef, Expression expression) {
+		super(sourceRef, expression);
 	}
 	
-	public ReturnSt(UnitSource source, int sourceStart, int sourceStop) {
-		super(source, sourceStart, sourceStop);
+	public ReturnSt(SourceReference sourceRef) {
+		super(sourceRef);
 	}
 
 	@Nullable

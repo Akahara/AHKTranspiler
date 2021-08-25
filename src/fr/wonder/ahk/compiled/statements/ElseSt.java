@@ -1,19 +1,19 @@
 package fr.wonder.ahk.compiled.statements;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.units.SourceReference;
 
 public class ElseSt extends LabeledStatement {
 	
 	/* Set by the linker */
 	public IfSt closedIf;
 	
-	public ElseSt(UnitSource source, int sourceStart, int sourceStop, Expression condition, boolean singleLine) {
-		super(source, sourceStart, sourceStop, singleLine, condition);
+	public ElseSt(SourceReference sourceRef, Expression condition, boolean singleLine) {
+		super(sourceRef, singleLine, condition);
 	}
 	
-	public ElseSt(UnitSource source, int sourceStart, int sourceStop, boolean singleLine) {
-		super(source, sourceStart, sourceStop, singleLine);
+	public ElseSt(SourceReference sourceRef, boolean singleLine) {
+		super(sourceRef, singleLine);
 	}
 	
 	public Expression getCondition() {

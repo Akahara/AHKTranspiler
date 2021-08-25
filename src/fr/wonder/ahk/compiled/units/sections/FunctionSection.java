@@ -4,16 +4,17 @@ import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.units.Signature;
-import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.utils.ArrayOperator;
 
-public class FunctionSection extends SourceObject {
+public class FunctionSection implements SourceElement {
 	
-	private final int declarationStop;
+	public final SourceReference sourceRef;
 	public final Unit unit;
 	
 	// set by the unit parser
@@ -28,15 +29,14 @@ public class FunctionSection extends SourceObject {
 	// set by the linker using #makeSignature
 	private FunctionPrototype prototype;
 	
-	public FunctionSection(Unit unit, int sourceStart, int sourceStop, int declarationStop, DeclarationModifiers modifiers) {
-		super(unit.source, sourceStart, sourceStop);
+	public FunctionSection(Unit unit, SourceReference sourceRef, DeclarationModifiers modifiers) {
+		this.sourceRef = sourceRef;
 		this.unit = unit;
-		this.declarationStop = declarationStop;
 		this.modifiers = modifiers;
 	}
 	
 	public static FunctionSection dummyFunction() {
-		return new FunctionSection(Invalids.UNIT, 0, 0, 0, DeclarationModifiers.NONE);
+		return new FunctionSection(Invalids.UNIT, Invalids.SOURCE_REF, DeclarationModifiers.NONE);
 	}
 	
 	@Override
@@ -45,10 +45,10 @@ public class FunctionSection extends SourceObject {
 	}
 	
 	@Override
-	public String getErr() {
-		return getSource().getErr(getSourceStart(), declarationStop);
+	public SourceReference getSourceReference() {
+		return sourceRef;
 	}
-
+	
 	/** Called by the linker after the function argument types where computed */
 	public void setSignature(Signature signature) {
 		this.prototype = new FunctionPrototype(signature, getFunctionType(), modifiers);

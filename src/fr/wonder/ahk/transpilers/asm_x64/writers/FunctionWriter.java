@@ -63,8 +63,8 @@ public class FunctionWriter {
 			boolean scopeUpdated = false;
 			
 			if(writer.project.manifest.DEBUG_SYMBOLS) {
-				if(st.sourceStop != -1)
-					writer.instructions.comment(st.getSource().getLine(st).strip());
+				if(st.sourceRef.stop != -1)
+					writer.instructions.comment(st.sourceRef.getLine().strip());
 				else
 					writer.instructions.comment("~ " + st.toString());
 			}

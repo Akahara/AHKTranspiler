@@ -1,14 +1,14 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class SizeofExp extends Expression {
 
-	public SizeofExp(UnitSource source, int sourceStart, int sourceStop, Expression exp) {
-		super(source, sourceStart, sourceStop, exp);
+	public SizeofExp(SourceReference sourceRef, Expression exp) {
+		super(sourceRef, exp);
 	}
 	
 	public Expression getExpression() {

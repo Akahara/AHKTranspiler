@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -9,8 +9,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public final T value;
 	
-	protected LiteralExp(UnitSource source, int sourceStart, int sourceStop, T value) {
-		super(source, sourceStart, sourceStop);
+	protected LiteralExp(SourceReference sourceRef, T value) {
+		super(sourceRef);
 		this.value = value;
 	}
 	
@@ -26,8 +26,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class IntLiteral extends LiteralExp<Long> {
 		
-		public IntLiteral(UnitSource source, int sourceStart, int sourceStop, long i) {
-			super(source, sourceStart, sourceStop, i);
+		public IntLiteral(SourceReference sourceRef, long i) {
+			super(sourceRef, i);
 		}
 		
 		@Override
@@ -44,8 +44,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class FloatLiteral extends LiteralExp<Double> {
 		
-		public FloatLiteral(UnitSource source, int sourceStart, int sourceStop, double f) {
-			super(source, sourceStart, sourceStop, f);
+		public FloatLiteral(SourceReference sourceRef, double f) {
+			super(sourceRef, f);
 		}
 
 		@Override
@@ -62,8 +62,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class BoolLiteral extends LiteralExp<Boolean> {
 		
-		public BoolLiteral(UnitSource source, int sourceStart, int sourceStop, boolean b) {
-			super(source, sourceStart, sourceStop, b);
+		public BoolLiteral(SourceReference sourceRef, boolean b) {
+			super(sourceRef, b);
 		}
 
 		@Override
@@ -80,8 +80,8 @@ public abstract class LiteralExp<T> extends Expression {
 	
 	public static class StrLiteral extends LiteralExp<String> {
 		
-		public StrLiteral(UnitSource source, int sourceStart, int sourceStop, String s) {
-			super(source, sourceStart, sourceStop, s);
+		public StrLiteral(SourceReference sourceRef, String s) {
+			super(sourceRef, s);
 		}
 
 		@Override

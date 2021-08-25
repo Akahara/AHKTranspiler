@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiler.parser;
 import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.Statement;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
@@ -20,12 +21,8 @@ class FunctionDeclarationParser extends AbstractParser {
 			int start, int stop, DeclarationModifiers modifiers, ErrorWrapper errors) {
 		
 		Token[] declaration = lines[start];
-		FunctionSection function = new FunctionSection(
-				unit,
-				declaration[0].sourceStart, // source start
-				lines[stop-1][lines[stop-1].length-1].sourceStop, // source stop
-				declaration[declaration.length-1].sourceStop, // declaration stop
-				modifiers);
+		SourceReference funcSourceRef = SourceReference.fromLine(declaration);
+		FunctionSection function = new FunctionSection(unit, funcSourceRef, modifiers);
 		
 		try {
 			ErrorWrapper subErrors = errors.subErrrors("Invalid function declaration");

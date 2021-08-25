@@ -58,7 +58,10 @@ public class FunctionArguments {
 	 * @return a constructor that best suits the given arguments, or null if none
 	 *         match given arguments
 	 */
-	public static ConstructorPrototype searchMatchingConstructor(ConstructorPrototype[] constructors, VarType[] args, SourceElement callingElement, ErrorWrapper errors) {
+	public static ConstructorPrototype searchMatchingConstructor(
+			ConstructorPrototype[] constructors, VarType[] args,
+			SourceElement callingElement, ErrorWrapper errors) {
+		
 		int validFuncConversionCount = Integer.MAX_VALUE;
 		ConstructorPrototype validFunc = null;
 		boolean multipleMatches = false;

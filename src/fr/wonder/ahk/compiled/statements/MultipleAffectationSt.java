@@ -2,27 +2,28 @@ package fr.wonder.ahk.compiled.statements;
 
 import java.util.Arrays;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.VarExp;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.utils.Utils;
 
 public class MultipleAffectationSt extends Statement {
 
 	private final String[] variables;
 	
-	public MultipleAffectationSt(UnitSource source, int sourceStart, int sourceStop, int sourceVariablesStop,
+	public MultipleAffectationSt(SourceReference sourceRef, int sourceVariablesStop,
 			String[] variables, Expression[] values) {
-		super(source, sourceStart, sourceStop, concatVarVal(
-				source, sourceStart, sourceVariablesStop, variables, values));
+		super(sourceRef, concatVarVal(
+				new SourceReference(sourceRef.source, sourceRef.start, sourceVariablesStop),
+				variables, values));
 		this.variables = variables;
 	}
 	
-	private static Expression[] concatVarVal(UnitSource source, int sourceStart, int sourceStop,
+	private static Expression[] concatVarVal(SourceReference sourceRef,
 			String[] variables, Expression[] values) {
 		Expression[] expressions = Arrays.copyOfRange(values, 0, values.length + variables.length);
 		for(int i = 0; i < variables.length; i++)
-			expressions[i+values.length] = new VarExp(source, sourceStart, sourceStop, variables[i]);
+			expressions[i+values.length] = new VarExp(sourceRef, variables[i]);
 		return expressions;
 	}
 	

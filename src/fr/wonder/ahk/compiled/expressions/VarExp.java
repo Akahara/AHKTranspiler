@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -13,8 +13,8 @@ public class VarExp extends Expression {
 	// set by the linker
 	public VarAccess declaration;
 	
-	public VarExp(UnitSource source, int sourceStart, int sourceStop, String variable) {
-		super(source, sourceStart, sourceStop);
+	public VarExp(SourceReference sourceRef, String variable) {
+		super(sourceRef);
 		this.variable = variable;
 	}
 	

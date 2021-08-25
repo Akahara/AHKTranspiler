@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import fr.wonder.ahk.UnitSource;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -50,7 +51,8 @@ public class Tokenizer {
 						if(!quoteIsComment) {
 							int ss = quoteBeginPosition;
 							int st = i;
-							tokens.add(new Token(source, LIT_STR, source.substring(ss, st), ss, st));
+							SourceReference sourceRef = new SourceReference(source, ss, st);
+							tokens.add(new Token(sourceRef, LIT_STR, source.substring(ss, st)));
 						}
 						i += quoteEnd.syntax.length();
 						quoteEnd = null;
@@ -69,7 +71,8 @@ public class Tokenizer {
 				
 				int ss = i;
 				int st = i+latestOpenedSection.syntax.length();
-				Token t = new Token(source, latestOpenedSection, source.substring(ss, st), ss, st);
+				SourceReference sourceRef = new SourceReference(source, ss, st);
+				Token t = new Token(sourceRef, latestOpenedSection, source.substring(ss, st));
 				t.linkSectionPair(openedSectionTokens.getLast());
 				tokens.add(t);
 				openedSections.removeLast();
@@ -96,7 +99,8 @@ public class Tokenizer {
 					quoteBeginPosition = stop;
 					quoteIsComment = del == SectionToken.SEC_COMMENTS || del == SectionToken.SEC_LINE_COMMENT;
 				} else {
-					Token t = new Token(source, del.start, source.substring(i, stop), i, stop);
+					SourceReference sourceRef = new SourceReference(source, i, stop);
+					Token t = new Token(sourceRef, del.start, source.substring(i, stop));
 					tokens.add(t);
 					if(del.stop != null) {
 						openedSections.add(del);
@@ -146,10 +150,12 @@ public class Tokenizer {
 			return;
 		String text = source.substring(begin, end);
 		TokenBase b = getBase(text);
-		if(b == null)
+		if(b == null) {
 			errors.add("Unresolved token:" + source.getErr(begin, end));
-		else
-			tokens.add(new Token(source, b, text, begin, end));
+		} else {
+			SourceReference sourceRef = new SourceReference(source, begin, end);
+			tokens.add(new Token(sourceRef, b, text));
+		}
 	}
 	
 	private static TokenBase getBase(String split) {
@@ -172,12 +178,12 @@ public class Tokenizer {
 			if(tk.base == TK_DOT) {
 				// replace <(int) . int> and <int . (int)> by <float>
 				String floatText = "";
-				int floatStart = tk.sourceStart;
-				int floatStop = tk.sourceStop;
+				int floatStart = tk.sourceRef.start;
+				int floatStop = tk.sourceRef.stop;
 				boolean isFloat = false;
 				if(ptk.base == LIT_INT) {
 					floatText = ptk.text;
-					floatStart = ptk.sourceStart;
+					floatStart = ptk.sourceRef.start;
 					tokens.remove(i-1);
 					i--;
 					isFloat = true;
@@ -185,20 +191,22 @@ public class Tokenizer {
 				floatText += ".";
 				if(ntk != null && ntk.base == LIT_INT) {
 					floatText += ntk.text;
-					floatStop = ntk.sourceStop;
+					floatStop = ntk.sourceRef.stop;
 					tokens.remove(i+1);
 					isFloat = true;
 				}
-				if(isFloat)
-					tokens.set(i, new Token(source, LIT_FLOAT, floatText, floatStart, floatStop));
+				if(isFloat) {
+					SourceReference sourceRef = new SourceReference(source, floatStart, floatStop);
+					tokens.set(i, new Token(sourceRef, LIT_FLOAT, floatText));
+				}
 				
 				// replace <Unit . variable> by <variable>
 				if( ntk != null &&
 					ptk.base == TokenBase.VAR_UNIT &&
 					ntk.base == TokenBase.VAR_VARIABLE) {
 					
-					tokens.set(i, new Token(tk.getSource(), TokenBase.VAR_VARIABLE,
-							ptk.text + tk.text + ntk.text, ptk.sourceStart, ntk.sourceStop));
+					tokens.set(i, new Token(SourceReference.concat(ptk, ntk), TokenBase.VAR_VARIABLE,
+							ptk.text + tk.text + ntk.text));
 					tokens.remove(i+1);
 					tokens.remove(i-1);
 					i--;

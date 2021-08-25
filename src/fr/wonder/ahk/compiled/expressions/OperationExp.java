@@ -2,8 +2,8 @@ package fr.wonder.ahk.compiled.expressions;
 
 import java.util.Objects;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.compiler.types.TypesTable;
@@ -16,15 +16,15 @@ public class OperationExp extends Expression {
 	/** set by the linker using {@link #setOperation(Operation)} */
 	private Operation operation;
 	
-	public OperationExp(UnitSource source, int sourceStart, int sourceStop, Operator operator,
+	public OperationExp(SourceReference sourceRef, Operator operator,
 			Expression leftOperand, Expression rightOperand) {
-		super(source, sourceStart, sourceStop, rightOperand, leftOperand);
+		super(sourceRef, rightOperand, leftOperand);
 		this.operator = operator;
 	}
 	
-	public OperationExp(UnitSource source, int sourceStart, int sourceStop, Operator operator,
+	public OperationExp(SourceReference sourceRef, Operator operator,
 			Expression rightOperand) {
-		super(source, sourceStart, sourceStop, rightOperand);
+		super(sourceRef, rightOperand);
 		this.operator = operator;
 	}
 	

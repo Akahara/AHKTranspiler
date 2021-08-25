@@ -2,7 +2,8 @@ package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
-import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
@@ -11,8 +12,9 @@ import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.utils.ArrayOperator;
 
-public class StructSection extends SourceObject {
+public class StructSection implements SourceElement {
 
+	public final SourceReference sourceRef;
 	public final String name;
 	public final Unit unit;
 	public final DeclarationModifiers modifiers;
@@ -25,12 +27,17 @@ public class StructSection extends SourceObject {
 	
 	private StructPrototype prototype;
 	
-	public StructSection(Unit unit, int sourceStart, int sourceStop,
+	public StructSection(Unit unit, SourceReference sourceRef,
 			String structName, DeclarationModifiers modifiers) {
-		super(unit.source, sourceStart, sourceStop);
+		this.sourceRef = sourceRef;
 		this.name = structName;
 		this.unit = unit;
 		this.modifiers = modifiers;
+	}
+	
+	@Override
+	public SourceReference getSourceReference() {
+		return sourceRef;
 	}
 	
 	public VariableDeclaration getMember(String name) {

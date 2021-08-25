@@ -9,6 +9,7 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
@@ -100,7 +101,7 @@ class AbstractParser {
 	
 	public static void assertNoRemainingTokens(Token[] line, Pointer pointer, ErrorWrapper errors) throws ParsingException {
 		if(line.length != pointer.position) {
-			errors.add("Unexpected tokens:" + line[pointer.position].getSource()
+			errors.add("Unexpected tokens:" + line[pointer.position].sourceRef.source
 					.getErr(line, pointer.position, line.length));
 			throw new ParsingException();
 		}
@@ -131,7 +132,7 @@ class AbstractParser {
 	public static Token assertToken(Token[] line, Pointer p, TokenBase base,
 			String error, ErrorWrapper errors) throws ParsingException {
 		if(p.position == line.length) {
-			errors.add(error + ':' + line[0].getSource().getErr(line[line.length-1].sourceStop));
+			errors.add(error + ':' + line[0].sourceRef.source.getErr(line[line.length-1].sourceRef.stop));
 			throw new ParsingException();
 		}
 		Token t = line[p.position];
@@ -180,7 +181,7 @@ class AbstractParser {
 		
 		while(true) {
 			assertHasNext(line, pointer, "Expected argument type", errors);
-			int sourceStart = line[pointer.position].sourceStart;
+			int sourceStart = line[pointer.position].sourceRef.start;
 			VarType type = typeParser.parseType();
 			String name = "";
 			assertHasNext(line, pointer, "Incomplete composite", errors);
@@ -193,8 +194,9 @@ class AbstractParser {
 			} else if(requireNames) {
 				errors.add("Expected name:" + nextTk.getErr());
 			}
-			int sourceStop = nextTk.sourceStart;
-			arguments.add(new FunctionArgument(source, sourceStart, sourceStop, name, type));
+			int sourceStop = nextTk.sourceRef.start;
+			SourceReference sourceRef = new SourceReference(source, sourceStart, sourceStop);
+			arguments.add(new FunctionArgument(sourceRef, name, type));
 			
 			if(nextTk.base == TokenBase.TK_PARENTHESIS_CLOSE)
 				return arguments;

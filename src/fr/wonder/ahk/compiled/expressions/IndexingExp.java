@@ -2,9 +2,9 @@ package fr.wonder.ahk.compiled.expressions;
 
 import java.util.Arrays;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
@@ -12,8 +12,8 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class IndexingExp extends Expression {
 	
-	public IndexingExp(UnitSource source, int sourceStart, int sourceStop, Expression array, Expression[] indices) {
-		super(source, sourceStart, sourceStop, array, indices);
+	public IndexingExp(SourceReference sourceRef, Expression array, Expression[] indices) {
+		super(sourceRef, array, indices);
 	}
 	
 	public Expression getArray() {
@@ -47,12 +47,8 @@ public class IndexingExp extends Expression {
 	public IndexingExp subIndexingExpression() {
 		if(!(this.type instanceof VarArrayType))
 			throw new IllegalStateException("Cannot sub-index a non-array typed indexing expression");
-		IndexingExp subExp = new IndexingExp(
-				getSource(),
-				getSourceStart(),
-				getSourceStop(),
-				getArray(),
-				Arrays.copyOfRange(expressions, 1, expressions.length-2));
+		Expression[] subIndices = Arrays.copyOfRange(expressions, 1, expressions.length-2);
+		IndexingExp subExp = new IndexingExp(sourceRef, getArray(), subIndices);
 		subExp.type = ((VarArrayType) this.type).componentType;
 		return subExp;
 	}

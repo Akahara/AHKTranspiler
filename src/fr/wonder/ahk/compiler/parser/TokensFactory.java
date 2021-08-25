@@ -30,8 +30,11 @@ public class TokensFactory {
 						lines.add(Arrays.copyOfRange(tokens, begin, end));
 						for(int j = begin; j < end; j++) {
 							Token pair = tokens[j].sectionPair;
-							if(pair != null && pair.base != TokenBase.TK_BRACE_CLOSE && pair.sourceStart > tokens[i].sourceStop) {
-								errors.add("Unexpected break in section:" + tokens[i].getErr() + "\nOpened section:" + tokens[j].getErr());
+							if(pair != null &&
+									pair.base != TokenBase.TK_BRACE_CLOSE &&
+									pair.sourceRef.start > tokens[i].sourceRef.stop) {
+								errors.add("Unexpected break in section:" + tokens[i].getErr() 
+										+ "\nOpened section:" + tokens[j].getErr());
 							}
 						}
 					}

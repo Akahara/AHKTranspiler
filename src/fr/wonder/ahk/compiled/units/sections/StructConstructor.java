@@ -3,23 +3,25 @@ package fr.wonder.ahk.compiled.units.sections;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Signature;
-import fr.wonder.ahk.compiled.units.SourceObject;
+import fr.wonder.ahk.compiled.units.SourceElement;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.utils.ArrayOperator;
 
-public class StructConstructor extends SourceObject {
+public class StructConstructor implements SourceElement {
 	
+	public final SourceReference sourceRef;
 	public final StructSection struct;
 	public final FunctionArgument[] arguments;
 	public final DeclarationModifiers modifiers;
 	
 	private ConstructorPrototype prototype;
 	
-	public StructConstructor(StructSection struct, int sourceStart, int sourceStop,
+	public StructConstructor(StructSection struct, SourceReference sourceRef,
 			DeclarationModifiers modifiers, FunctionArgument[] arguments) {
 		
-		super(struct.unit.source, sourceStart, sourceStop);
+		this.sourceRef = sourceRef;
 		this.struct = struct;
 		this.modifiers = modifiers;
 		this.arguments = arguments;
@@ -27,6 +29,11 @@ public class StructConstructor extends SourceObject {
 	
 	public VarType[] getArgumentTypes() {
 		return ArrayOperator.map(arguments, VarType[]::new, arg -> arg.type);
+	}
+	
+	@Override
+	public SourceReference getSourceReference() {
+		return sourceRef;
 	}
 	
 	@Override

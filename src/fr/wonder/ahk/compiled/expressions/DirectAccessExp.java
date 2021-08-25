@@ -1,8 +1,8 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -13,9 +13,8 @@ public class DirectAccessExp extends Expression {
 	/** Set by the linker */
 	public VariablePrototype member;
 	
-	public DirectAccessExp(UnitSource source, int sourceStart,
-			int sourceStop, Expression structInstance, String memberName) {
-		super(source, sourceStart, sourceStop, structInstance);
+	public DirectAccessExp(SourceReference sourceRef, Expression structInstance, String memberName) {
+		super(sourceRef, structInstance);
 		this.memberName = memberName;
 	}
 	
