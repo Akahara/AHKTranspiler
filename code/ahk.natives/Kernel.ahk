@@ -17,7 +17,7 @@ global str[] argv;
 @native("ahk_Kernel_print_dec");
 global func void printi(int i) {}
 global func KernelOut kprinti(KernelOut o, int i) { printi(i); return o; }
-@native("ahk_Kernel_print_hex");
+@native("ahk_Kernel_print_float");
 global func void printf(float f) {}
 global func KernelOut kprintf(KernelOut o, float f) { printf(f); return o; }
 @native("ahk_Kernel_print_str");

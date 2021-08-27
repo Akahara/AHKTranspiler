@@ -12,6 +12,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
+import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
@@ -207,9 +208,12 @@ public class UnitWriter {
 		if(hasNativeRefs)
 			instructions.skip();
 		
-		collectStrConstants(strConstants, unit.variables);
-		for(FunctionSection f : unit.functions)
-			collectStrConstants(strConstants, f.body);
+		for(VariableDeclaration var : unit.variables)
+			collectStrConstants(var);
+		for(FunctionSection func : unit.functions) {
+			for(Statement st : func.body)
+				collectStrConstants(st);
+		}
 		for(StrLiteral cst : strConstants)
 			instructions.add(new StringDefinition(getLabel(cst), cst.value));
 		if(!strConstants.isEmpty())
@@ -249,14 +253,12 @@ public class UnitWriter {
 		instructions.addAll(externDeclarationsIndex, externDeclarations);
 	}
 	
-	private static void collectStrConstants(List<StrLiteral> csts, ExpressionHolder[] vars) {
-		for(ExpressionHolder h : vars) {
-			for(Expression e : h.getExpressions()) {
-				if(e instanceof StrLiteral)
-					csts.add((StrLiteral) e);
-				else
-					collectStrConstants(csts, h.getExpressions());
-			}
+	private void collectStrConstants(ExpressionHolder holder) {
+		for(Expression e : holder.getExpressions()) {
+			if(e instanceof StrLiteral)
+				strConstants.add((StrLiteral) e);
+			else
+				collectStrConstants(e);
 		}
 	}
 	

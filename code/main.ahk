@@ -134,8 +134,10 @@ global func int main() {
 	Kernel.println("----- Expected 4");
 	Kernel.printlni(l); // if the stack was not messed up, this should print 4
 	
-	Kernel.out << "----- Expected 45\n";
+	Kernel.out << "----- Expected 45 3.5 ~2.3 0.\n";
 	Kernel.out << 4 << 5 << "\n";
+	Kernel.out << 3.5 << "\n" << 2.3 << "\n";
+	Kernel.out << 0. << "\n";
 	
 	return 5;
 }

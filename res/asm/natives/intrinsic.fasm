@@ -11,12 +11,6 @@
 ; 
 ; -------------------------------------------------- ;
 
-;%ifndef AHK_CONSTANTS
-;  %define AHK_CONSTANTS
-;  
-;  %define MAX_LAMBDA_ARG_COUNT 7
-;%endif
-
 %ifndef NATIVE_CONSTANTS
   %define NATIVE_CONSTANTS
   
@@ -71,17 +65,6 @@
       %rotate 1
     %endrep
   %endmacro
-  
-  ;%macro def_null_lambda 2
-  ;  %assign i 0
-  ;  %rep AHK_MAX_LAMBDA_ARG_COUNT
-  ;    %strcat lambda_name %1, "_", i
-  ;    def_closure lambda_name,closure_run_constant,i,%2
-  ;    %undef lambda_name
-  ;    %assign i i+1
-  ;  %endrep
-  ;  %undef i
-  ;%endmacro
   
 %endif
 
