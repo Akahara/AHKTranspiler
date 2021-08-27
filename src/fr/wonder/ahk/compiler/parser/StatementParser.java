@@ -22,6 +22,7 @@ import fr.wonder.ahk.compiled.statements.ForSt;
 import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.MultipleAffectationSt;
+import fr.wonder.ahk.compiled.statements.OperationSt;
 import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
@@ -33,6 +34,7 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.parser.ExpressionParser.Section;
+import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.compiler.tokens.Tokens;
@@ -77,14 +79,13 @@ public class StatementParser extends AbstractParser {
 			return parseMultipleAffectationStatement(unit, line, affectationTokenPos, errors);
 		if(affectationTokenPos != -1)
 			return parseAffectationStatement(unit, line, affectationTokenPos, errors);
-		if(canBeFunctionStatement(line))
-			return parseFunctionStatement(unit, line, errors);
+		if(canBeExpressionStatement(line))
+			return tryParseExpressionStatement(unit, line, errors);
 		
 		errors.add("Unknown statement:" + unit.source.getErr(line));
 		return Invalids.STATEMENT;
 	}
-	
-	
+
 	private static AffectationSt parseDirectAffectationStatement(Unit unit, Token[] line, ErrorWrapper errors) {
 		ErrorWrapper subErrors = errors.subErrrors("Unable to parse variable affectation");
 		Expression leftOperand = ExpressionParser.parseExpression(unit, line, 0, line.length-1, subErrors);
@@ -383,16 +384,26 @@ public class StatementParser extends AbstractParser {
 				line[opPos-1].sourceRef.stop, variables, values);
 	}
 	
-	private static boolean canBeFunctionStatement(Token[] line) {
-		return line[line.length-1].base == TokenBase.TK_PARENTHESIS_CLOSE;
+	private static Statement tryParseExpressionStatement(Unit unit, Token[] line, ErrorWrapper errors) {
+		Expression statementAsExpression = ExpressionParser.parseExpression(unit, line, 0, line.length, errors);
+		if(statementAsExpression instanceof FunctionCallExp)
+			return new FunctionSt(statementAsExpression.sourceRef, (FunctionCallExp) statementAsExpression);
+		if(statementAsExpression instanceof OperationExp)
+			return new OperationSt(statementAsExpression.sourceRef, (OperationExp) statementAsExpression);
+		errors.add("Only function calls and operations expressions can be valid statements:" + unit.source.getErr(line));
+		return null;
 	}
 	
-	private static Statement parseFunctionStatement(Unit unit, Token[] line, ErrorWrapper errors) {
-		Expression exp = ExpressionParser.parseExpression(unit, line, 0, line.length, errors);
-		if(exp instanceof FunctionCallExp)
-			return new FunctionSt(SourceReference.fromLine(line), (FunctionCallExp) exp);
-		else
-			throw new IllegalStateException("Statement is not a function " + unit.source.getErr(line));
+	private static boolean canBeExpressionStatement(Token[] line) {
+		Section sec = ExpressionParser.getVisibleSection(line, 0, line.length);
+		// line may be an overloaded operator function call
+		if(!sec.operators.isEmpty())
+			return true;
+		// line may be a function call
+		for(Section subSection : sec.subSections)
+			if(subSection.type == SectionToken.SEC_PARENTHESIS)
+				return true;
+		return false;
 	}
 	
 }

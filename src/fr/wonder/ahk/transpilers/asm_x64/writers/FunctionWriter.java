@@ -13,6 +13,7 @@ import fr.wonder.ahk.compiled.statements.FunctionSt;
 import fr.wonder.ahk.compiled.statements.IfSt;
 import fr.wonder.ahk.compiled.statements.LabeledStatement;
 import fr.wonder.ahk.compiled.statements.MultipleAffectationSt;
+import fr.wonder.ahk.compiled.statements.OperationSt;
 import fr.wonder.ahk.compiled.statements.RangedForSt;
 import fr.wonder.ahk.compiled.statements.ReturnSt;
 import fr.wonder.ahk.compiled.statements.SectionEndSt;
@@ -25,6 +26,7 @@ import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnimplementedException;
 
 public class FunctionWriter {
 	
@@ -100,7 +102,10 @@ public class FunctionWriter {
 				needsRetLabel |= i != func.body.length-1;
 				
 			} else if(st instanceof FunctionSt) {
-				writeFunctionStatement(((FunctionSt) st), errors);
+				writeFunctionStatement((FunctionSt) st, errors);
+				
+			} else if(st instanceof OperationSt) {
+				writeOperationStatement((OperationSt) st, errors);
 				
 			} else if(st instanceof AffectationSt) {
 				writeAffectationStatement((AffectationSt) st, errors);
@@ -109,7 +114,7 @@ public class FunctionWriter {
 				writeMultipleAffectationSt((MultipleAffectationSt) st, errors);
 				
 			} else {
-				errors.add("Unhandled statement type: " + st.getClass().getSimpleName() + " " + st.getErr());
+				throw new UnimplementedException("Unhandled statement type: " + st.getClass().getSimpleName());
 			}
 			
 			if(!scopeUpdated) {
@@ -131,7 +136,7 @@ public class FunctionWriter {
 			throw new IllegalStateException("Unimplemented calling convention " + writer.project.manifest.callingConvention);
 		}
 	}
-	
+
 	private static int getMaxStackSize(Statement[] statements) {
 		List<Integer> sections = new ArrayList<>();
 		int current = 0;
@@ -270,6 +275,10 @@ public class FunctionWriter {
 	
 	private void writeMultipleAffectationSt(MultipleAffectationSt st, ErrorWrapper errors) {
 		writer.mem.writeMultipleAffectationTo(st.getVariables(), st.getValues(), errors);
+	}
+	
+	private void writeOperationStatement(OperationSt st, ErrorWrapper errors) {
+		writer.expWriter.writeExpression(st.getOperation(), errors);
 	}
 	
 }

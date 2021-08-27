@@ -37,9 +37,12 @@ public class OperationExp extends Expression {
 	public Expression getRightOperand() {
 		return expressions[0];
 	}
-
+	
+	/** Returns an unmodifiable array of this operation's operands */
 	public Expression[] getOperands() {
-		return expressions;
+		// if there are two operands, swap their orders (the left operand is stored at index 1)
+		return expressions.length == 1 ? expressions :
+			new Expression[] { expressions[1], expressions[0] };
 	}
 	
 	public void setOperation(Operation op) {

@@ -178,6 +178,8 @@ class StructSectionParser extends AbstractParser {
 			Operator op = Tokens.getOperator(line[p.position].base);
 			if(op == null)
 				errors.add("Expected operator:" + line[p.position].getErr());
+			else if(op == Operator.STRICTEQUALS)
+				errors.add("The strict equality operator cannot be overridden:" + line[p.position].getErr());
 			p.position++;
 			assertHasNext(line, p, "Incomplete operator declaration", errors);
 			VarType rightOperand = parseType(unit, line, p, errors);

@@ -216,14 +216,12 @@ public class UnitWriter {
 			instructions.skip();
 		
 		for(VariableDeclaration var : unit.variables) {
-			if(var.modifiers.visibility == DeclarationVisibility.GLOBAL)
-				instructions.label(RegistryManager.getGlobalRegistry(var.getPrototype()));
 			String value;
 			if(initializedVariables.contains(var))
 				value = getValueString((LiteralExp<?>) var.getDefaultValue());
 			else
 				value = "0";
-			String label = RegistryManager.getLocalRegistry(var.getPrototype());
+			String label = RegistryManager.getGlobalRegistry(var.getPrototype());
 			instructions.add(new GlobalVarDeclaration(label, MemSize.QWORD, value));
 		}
 		if(unit.variables.length != 0)
@@ -306,7 +304,7 @@ public class UnitWriter {
 		}
 		for(VariableDeclaration var : initializableVariables) {
 			instructions.comment("init " + var.name);
-			Address address = new MemAddress(new LabelAddress(RegistryManager.getLocalRegistry(var.getPrototype())));
+			Address address = new MemAddress(new LabelAddress(registries.getRegistry(var.getPrototype())));
 			if(var.modifiers.hasModifier(Modifier.NATIVE)) {
 				String nativeLabel = var.modifiers.getModifier(NativeModifier.class).nativeRef;
 				instructions.mov(address, nativeLabel);

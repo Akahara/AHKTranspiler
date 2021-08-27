@@ -27,9 +27,7 @@ public class RegistryManager {
 			throw new IllegalStateException("Cannot globally access a scoped variable");
 		if(var instanceof FunctionPrototype)
 			return getClosureRegistry((FunctionPrototype) var);
-		if(!var.getSignature().declaringUnit.equals(writer.unit.fullBase))
-			return getGlobalRegistry(var);
-		return getLocalRegistry(var);
+		return getGlobalRegistry(var);
 	}
 	
 	public static String getFunctionRegistry(FunctionPrototype func) {
@@ -48,18 +46,20 @@ public class RegistryManager {
 		if(var instanceof FunctionPrototype && ((FunctionPrototype) var).getModifiers().hasModifier(Modifier.NATIVE))
 			return ((FunctionPrototype) var).getModifiers().getModifier(NativeModifier.class).nativeRef;
 		
-		return getUnitRegistry(var.getSignature().declaringUnit) + "_" + getLocalRegistry(var);
-	}
-	
-	public static String getLocalRegistry(VarAccess var) {
-		if(var instanceof VariablePrototype)
-			return ((VariablePrototype) var).getName();
-		if(var instanceof FunctionPrototype) {
+		String unitRegistry = getUnitRegistry(var.getSignature().declaringUnit);
+		String localRegistry;
+		
+		if(var instanceof VariablePrototype) {
+			localRegistry = ((VariablePrototype) var).getName();
+		} else if(var instanceof FunctionPrototype) {
 			FunctionPrototype f = (FunctionPrototype) var;
-			return f.getName() + "_" + f.getType().getSignature();
+			localRegistry = f.getName() + "_" + f.getType().getSignature();
+		} else {
+			throw new IllegalArgumentException("Unimplemented registry " + var.getClass());
 		}
 		
-		throw new IllegalArgumentException("Unimplemented registry " + var.getClass());
+		
+		return unitRegistry + "_" + localRegistry;
 	}
 	
 	public static String getClosureRegistry(FunctionPrototype func) {
