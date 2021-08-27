@@ -261,6 +261,10 @@ ahk_Kernel_print_float:
   mov al,[rcx+rdx-1]
   cmp al,'0'
   je .skip_zero
+  cmp rdx,0
+  jge .has_decimals
+  mov rdx,0 ; don't print a negative amount of decimals
+.has_decimals:
   
   mov rax,SYSCALL_WRITE
   mov rbx,STD_OUT

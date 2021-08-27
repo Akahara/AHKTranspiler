@@ -21,6 +21,13 @@ import fr.wonder.commons.systems.process.ProcessUtils;
 
 public class AHKTranspiler {
 	
+	/*
+	 * TODO x64 files
+	 * TODO lambdas
+	 * TODO create a new x64 transpiler, based on an abstract intermediate language
+	 * TODO rework project handles
+	 */
+	
 //	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);
 	public static Logger logger = new AnsiLogger(null, Logger.LEVEL_DEBUG);
 	
