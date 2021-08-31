@@ -48,15 +48,22 @@ public class AHKTranspiler {
 	public static void main(String[] args) throws IOException {
 		File codeDir = new File("code");
 		ProjectHandle project = createProject(codeDir, new File(codeDir, "manifest.txt"));
-		Transpiler transpiler = new AsmX64Transpiler();
+		Transpiler transpiler;
+		
+		transpiler = new AsmX64Transpiler();
+//		transpiler = new AHLTranspiler();
+		
 		File dir = new File("exported/exported_x64");
 		dir.mkdirs();
 		FilesUtils.deleteContents(dir);
 		try {
+			logger.warn("Exporting with " + transpiler.getName());
 			LinkedHandle handle = project
 				.compile(new ErrorWrapper("Unable to compile", true))
 				.link(new ErrorWrapper("Unable to link", true));
 			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export", true));
+			if(exec == null)
+				return;
 			logger.warn("Running with " + transpiler.getName());
 			Process process = transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run"));
 			if(process != null)
