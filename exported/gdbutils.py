@@ -8,6 +8,7 @@ C_RED = "\u001b[38;5;124m"
 C_RESET = "\u001b[0m"
 C_ITALIC = "\u001b[3m"
 C_BOLD = "\u001b[1m"
+C_UNDERLINE = "\u001b[4m"
 
 inferior = None
 
@@ -81,8 +82,10 @@ class MemoryBlock:
         self.address = address
         if address:
             self.size = qword(address-8)
+            self.struct_address = qword(address-16)
         else:
             self.size = -1
+            self.struct_address = -1
             
     def is_valid(self):
         return self.size != -1
@@ -125,7 +128,7 @@ def memcmd_print_info():
     layout = [ -1 for _ in full_mem ]
     max_used_layout_index = 0
     for block in mem_blocks:
-        for i in range(-8, block.size):
+        for i in range(-16, block.size):
             lindex = block.address-mem_start+i
             if layout[lindex] != -1:
                 layout[lindex] = -2
@@ -138,6 +141,7 @@ def memcmd_print_info():
     prev_bid = -3
     used_colors = (C_BLUE, C_CYAN)
     bold_count = 0
+    underline_count = 0
     for i in range(0, max_used_layout_index):
         bid = layout[i]
         color = None
@@ -147,6 +151,7 @@ def memcmd_print_info():
             if bid != -1:
                 used_colors = (used_colors[1], used_colors[0])
                 bold_count = 8
+                underline_count = 16
             prev_bid = bid
         else:
             h += "   "
@@ -161,6 +166,9 @@ def memcmd_print_info():
         if bold_count > 0:
             s += C_BOLD
             bold_count -= 1
+        if underline_count > 0:
+            s += C_UNDERLINE
+            underline_count -= 1
         s += color + "%02x " % full_mem[i] + C_RESET
         if i%32 == 31:
             log(h)

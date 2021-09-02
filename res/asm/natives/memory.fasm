@@ -24,18 +24,18 @@ section .text
 ; ==============================================================
 ; 
 ; A data block of size n is stored in the heap as
-; a memory block of size n+8, with the value n being
-; stored in the first 8 bytes. A pointer to the data
+; a memory block of size n+16, with the struct type and size
+; n being stored in the first 16 bytes. A pointer to the data
 ; points to the first byte of data, so [ptr-8] can be
 ; used at any time to retrieve the data size. This value
 ; must NEVER be modified by other than a mem_ function.
 ;
-; ------/==============\/==========\------
-;       | |            || |        |      
-; ...   |n| <data>     ||n| <data> | ...  
-;       | |            || |        |      
-; ------\==============/\==========/------
-;         ^ptr            ^ptr           
+; ----/================\/============\------
+;     | | |            || | |        |      
+; ... |s|n| <data>     ||s|n| <data> | ...  
+;     | | |            || | |        |      
+; ----\================/\============/------
+;          ^ptr              ^ptr           
 ;
 ;
 ; An allocation table is stored as a memory block (see
@@ -248,17 +248,17 @@ get_empty_block:
 .check_table:
   lea r11,[rdx+rcx*8] ; r11 = |E| = T+t*8
   mov r9,[r11]        ; r9 = E = [T+t*8] = [r11]
-  lea r12,[rax+rsi+8] ; r12 = A+S+8 the speculative end of the researched block
+  lea r12,[rax+rsi+16]; r12 = A+S+16 the speculative end of the researched block
   test r9,r9          ; E=0 -> no overlap
   jz .nooverlapsave
   lea r10,[r9-8]      ; r10 = E-8 the size of the entry block
   cmp r10,r12
-  jge .nooverlap      ; E-4>=A+S+4 -> no overlap
+  jge .nooverlap      ; E-8>=A+S+8 -> no overlap
   add r9,[r10]        ; r9 = E+[E-8] = r9+[r10]
   cmp r9,rax
   jle .nooverlap      ; E+[E-8]<=A -> no overlap
 .overlap:             ; -> overlap
-  mov rax,r9          ; A = E+[E-4] the end of the overlapping block
+  mov rax,r9          ; A = E+[E-8] the end of the overlapping block
   jmp .check_tables
   
 .nooverlapsave:       ; keep track of an empty table entry in rbx
@@ -286,8 +286,8 @@ get_empty_block:
 .ret:
   pop rcx ; T
   pop rbx ; B
-  pop rax ; A+8
-  add rax,8
+  pop rax ; A+16
+  add rax,16
   
   mov rsp,rbp
   pop rbp

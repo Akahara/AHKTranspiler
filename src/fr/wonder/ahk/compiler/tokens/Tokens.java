@@ -34,7 +34,7 @@ public class Tokens {
 			KW_LOCAL, KW_OPERATOR,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,			// types
 			TYPE_BOOL,
-			VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,				// variable elements (MUST be read last by the tokenizer)
+			VAR_GENERIC, VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,	// variable elements (MUST be read last by the tokenizer)
 	};
 	
 	public static final TokenBase[] SPLITS = {

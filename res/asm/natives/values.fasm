@@ -6,4 +6,5 @@ section .data
 global_fsignbit dq 0x8000000000000000
 dq 0
 global_empty_mem_block:
-
+times 10 dq 0xcc ; unused memory, keep 10 qwords that can be watched
+                 ; in case something tries to write out of bounds

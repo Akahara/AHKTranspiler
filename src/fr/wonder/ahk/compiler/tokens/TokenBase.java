@@ -7,6 +7,7 @@ public enum TokenBase {
 	
 	VAR_UNIT("[A-Z]\\w*"),
 	VAR_VARIABLE("[a-z]\\w*"),
+	VAR_GENERIC("[A-Z]"),
 	VAR_MODIFIER("@[a-z]\\w*"),
 	
 	LIT_INT("\\d+"),
