@@ -24,6 +24,8 @@ public enum SectionToken {
 	SEC_BRACKETS	(TK_BRACKET_OPEN, TK_BRACKET_CLOSE),
 	SEC_PARENTHESIS	(TK_PARENTHESIS_OPEN, TK_PARENTHESIS_CLOSE),
 	
+	SEC_GENERIC_BINDING (TK_GENERIC_BINDING_BEGIN, TK_GENERIC_BINDING_END),
+	
 	/*
 	 * do not mistake a direct operator with its 'indirect' counterpart,
 	 * direct operators are ++ -- and are used as shorthands for '+= 1'...

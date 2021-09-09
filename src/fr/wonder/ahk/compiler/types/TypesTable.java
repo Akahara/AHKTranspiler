@@ -10,9 +10,13 @@ import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
+import fr.wonder.ahk.compiled.units.sections.GenericContext;
+import fr.wonder.ahk.compiler.linker.GenericBindings;
 import fr.wonder.commons.types.Triplet;
 
 public class TypesTable {
+	
+	public final GenericBindings genericBindings = new GenericBindings();
 	
 	private final Map<Triplet<VarType, VarType, Operator>, OverloadedOperatorPrototype> operations = new HashMap<>();
 	private final Map<Triplet<VarType, VarType, Operator>, Operation> functionOperations = new HashMap<>();
@@ -117,7 +121,7 @@ public class TypesTable {
 		
 		if(resultOp == null)
 			return null;
-		VarFunctionType funcType = new VarFunctionType(resultOp.resultType, funcTypeArgs);
+		VarFunctionType funcType = new VarFunctionType(resultOp.resultType, funcTypeArgs, GenericContext.EMPTY_CONTEXT);
 		FunctionOperation funcOperation = new FunctionOperation(leftOp, rightOp, resultOp, funcType);
 		functionOperations.put(opKey(leftOp, rightOp, operator), funcOperation);
 		return funcOperation;

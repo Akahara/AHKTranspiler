@@ -6,8 +6,10 @@ import java.util.List;
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.sections.Blueprint;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -79,8 +81,6 @@ public class UnitParser extends AbstractParser {
 		
 		int declarationEnd = 1+aliasCount+importationCount;
 		
-		// TODO0 check if the declaration end is right
-		
 		if(lines.length == declarationEnd) {
 			errors.add("Incomplete source file:" + source.getErr(source.length()-1));
 			errors.assertNoErrors();
@@ -106,7 +106,7 @@ public class UnitParser extends AbstractParser {
 	
 	public static void parseUnit(Unit unit, Token[][] tokens, ErrorWrapper errors) throws WrappedException {
 		int declarationEnd = unit.importations.length + unit.declaredAliasCount + 2;
-		parseSections(unit, tokens, declarationEnd, errors.subErrrors("Unable to parse unit body"));
+		parseSections(unit, tokens, declarationEnd, errors.subErrors("Unable to parse unit body"));
 		errors.assertNoErrors();
 	}
 	
@@ -115,6 +115,7 @@ public class UnitParser extends AbstractParser {
 		List<FunctionSection> functions = new ArrayList<>();
 		List<VariableDeclaration> variables = new ArrayList<>();
 		List<StructSection> structures = new ArrayList<>();
+		List<Blueprint> blueprints = new ArrayList<>();
 		
 		ModifiersHolder modifiers = new ModifiersHolder();
 		
@@ -129,8 +130,9 @@ public class UnitParser extends AbstractParser {
 					continue;
 				}
 				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
-				FunctionSection func = FunctionDeclarationParser.parseFunctionSection(
-						unit, lines, i, functionEnd, mods, errors);
+				FunctionSection func = FunctionDeclarationParser.parseFunctionDeclaration(
+						unit, line, line.length-1, null, mods, errors);
+				FunctionDeclarationParser.parseFunctionBody(func, lines, i+1, functionEnd, errors);
 				i = functionEnd;
 				functions.add(func);
 				
@@ -138,33 +140,40 @@ public class UnitParser extends AbstractParser {
 				// parse modifier
 				modifiers.add(parseModifier(line, errors));
 				
+			} else if(Tokens.isDeclarationVisibility(line[0].base)) {
+				// parse visibility
+				modifiers.setVisibility(line[0], errors);
+				
 			} else if(line[0].base == TokenBase.KW_STRUCT) {
 				// parse struct
 				DeclarationModifiers mods = modifiers.getModifiers();
-				try {
-					Pointer p = new Pointer(1);
-					assertHasNext(line, p, "Invalid struct declaration", errors);
-					assertToken(line, p, TokenBase.VAR_UNIT, "Expected structure name", errors);
-					assertToken(line, p, TokenBase.TK_BRACE_OPEN, "Expected '{' to begin structure", errors);
-					assertNoRemainingTokens(line, p, errors);
-				} catch (ParsingException e) {
+				if(line[line.length-1].base != TokenBase.TK_BRACE_OPEN) {
+					errors.add("Expected '{' to begin structure:" + line[line.length-1].getErr());
 					continue;
 				}
 				int structEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
-				ErrorWrapper subErrors = errors.subErrrors("Cannot parse a struct declaration");
+				ErrorWrapper subErrors = errors.subErrors("Cannot parse a struct declaration");
 				StructSection struct = StructSectionParser.parseStruct(unit, lines, i, structEnd, mods, subErrors);
 				i = structEnd;
 				structures.add(struct);
 				
+			} else if(line[0].base == TokenBase.KW_BLUEPRINT) {
+				DeclarationModifiers mods = modifiers.getModifiers();
+				if(line[line.length-1].base != TokenBase.TK_BRACE_OPEN) {
+					errors.add("Expected '{' to begin blueprint:" + line[line.length-1].getErr());
+					continue;
+				}
+				int blueprintEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
+				ErrorWrapper subErrors = errors.subErrors("Cannot parse a blueprint declaration");
+				Blueprint blueprint = BlueprintParser.parseBlueprint(unit, lines, i, blueprintEnd, mods, subErrors);
+				i = blueprintEnd;
+				blueprints.add(blueprint);
+				
 			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
 				DeclarationModifiers mods = modifiers.getModifiers();
-				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, mods, errors);
+				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, GenericContext.NO_CONTEXT, mods, errors);
 				variables.add(var);
-				
-			} else if(Tokens.isDeclarationVisibility(line[0].base)) {
-				// parse visibility
-				modifiers.setVisibility(line[0], errors);
 				
 			} else {
 				errors.add("Unexpected line begin token:" + unit.source.getErr(line));
@@ -174,6 +183,7 @@ public class UnitParser extends AbstractParser {
 		unit.variables = variables.toArray(VariableDeclaration[]::new);
 		unit.functions = functions.toArray(FunctionSection[]::new);
 		unit.structures = structures.toArray(StructSection[]::new);
+		unit.blueprints = blueprints.toArray(Blueprint[]::new);
 	}
 	
 	private static int getSectionEnd(Token[][] lines, Token sectionStop, int start) {

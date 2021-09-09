@@ -10,6 +10,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.Alias;
+import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -32,7 +33,7 @@ public class AliasDeclarationParser extends AbstractParser {
 		
 		for(int i = 0; i < units.length; i++) {
 			Unit unit = units[i];
-			ErrorWrapper unitErrors = errors.subErrrors("Cannot resolve alias declarations of unit " + unit.fullBase);
+			ErrorWrapper unitErrors = errors.subErrors("Cannot resolve alias declarations of unit " + unit.fullBase);
 			
 			UnitAliases unitAlias = new UnitAliases(unit, unitErrors);
 			unitsAliases[i] = unitAlias;
@@ -101,7 +102,7 @@ public class AliasDeclarationParser extends AbstractParser {
 				continue;
 			}
 			String aliasName = line[1].text;
-			ErrorWrapper aliasErrors = unitAliases.errors.subErrrors("Cannot resolve alias " + aliasName);
+			ErrorWrapper aliasErrors = unitAliases.errors.subErrors("Cannot resolve alias " + aliasName);
 			unitAliases.aliases.add(new AliasParser(unitAliases, line, aliasName, aliasErrors));
 		}
 	}
@@ -265,7 +266,7 @@ public class AliasDeclarationParser extends AbstractParser {
 			throw new ParsingException();
 		}
 		
-		return new VarFunctionType(returnType, arguments.getTypes());
+		return new VarFunctionType(returnType, arguments.getTypes(), GenericContext.EMPTY_CONTEXT);
 	}
 	
 	private static VarType parseCompositeType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {

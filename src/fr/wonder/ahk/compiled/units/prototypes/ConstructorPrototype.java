@@ -6,7 +6,7 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 
 public class ConstructorPrototype implements Prototype<ConstructorPrototype> {
 
-	private final Signature signature;
+	public final Signature signature;
 	public final VarType[] argTypes;
 	public final String[] argNames;
 	public final DeclarationModifiers modifiers;

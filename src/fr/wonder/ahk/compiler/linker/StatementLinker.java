@@ -24,7 +24,6 @@ import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.types.ConversionTable;
-import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -36,8 +35,7 @@ class StatementLinker {
 		this.linker = linker;
 	}
 	
-	void linkStatements(Unit unit, Scope scope, FunctionSection func,
-			TypesTable typesTable, ErrorWrapper errors) {
+	void linkStatements(Unit unit, Scope scope, FunctionSection func, ErrorWrapper errors) {
 		
 		List<LabeledStatement> openedSections = new ArrayList<>();
 		LabeledStatement latestClosedStatement = null;
@@ -72,15 +70,15 @@ class StatementLinker {
 			// handle special statements
 			if(st instanceof ForSt && ((ForSt) st).declaration != null) {
 				ForSt forst = (ForSt) st;
-				linker.expressions.linkExpressions(unit, scope, forst.declaration, typesTable, errors);
-				linkStatement(unit, func, forst.declaration, typesTable, errors);
+				linker.expressions.linkExpressions(unit, scope, forst.declaration, func.genericContext, errors);
+				linkStatement(unit, func, forst.declaration, errors);
 				declareVariable(forst.declaration, scope, errors);
-				linker.expressions.linkExpressions(unit, scope, forst.affectation, typesTable, errors);
-				linkStatement(unit, func, forst.affectation, typesTable, errors);
+				linker.expressions.linkExpressions(unit, scope, forst.affectation, func.genericContext, errors);
+				linkStatement(unit, func, forst.affectation, errors);
 			}
 			
-			linker.expressions.linkExpressions(unit, scope, st, typesTable, errors);
-			linkStatement(unit, func, st, typesTable, errors);
+			linker.expressions.linkExpressions(unit, scope, st, func.genericContext, errors);
+			linkStatement(unit, func, st, errors);
 			
 			if(st instanceof VariableDeclaration)
 				declareVariable((VariableDeclaration) st, scope, errors);
@@ -102,77 +100,98 @@ class StatementLinker {
 		}
 	}
 
-	private void linkStatement(Unit lunit, FunctionSection func, Statement st,
-			TypesTable typesTable, ErrorWrapper errors) {
+	private void linkStatement(Unit lunit, FunctionSection func, Statement st, ErrorWrapper errors) {
 		
 		if(st instanceof ReturnSt) {
-			ReturnSt rst = (ReturnSt) st;
-			Expression returned = rst.getExpression();
-			if(func.returnType == VarType.VOID) {
-				if(returned != null) {
-					errors.add("A void function cannot return a value:" + rst.getErr());
-					return;
-				}
-			} else {
-				if(returned == null) {
-					errors.add("This function must return a value of type " + func.returnType + rst.getErr());
-					return;
-				}
-				linker.checkAffectationType(st, 0, func.returnType, errors);
-			}
+			linkReturnSt(func, (ReturnSt) st, errors);
 			
 		} else if(st instanceof IfSt) {
-			Expression condition = ((IfSt) st).getCondition();
-			if(!ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
-				errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
+			linkIfSt((IfSt) st, errors);
 			
 		} else if(st instanceof ElseSt) {
-			Expression condition = ((ElseSt) st).getCondition();
-			if(condition != null && !ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
-				errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
+			linkElseSt((ElseSt) st, errors);
 			
 		} else if(st instanceof AffectationSt) {
-			linker.checkAffectationType(st, 1, ((AffectationSt) st).getVariable().getType(), errors);
+			linkAffectationSt((AffectationSt) st, errors);
 			
 		} else if(st instanceof MultipleAffectationSt) {
-			MultipleAffectationSt a = (MultipleAffectationSt) st;
-			Expression[] variables = a.getVariables();
-			Expression[] values = a.getValues();
-			VarType[] valuesTypes;
-			if(a.isUnwrappedFunction()) {
-				if(!(values[0] instanceof FunctionExpression) ||
-					!(values[0].getType() instanceof VarCompositeType)) {
-					errors.add("Invalid affectation, the right hand side of the"
-							+ " assignement is not a composite type " + values[0].getErr());
-					return;
-				}
-				valuesTypes = ((VarCompositeType) values[0].getType()).types;
-			} else {
-				valuesTypes = ArrayOperator.map(values, VarType[]::new, Expression::getType);
-			}
-			
-			if(valuesTypes.length != variables.length) {
-				errors.add("Invalid affectation, " + variables.length + " variables for " 
-						+ valuesTypes.length + " values");
-				return;
-			}
-			
-			if(!a.isUnwrappedFunction()) {
-				for(int i = 0; i < variables.length; i++)
-					linker.checkAffectationType(a, i, variables[i].getType(), errors);
-			} else {
-				for(int i = 0; i < variables.length; i++) {
-					VarType from = valuesTypes[i], to = variables[i].getType();
-					if(!from.equals(to))
-						errors.add("Type mismatch, " + from + " does not match " + to + " (function"
-								+ " unwrapping cannot not use implicit conversions)" + st.getErr());
-				}
-			}
+			linkMultipleAffectationSt((MultipleAffectationSt) st, errors);
 			
 		} else if(st instanceof VariableDeclaration) {
-			linker.checkAffectationType(st, 0, ((VariableDeclaration) st).getType(), errors);
+			linkVariableDeclarationSt((VariableDeclaration) st, errors);
 			
 		}
+	}
+
+	private void linkElseSt(ElseSt st, ErrorWrapper errors) {
+		Expression condition = st.getCondition();
+		if(condition != null && !ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
+			errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
+	}
+
+	private void linkAffectationSt(AffectationSt st, ErrorWrapper errors) {
+		linker.checkAffectationType(st, 1, st.getVariable().getType(), errors);
+	}
+
+	private void linkMultipleAffectationSt(MultipleAffectationSt st, ErrorWrapper errors) {
+		Expression[] variables = st.getVariables();
+		Expression[] values = st.getValues();
+		VarType[] valuesTypes;
+		if(st.isUnwrappedFunction()) {
+			if(!(values[0] instanceof FunctionExpression) ||
+				!(values[0].getType() instanceof VarCompositeType)) {
+				errors.add("Invalid affectation, the right hand side of the"
+						+ " assignement is not a composite type " + values[0].getErr());
+				return;
+			}
+			valuesTypes = ((VarCompositeType) values[0].getType()).types;
+		} else {
+			valuesTypes = ArrayOperator.map(values, VarType[]::new, Expression::getType);
+		}
+		
+		if(valuesTypes.length != variables.length) {
+			errors.add("Invalid affectation, " + variables.length + " variables for " 
+					+ valuesTypes.length + " values");
+			return;
+		}
+		
+		if(!st.isUnwrappedFunction()) {
+			for(int i = 0; i < variables.length; i++)
+				linker.checkAffectationType(st, i, variables[i].getType(), errors);
+		} else {
+			for(int i = 0; i < variables.length; i++) {
+				VarType from = valuesTypes[i], to = variables[i].getType();
+				if(!from.equals(to))
+					errors.add("Type mismatch, " + from + " does not match " + to + " (function"
+							+ " unwrapping cannot not use implicit conversions)" + st.getErr());
+			}
+		}
+	}
+
+	private void linkVariableDeclarationSt(VariableDeclaration st, ErrorWrapper errors) {
+		linker.checkAffectationType(st, 0, st.getType(), errors);
+	}
+
+	private void linkReturnSt(FunctionSection func, ReturnSt st, ErrorWrapper errors) {
+		Expression returned = st.getExpression();
+		if(func.returnType == VarType.VOID) {
+			if(returned != null) {
+				errors.add("A void function cannot return a value:" + st.getErr());
+				return;
+			}
+		} else {
+			if(returned == null) {
+				errors.add("This function must return a value of type " + func.returnType + st.getErr());
+				return;
+			}
+			linker.checkAffectationType(st, 0, func.returnType, errors);
+		}
+	}
+
+	private void linkIfSt(IfSt st, ErrorWrapper errors) {
+		Expression condition = st.getCondition();
+		if(!ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
+			errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 	}
 
 }

@@ -1,11 +1,8 @@
 package fr.wonder.ahk.compiled.expressions;
 
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
-import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
-import fr.wonder.commons.exceptions.ErrorWrapper;
 
 /**
  * Replaces {@link FunctionCallExp} when the {@link FunctionCallExp#getFunction() function argument}
@@ -49,11 +46,6 @@ public class FunctionExp extends FunctionExpression {
 	public String toString() {
 		return function.signature.declaringUnit + "." + function.getName() +
 				"(" + Utils.toString(getArguments()) + ")";
-	}
-
-	@Override
-	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return function.functionType.returnType;
 	}
 
 }

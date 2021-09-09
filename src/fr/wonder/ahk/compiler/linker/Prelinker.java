@@ -3,9 +3,11 @@ package fr.wonder.ahk.compiler.linker;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.wonder.ahk.compiled.expressions.types.VarBoundStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.ExternalStructAccess;
+import fr.wonder.ahk.compiled.units.ExternalStructAccess.ParametrizedAccess;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
@@ -92,14 +94,28 @@ class Prelinker {
 		
 		for(ExternalStructAccess structAccess : unit.usedStructTypes.values()) {
 			VarStructType structType = structAccess.structTypeInstance;
-			structType.structure = linker.searchStructSection(unit, structType.name);
-			if(structType.structure == null) {
+			StructPrototype structure = linker.searchStructSection(unit, structType.name);
+			if(structure == null) {
 				errors.add("Unknown structure type used: " + structType.name + 
-						" (" + structAccess.occurenceCount + " references)" +
-						structAccess.firstOccurence.getErr());
-				structType.structure = Invalids.STRUCT_PROTOTYPE;
+						" (" + structAccess.occurrenceCount + " references)" +
+						structAccess.firstOccurrence.getErr());
+				structure = Invalids.STRUCT_PROTOTYPE;
 			} else {
-				unit.prototype.externalAccesses.add(structType.structure);
+				unit.prototype.externalAccesses.add(structure);
+			}
+			structType.structure = structure;
+			
+			for(ParametrizedAccess parametrizedInstance : structAccess.parametrizedInstances) {
+				VarBoundStructType boundType = parametrizedInstance.type;
+				if(structure == Invalids.STRUCT_PROTOTYPE) {
+					boundType.structure = Invalids.STRUCT_PROTOTYPE;
+				} else if(GenericBindings.validateBindings(structure.genericContext,
+						boundType.boundTypes, parametrizedInstance.occurrence, errors)) {
+					boundType.structure = linker.typesTable.genericBindings.bindGenerics(
+							structure, boundType.boundTypes, parametrizedInstance.genericContext);
+				} else {
+					boundType.structure = Invalids.STRUCT_PROTOTYPE;
+				}
 			}
 		}
 	}

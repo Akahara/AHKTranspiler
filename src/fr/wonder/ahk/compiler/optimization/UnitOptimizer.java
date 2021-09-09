@@ -13,7 +13,7 @@ public class UnitOptimizer {
 	
 	public static void optimize(ProjectHandle handle, Unit u, ErrorWrapper errors) {
 		if(handle.manifest.LITERAL_OPTIMIZATION)
-			optimizeExpressions(u, errors.subErrrors("Errors while optimizing expressions"));
+			optimizeExpressions(u, errors.subErrors("Errors while optimizing expressions"));
 	}
 	
 	private static void optimizeExpressions(Unit u, ErrorWrapper errors) {

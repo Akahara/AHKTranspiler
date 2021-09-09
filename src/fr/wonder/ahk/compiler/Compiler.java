@@ -22,7 +22,7 @@ public class Compiler {
 		for (int i = 0; i < project.units.length; i++) {
 			try {
 				UnitSource source = project.units[i];
-				ErrorWrapper subErrors = errors.subErrrors("Parsing errors in unit " + source.name);
+				ErrorWrapper subErrors = errors.subErrors("Parsing errors in unit " + source.name);
 				
 				Token[] tokens = Tokenizer.tokenize(source, subErrors);
 				errors.assertNoErrors();

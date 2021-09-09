@@ -13,9 +13,15 @@ public class OverloadedOperatorPrototype extends Operation implements Prototype<
 	
 	/** Set by the linker */
 	public FunctionPrototype function;
+
+	public OverloadedOperatorPrototype(Operator operator, VarType leftOperand,
+			VarType rightOperand, VarType resultType, Signature signature) {
+		super(leftOperand, rightOperand, operator, resultType);
+		this.signature = signature;
+	}
 	
-	public OverloadedOperatorPrototype(StructSection structure, Operator operator,
-			VarType leftOperand, VarType rightOperand, VarType resultType) {
+	public OverloadedOperatorPrototype(StructSection structure, Operator operator, VarType leftOperand,
+			VarType rightOperand, VarType resultType) {
 		super(leftOperand, rightOperand, operator, resultType);
 		this.signature = Signatures.of(this, structure);
 	}

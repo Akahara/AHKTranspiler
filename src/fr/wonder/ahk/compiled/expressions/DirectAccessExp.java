@@ -1,11 +1,8 @@
 package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class DirectAccessExp extends Expression {
 	
@@ -30,11 +27,6 @@ public class DirectAccessExp extends Expression {
 	@Override
 	public String toString() {
 		return getStruct()+"."+memberName;
-	}
-	
-	@Override
-	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return member.type;
 	}
 
 }

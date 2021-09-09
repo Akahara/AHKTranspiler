@@ -6,8 +6,6 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.Operation;
-import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class OperationExp extends Expression {
 	
@@ -73,11 +71,6 @@ public class OperationExp extends Expression {
 	@Override
 	public String toString() {
 		return "("+Objects.toString(getLeftOperand())+") "+operator+" ("+Objects.toString(getRightOperand())+")";
-	}
-	
-	@Override
-	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return operation.resultType;
 	}
 	
 	public String operationString() {

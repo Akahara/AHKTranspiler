@@ -23,7 +23,7 @@ public class TokensFactory {
 					if(i > begin) {
 						// keep the '{' at the end of the line
 						int end = i;
-						if(tokens[i].base != TokenBase.TK_LINE_BREAK)
+						if(tokens[i].base == TokenBase.TK_BRACE_OPEN)
 							end++;
 						// add a line composed of all encountered tokens since last 
 						// section begin excluding split losses

@@ -67,11 +67,11 @@ public class AsmX64Transpiler implements Transpiler {
 	}
 	
 	private void validateProject(LinkedHandle handle, ErrorWrapper errors) {
-		handle.manifest.validate(handle, errors.subErrrors("Invalid manifest"), false);
-		handle.manifest.validateAsm(errors.subErrrors("Invalid manifest"));
+		handle.manifest.validate(handle, errors.subErrors("Invalid manifest"), false);
+		handle.manifest.validateAsm(errors.subErrors("Invalid manifest"));
 		
 		for(Unit u : handle.units)
-			validateUnit(handle, u, errors.subErrrors("Unable to validate unit " + u.fullBase));
+			validateUnit(handle, u, errors.subErrors("Unable to validate unit " + u.fullBase));
 	}
 
 	private void validateUnit(LinkedHandle handle, Unit unit, ErrorWrapper errors) {

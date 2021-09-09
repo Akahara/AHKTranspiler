@@ -1,19 +1,25 @@
 package fr.wonder.ahk.compiler.parser;
 
-import static fr.wonder.ahk.compiler.tokens.TokenBase.VAR_UNIT;
-
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarBoundStructType;
+import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.ExternalStructAccess;
+import fr.wonder.ahk.compiled.units.ExternalStructAccess.ParametrizedAccess;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
+import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
@@ -57,6 +63,10 @@ class AbstractParser {
 		
 		String[] getNames() {
 			return stream().map(arg -> arg.name).toArray(String[]::new);
+		}
+		
+		FunctionArgument[] asArray() {
+			return toArray(FunctionArgument[]::new);
 		}
 		
 	}
@@ -108,18 +118,57 @@ class AbstractParser {
 	}
 
 	/** Cannot parse composites or functions */
-	public static VarType parseType(Unit unit, Token[] line, Pointer pointer, ErrorWrapper errors) {
+	public static VarType parseType(Unit unit, Token[] line, GenericContext genc, Pointer pointer,
+			ErrorWrapper errors) {
+		
+		if(pointer.position >= line.length) {
+			errors.add("Expected type:" + unit.source.getErr(line[line.length-1].getSourceReference().stop));
+			return Invalids.TYPE;
+		}
+		
 		Token token = line[pointer.position];
 		VarType baseType;
-		if(token.base == VAR_UNIT)
+		if(token.base == TokenBase.VAR_UNIT) {
 			baseType = unit.getStructOrAliasType(token);
-		else if(Tokens.isVarType(token.base))
+		} else if(token.base == TokenBase.VAR_GENERIC) {
+			baseType = genc.getGenericType(token, errors);
+		} else if(Tokens.isVarType(token.base)) {
 			baseType = Tokens.typesMap.get(token.base);
-		else {
+		} else {
 			errors.add("Expected type:" + token.getErr());
 			return Invalids.TYPE;
 		}
 		pointer.position++;
+		
+		if(pointer.position < line.length && line[pointer.position].base == TokenBase.TK_GENERIC_BINDING_BEGIN) {
+			pointer.position++;
+			List<VarType> typeParameters = new ArrayList<>();
+			while(true) {
+				typeParameters.add(parseType(unit, line, genc, pointer, errors));
+				if(pointer.position == line.length) {
+					errors.add("Unfinished type parameters:" + line[line.length-1].getErr());
+					return Invalids.TYPE;
+				}
+				Token nextTk = line[pointer.position];
+				pointer.position++;
+				if(nextTk.base == TokenBase.TK_GENERIC_BINDING_END)
+					break;
+				if(nextTk.base != TokenBase.TK_COMMA)
+					errors.add("Expected ',' in type parameters:" + nextTk.getErr());
+			}
+			if(typeParameters.isEmpty())
+				errors.add("Cannot make an empty parametrized type:" + unit.source.getErr(line, pointer.position-2, pointer.position));
+			else if(!(baseType instanceof VarStructType))
+				errors.add("Type " + baseType + " cannot be parametrized:" + line[pointer.position-1].getErr());
+			else {
+				VarBoundStructType bound = new VarBoundStructType(baseType.getName(), typeParameters.toArray(VarType[]::new));
+				ExternalStructAccess structAccess = unit.usedStructTypes.get(baseType.getName());
+				ParametrizedAccess access = new ParametrizedAccess(bound, token, genc);
+				structAccess.parametrizedInstances.add(access);
+				baseType = bound;
+			}
+		}
+		
 		while(pointer.position+1 < line.length &&
 				line[pointer.position].base == TokenBase.TK_BRACKET_OPEN &&
 				line[pointer.position+1].base == TokenBase.TK_BRACKET_CLOSE) {
@@ -153,9 +202,10 @@ class AbstractParser {
 	 * in the error wrapper and the name will default to the empty string.
 	 */
 	public static ArgumentList readArguments(Unit unit, Token[] line,
-			Pointer pointer, boolean requireNames, ErrorWrapper errors) throws ParsingException {
+			boolean requireNames, GenericContext genc, Pointer pointer,
+			ErrorWrapper errors) throws ParsingException {
 		
-		return readArguments(() -> parseType(unit, line, pointer, errors),
+		return readArguments(() -> parseType(unit, line, genc, pointer, errors),
 				unit.source, line, pointer, requireNames, errors);
 	}
 	
@@ -230,7 +280,7 @@ class AbstractParser {
 			return null;
 		}
 		LiteralExp<?>[] arguments = new LiteralExp[(line.length-2)/2];
-		ErrorWrapper subErrors = errors.subErrrors("Unable to parse modifier parameter, expected literal");
+		ErrorWrapper subErrors = errors.subErrors("Unable to parse modifier parameter, expected literal");
 		for(int i = 2; i < line.length-1; i++) {
 			if(i%2 == 0) {
 				if(line[i].base == TokenBase.LIT_NULL)
@@ -246,5 +296,50 @@ class AbstractParser {
 			}
 		}
 		return new Modifier(line[0].text.substring(1), arguments);
+	}
+	
+	public static GenericContext readGenericArray(Token[] line,
+			GenericContext parentContext, Pointer p, ErrorWrapper errors) throws ParsingException {
+		
+		if(p.position == line.length)
+			return new GenericContext(parentContext, GenericContext.NO_GENERICS);
+		if(line[p.position].base != TokenBase.TK_GENERIC_BINDING_BEGIN)
+			return new GenericContext(parentContext, GenericContext.NO_GENERICS);
+		p.position++;
+		
+		Map<String, VarGenericType> generics = new LinkedHashMap<>();
+		
+		assertHasNext(line, p, "Expected generic array", errors);
+		if(line[p.position].base == TokenBase.TK_GENERIC_BINDING_END) {
+			errors.add("Generic bindings cannot be empty:" +
+					SourceReference.fromLine(line, p.position-1, p.position).getErr());
+			return Invalids.GENERIC_CONTEXT;
+		}
+		
+		while(true) {
+			assertHasNext(line, p, "Unfinished generic array", errors);
+			Token tk = line[p.position++];
+			if(tk.base != TokenBase.VAR_GENERIC) {
+				errors.add("Expected generic:" + tk.getErr());
+				continue;
+			}
+			
+			String name = tk.text;
+			if((parentContext != null && parentContext.retrieveGenericType(name) != null) ||
+					generics.containsKey(name)) {
+				errors.add("Cannot use already bound generic '" + name + "':" + tk.getErr());
+			} else {
+				generics.put(name, new VarGenericType(name));
+			}
+			
+			assertHasNext(line, p, "Unfinished generic array", errors);
+			tk = line[p.position++];
+			
+			if(tk.base == TokenBase.TK_GENERIC_BINDING_END) {
+				return new GenericContext(parentContext, generics.values().toArray(VarGenericType[]::new));
+			} else if(tk.base != TokenBase.TK_COMMA) {
+				errors.add("Expected ',' in generic array:" + tk.getErr());
+			}
+		}
 	}
 }

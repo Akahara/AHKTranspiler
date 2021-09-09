@@ -48,7 +48,7 @@ public class RangedForSt extends LabeledStatement {
 	public ForSt toComplexFor() {
 		VarExp var = new VarExp(sourceRef, variable.name);
 		var.declaration = variable.getPrototype();
-		var.computeValueType(null, null);
+		var.type = variable.getType();
 		OperationExp condition = new OperationExp(sourceRef, Operator.LOWER, var, getMax());
 		condition.setOperation(NativeOperation.getOperation(VarType.INT, VarType.INT, Operator.LOWER, false));
 		OperationExp affectationValue = new OperationExp(sourceRef, Operator.ADD, var, getStep());

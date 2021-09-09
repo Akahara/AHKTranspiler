@@ -58,7 +58,6 @@ public class UnitWriter {
 		// all other variables (which values can be computed beforehand)
 		List<VariableDeclaration> initializedVariables = new ArrayList<>();
 		
-		// TODO0 use the compiler to optimize directly computable values
 		for(VariableDeclaration var : unit.variables) {
 			if(var.getDefaultValue() instanceof LiteralExp<?>)
 				initializedVariables.add(var);
@@ -296,7 +295,7 @@ public class UnitWriter {
 			ConcreteType concreteType = types.getConcreteType(struct);
 			String nullLabel = registries.getStructNullRegistry(struct.getPrototype());
 			MemAddress nullAddress = new MemAddress(new LabelAddress(nullLabel));
-			instructions.comment("init " + struct.name + " null");
+			instructions.comment("init " + struct.name + " null"); // FIX include generic types in null struct instances
 			for(VariableDeclaration member : struct.members) {
 				ConstructorDefaultValue nullField = struct.getNullField(member.name);
 				Expression nullMemberValue = nullField == null ? member.getDefaultValue() : nullField.getValue();

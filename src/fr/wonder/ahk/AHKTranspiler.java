@@ -2,6 +2,7 @@ package fr.wonder.ahk;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import fr.wonder.ahk.compiled.AHKManifest;
@@ -22,10 +23,11 @@ import fr.wonder.commons.systems.process.ProcessUtils;
 public class AHKTranspiler {
 	
 	/*
-	 * TODO x64 files
-	 * TODO lambdas
-	 * TODO create a new x64 transpiler, based on an abstract intermediate language
-	 * TODO rework project handles
+	 * TODO > x64 files
+	 * TODO > lambdas
+	 * TODO > generics
+	 * TODO > create a new x64 transpiler, based on an abstract intermediate language
+	 * TODO > rework project handles
 	 */
 	
 //	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);
@@ -39,6 +41,7 @@ public class AHKTranspiler {
 			File f = files.get(i);
 			sources[i] = new UnitSource(f.getName(), FilesUtils.read(f));
 		}
+		Arrays.sort(sources, (s1, s2) -> s2.name.compareTo(s1.name)); // compile the Kernel files last for debugging purposes
 		Manifest man = ManifestUtils.parseManifest(manifestFile);
 		AHKManifest manifest = ManifestUtils.buildManifestFromValues(man, AHKManifest.class,
 				ManifestUtils.CONVENTION_SCREAMING_SNAKE_CASE);

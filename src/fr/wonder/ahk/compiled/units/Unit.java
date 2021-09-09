@@ -9,6 +9,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
+import fr.wonder.ahk.compiled.units.sections.Blueprint;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.Prototypes;
@@ -27,6 +28,7 @@ public class Unit {
 	public VariableDeclaration[] variables;
 	public FunctionSection[] functions;
 	public StructSection[] structures;
+	public Blueprint[] blueprints;
 	
 	public Alias[] accessibleAliases;
 	public final int declaredAliasCount;
@@ -77,7 +79,7 @@ public class Unit {
 	public VarStructType getStructType(Token token) {
 		var knownType = usedStructTypes.get(token.text);
 		if(knownType != null) {
-			knownType.occurenceCount++;
+			knownType.occurrenceCount++;
 			return knownType.structTypeInstance;
 		}
 		

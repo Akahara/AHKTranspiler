@@ -11,7 +11,6 @@ import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.OverloadedOperator;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
-import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 class StructureLinker {
@@ -22,14 +21,14 @@ class StructureLinker {
 		this.linker = linker;
 	}
 	
-	void linkStructure(Unit unit, UnitScope unitScope, TypesTable typesTable, StructSection struct, ErrorWrapper errors) {
+	void linkStructure(Unit unit, UnitScope unitScope, StructSection struct, ErrorWrapper errors) {
 		for(ConstructorDefaultValue nullField : struct.nullFields) {
-			linker.expressions.linkExpressions(unit, unitScope, nullField, typesTable, errors);
+			linker.expressions.linkExpressions(unit, unitScope, nullField, struct.genericContext, errors);
 			VariableDeclaration member = struct.getMember(nullField.name);
 			linker.checkAffectationType(nullField, 0, member.getType(), errors);
 		}
 		for(VariableDeclaration member : struct.members) {
-			linker.expressions.linkExpressions(unit, unitScope, member, typesTable, errors);
+			linker.expressions.linkExpressions(unit, unitScope, member, struct.genericContext, errors);
 			linker.checkAffectationType(member, 0, member.getType(), errors);
 		}
 		for(OverloadedOperator operator : struct.operators) {

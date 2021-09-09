@@ -2,6 +2,7 @@ package fr.wonder.ahk.compiled.units.prototypes;
 
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
+import fr.wonder.ahk.compiled.units.sections.GenericContext;
 
 public class StructPrototype implements Prototype<StructPrototype> {
 
@@ -9,18 +10,21 @@ public class StructPrototype implements Prototype<StructPrototype> {
 	public final VariablePrototype[] members;
 	public final ConstructorPrototype[] constructors;
 	public final OverloadedOperatorPrototype[] overloadedOperators;
+	public final GenericContext genericContext;
 	public final DeclarationModifiers modifiers;
 	
 	public StructPrototype(
 			VariablePrototype[] members,
 			ConstructorPrototype[] constructors,
 			OverloadedOperatorPrototype[] overloadedOperators,
+			GenericContext genericContext,
 			DeclarationModifiers modifiers,
 			Signature signature) {
 		
 		this.members = members;
 		this.constructors = constructors;
 		this.overloadedOperators = overloadedOperators;
+		this.genericContext = genericContext;
 		this.modifiers = modifiers;
 		this.signature = signature;
 	}
@@ -45,6 +49,10 @@ public class StructPrototype implements Prototype<StructPrototype> {
 	/** Returns the structure name */
 	public String getName() {
 		return signature.name;
+	}
+	
+	public boolean hasGenericBindings() {
+		return genericContext.hasGenericMembers();
 	}
 
 }

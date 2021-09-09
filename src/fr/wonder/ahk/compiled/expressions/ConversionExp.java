@@ -2,9 +2,6 @@ package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
-import fr.wonder.ahk.compiler.types.ConversionTable;
-import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class ConversionExp extends Expression {
 	
@@ -25,14 +22,6 @@ public class ConversionExp extends Expression {
 	
 	public Expression getValue() {
 		return expressions[0];
-	}
-	
-	@Override
-	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		if(!ConversionTable.canConvertImplicitely(getValue().getType(), castType) &&
-			(isImplicit || !ConversionTable.canConvertExplicitely(getValue().getType(), castType)))
-			errors.add("Unable to convert explicitely from type " + getValue().getType() + " to " + castType);
-		return castType;
 	}
 	
 	@Override

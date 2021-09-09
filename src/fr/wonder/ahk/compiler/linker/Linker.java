@@ -20,6 +20,7 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Compiler;
 import fr.wonder.ahk.compiler.types.ConversionTable;
@@ -66,7 +67,7 @@ public class Linker {
 		// actually link unit statements and expressions
 		// only link non-native units, natives are already linked
 		for(Unit unit : units) {
-			ErrorWrapper subErrors = errors.subErrrors("Unable to link unit " + unit.fullBase);
+			ErrorWrapper subErrors = errors.subErrors("Unable to link unit " + unit.fullBase);
 			linkUnit(unit, subErrors);
 		}
 		errors.assertNoErrors();
@@ -95,7 +96,7 @@ public class Linker {
 		}
 		
 		for(Unit unit : units) {
-			prelinker.prelinkUnit(unit, errors.subErrrors("Unable to prelink unit " + unit.fullBase));
+			prelinker.prelinkUnit(unit, errors.subErrors("Unable to prelink unit " + unit.fullBase));
 		}
 		
 		structures.collectOverloadedOperators(errors);
@@ -110,22 +111,17 @@ public class Linker {
 		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(prototypes));
 		
 		for(VariableDeclaration var : unit.variables) {
-			expressions.linkExpressions(unit, unitScope, var, typesTable, errors);
+			expressions.linkExpressions(unit, unitScope, var, GenericContext.EMPTY_CONTEXT, errors);
 			checkAffectationType(var, 0, var.getType(), errors);
 		}
 		
 		for(FunctionSection func : unit.functions) {
-			ErrorWrapper ferrors = errors.subErrrors("Errors in function " + func.getSignature().computedSignature);
-			statements.linkStatements(
-					unit,
-					unitScope.innerScope(),
-					func,
-					typesTable,
-					ferrors);
+			ErrorWrapper ferrors = errors.subErrors("Errors in function " + func.getSignature().computedSignature);
+			statements.linkStatements(unit, unitScope.innerScope(), func, ferrors);
 		}
 		
 		for(StructSection struct : unit.structures) {
-			structures.linkStructure(unit, unitScope, typesTable, struct, errors);
+			structures.linkStructure(unit, unitScope, struct, errors);
 		}
 	}
 
@@ -160,6 +156,10 @@ public class Linker {
 			}
 			return;
 		}
+//		if(validType instanceof VarStructType && ((VarStructType) validType).structure.hasGenericBindings()) {
+//			errors.add("Type " + validType + " must be parametrized before affectation:" + valueHolder.getErr());
+//			return;
+//		}
 		if(value.getType().equals(validType))
 			return;
 		if(ConversionTable.canConvertImplicitely(value.getType(), validType)) {

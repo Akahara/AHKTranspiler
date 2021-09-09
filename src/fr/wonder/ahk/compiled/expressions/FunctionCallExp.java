@@ -3,11 +3,8 @@ package fr.wonder.ahk.compiled.expressions;
 import java.util.Arrays;
 
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
-import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
-import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.utils.ArrayOperator;
 
 /**
@@ -45,11 +42,6 @@ public class FunctionCallExp extends FunctionExpression {
 	@Override
 	public String toString() {
 		return getFunction() + "(" + Utils.toString(getArguments()) + ")";
-	}
-
-	@Override
-	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return functionType.returnType;
 	}
 	
 }

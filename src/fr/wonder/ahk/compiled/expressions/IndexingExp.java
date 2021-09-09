@@ -3,12 +3,8 @@ package fr.wonder.ahk.compiled.expressions;
 import java.util.Arrays;
 
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
-import fr.wonder.ahk.compiler.Invalids;
-import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.utils.Utils;
-import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class IndexingExp extends Expression {
 	
@@ -29,21 +25,6 @@ public class IndexingExp extends Expression {
 		return getArray() + "[" + Utils.toString(getIndices()) + "]";
 	}
 
-	@Override
-	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		VarType type = getArray().getType();
-		int indicesCount = expressions.length-1;
-		for(int i = 0; i < indicesCount; i++) {
-			if(type instanceof VarArrayType) {
-				type = ((VarArrayType) type).componentType;
-			} else {
-				errors.add("Type " + type + " cannot be indexed " + getErr());
-				return Invalids.TYPE;
-			}
-		}
-		return type;
-	}
-	
 	public IndexingExp subIndexingExpression() {
 		if(!(this.type instanceof VarArrayType))
 			throw new IllegalStateException("Cannot sub-index a non-array typed indexing expression");

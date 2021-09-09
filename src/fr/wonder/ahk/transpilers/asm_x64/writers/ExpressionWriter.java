@@ -13,10 +13,12 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
+import fr.wonder.ahk.compiled.expressions.ParametrizedExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
+import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
@@ -30,6 +32,7 @@ import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.exceptions.UnreachableException;
 
 public class ExpressionWriter {
@@ -66,6 +69,8 @@ public class ExpressionWriter {
 			writeConstructorExp((ConstructorExp) exp, errors);
 		else if(exp instanceof NullExp)
 			writeNullExp((NullExp) exp, errors);
+		else if(exp instanceof ParametrizedExp)
+			writeParametrizedExp((ParametrizedExp) exp, errors);
 		else
 			throw new UnreachableException("Unknown expression type " + exp.getClass());
 	}
@@ -243,9 +248,16 @@ public class ExpressionWriter {
 		} else if(actualType instanceof VarFunctionType) {
 			VarFunctionType funcType = (VarFunctionType) actualType;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
+		} else if(actualType instanceof VarGenericType) {
+			writer.instructions.clearRegister(Register.RAX);
+			// TODO when generic types have type requirements, fix null instances
 		} else {
 			throw new UnreachableException("Unimplemented null: " + actualType);
 		}
+	}
+
+	private void writeParametrizedExp(ParametrizedExp exp, ErrorWrapper errors) {
+		throw new UnimplementedException("Parametrized expressions");
 	}
 
 }

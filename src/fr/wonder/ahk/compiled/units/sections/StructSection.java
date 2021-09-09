@@ -15,9 +15,10 @@ import fr.wonder.commons.utils.ArrayOperator;
 public class StructSection implements SourceElement {
 
 	public final SourceReference sourceRef;
-	public final String name;
 	public final Unit unit;
+	public final String name;
 	public final DeclarationModifiers modifiers;
+	public final GenericContext genericContext;
 	
 	// set by the struct section parser
 	public VariableDeclaration[] members;
@@ -28,10 +29,13 @@ public class StructSection implements SourceElement {
 	private StructPrototype prototype;
 	
 	public StructSection(Unit unit, SourceReference sourceRef,
-			String structName, DeclarationModifiers modifiers) {
+			String structName, GenericContext genericContext,
+			DeclarationModifiers modifiers) {
+		
 		this.sourceRef = sourceRef;
-		this.name = structName;
 		this.unit = unit;
+		this.name = structName;
+		this.genericContext = genericContext;
 		this.modifiers = modifiers;
 	}
 	
@@ -70,6 +74,10 @@ public class StructSection implements SourceElement {
 		return name;
 	}
 	
+	public boolean isParametrized() {
+		return genericContext.hasGenericMembers();
+	}
+	
 	/**
 	 * Must be called <b>after</b> the {@code setSignature} method of all members
 	 * and constructors of this structure.
@@ -79,6 +87,7 @@ public class StructSection implements SourceElement {
 				ArrayOperator.map(members, VariablePrototype[]::new, VariableDeclaration::getPrototype),
 				ArrayOperator.map(constructors, ConstructorPrototype[]::new, StructConstructor::getPrototype),
 				ArrayOperator.map(operators, OverloadedOperatorPrototype[]::new, OverloadedOperator::getPrototype),
+				genericContext,
 				modifiers,
 				signature);
 	}

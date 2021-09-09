@@ -3,8 +3,6 @@ package fr.wonder.ahk.transpilers.asm_x64.writers;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.Invalids;
-import fr.wonder.ahk.compiler.types.TypesTable;
-import fr.wonder.commons.exceptions.ErrorWrapper;
 
 /**
  * Used by the {@link MemoryManager} to write <i>null</i> as a default value for variable declarations without default value
@@ -35,11 +33,6 @@ public class NoneExp extends Expression {
 		this.type = NoneType.INSTANCE;
 	}
 
-	@Override
-	protected VarType getValueType(TypesTable typesTable, ErrorWrapper errors) {
-		return type;
-	}
-	
 	@Override
 	public String toString() {
 		return "none";

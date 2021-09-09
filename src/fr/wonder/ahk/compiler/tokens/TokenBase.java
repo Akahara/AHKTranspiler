@@ -7,6 +7,7 @@ public enum TokenBase {
 	
 	VAR_UNIT("[A-Z]\\w*"),
 	VAR_VARIABLE("[a-z]\\w*"),
+	VAR_GENERIC("[A-Z]"),
 	VAR_MODIFIER("@[a-z]\\w*"),
 	
 	LIT_INT("\\d+"),
@@ -35,6 +36,7 @@ public enum TokenBase {
 	KW_GLOBAL("global"),
 	KW_LOCAL("local"),
 	KW_OPERATOR("operator"),
+	KW_BLUEPRINT("blueprint"),
 	
 	TYPE_VOID("void"),
 	TYPE_INT("int"),
@@ -69,6 +71,8 @@ public enum TokenBase {
 	TK_DOUBLE_QUOTE("\""),
 	TK_APOSTROPHE("'"),
 	TK_BACK_APOSTROPHE("`"),
+	TK_GENERIC_BINDING_BEGIN("<["),
+	TK_GENERIC_BINDING_END("]>"),
 	
 	/** not to mistake with {@link #KW_EQUAL}, this one is <code>==</code> */
 	OP_EQUALS("=="),
@@ -92,6 +96,14 @@ public enum TokenBase {
 	OP_DIRECT_MINUS("--"),
 	
 	;
+	
+	/*
+	 * Some bases have multiple uses, to clarify when that happens we create aliases
+	 * instead of duplicate bases that would mess up the tokenizer.
+	 */
+	
+	// TODO replace VAR_UNIT by VAR_STRUCT everywhere it makes sense
+	public static final TokenBase VAR_STRUCT = VAR_UNIT;
 	
 	public final String syntax;
 	
