@@ -10,12 +10,12 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarBoundStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
+import fr.wonder.ahk.compiled.expressions.types.VarSelfType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiled.units.ExternalStructAccess;
-import fr.wonder.ahk.compiled.units.ExternalStructAccess.ParametrizedAccess;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
@@ -28,7 +28,7 @@ import fr.wonder.ahk.compiler.tokens.Tokens;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.utils.Assertions;
 
-class AbstractParser {
+public class AbstractParser {
 
 	public static class ParsingException extends Exception {
 
@@ -116,10 +116,11 @@ class AbstractParser {
 			throw new ParsingException();
 		}
 	}
-
+	
+	public static final int ALLOW_NONE = 0, ALLOW_SELF = 1;
+	
 	/** Cannot parse composites or functions */
-	public static VarType parseType(Unit unit, Token[] line, GenericContext genc, Pointer pointer,
-			ErrorWrapper errors) {
+	public static VarType parseType(Unit unit, Token[] line, GenericContext genc, Pointer pointer, int allowedFields, ErrorWrapper errors) {
 		
 		if(pointer.position >= line.length) {
 			errors.add("Expected type:" + unit.source.getErr(line[line.length-1].getSourceReference().stop));
@@ -128,10 +129,17 @@ class AbstractParser {
 		
 		Token token = line[pointer.position];
 		VarType baseType;
-		if(token.base == TokenBase.VAR_UNIT) {
+		if(token.base == TokenBase.VAR_STRUCT) {
 			baseType = unit.getStructOrAliasType(token);
 		} else if(token.base == TokenBase.VAR_GENERIC) {
 			baseType = genc.getGenericType(token, errors);
+		} else if(token.base == TokenBase.KW_SELF) {
+			if((allowedFields & ALLOW_SELF) != 0) {
+				baseType = VarSelfType.SELF;
+			} else {
+				errors.add("Self is not acceptable in this context:" + token.getErr());
+				return Invalids.TYPE;
+			}
 		} else if(Tokens.isVarType(token.base)) {
 			baseType = Tokens.typesMap.get(token.base);
 		} else {
@@ -144,7 +152,7 @@ class AbstractParser {
 			pointer.position++;
 			List<VarType> typeParameters = new ArrayList<>();
 			while(true) {
-				typeParameters.add(parseType(unit, line, genc, pointer, errors));
+				typeParameters.add(parseType(unit, line, genc, pointer, allowedFields, errors));
 				if(pointer.position == line.length) {
 					errors.add("Unfinished type parameters:" + line[line.length-1].getErr());
 					return Invalids.TYPE;
@@ -162,9 +170,7 @@ class AbstractParser {
 				errors.add("Type " + baseType + " cannot be parametrized:" + line[pointer.position-1].getErr());
 			else {
 				VarBoundStructType bound = new VarBoundStructType(baseType.getName(), typeParameters.toArray(VarType[]::new));
-				ExternalStructAccess structAccess = unit.usedStructTypes.get(baseType.getName());
-				ParametrizedAccess access = new ParametrizedAccess(bound, token, genc);
-				structAccess.parametrizedInstances.add(access);
+				unit.usedStructTypes.addParametrizedInstance(bound, genc, token);
 				baseType = bound;
 			}
 		}
@@ -203,9 +209,9 @@ class AbstractParser {
 	 */
 	public static ArgumentList readArguments(Unit unit, Token[] line,
 			boolean requireNames, GenericContext genc, Pointer pointer,
-			ErrorWrapper errors) throws ParsingException {
+			int allowedFields, ErrorWrapper errors) throws ParsingException {
 		
-		return readArguments(() -> parseType(unit, line, genc, pointer, errors),
+		return readArguments(() -> parseType(unit, line, genc, pointer, allowedFields, errors),
 				unit.source, line, pointer, requireNames, errors);
 	}
 	
@@ -298,7 +304,7 @@ class AbstractParser {
 		return new Modifier(line[0].text.substring(1), arguments);
 	}
 	
-	public static GenericContext readGenericArray(Token[] line,
+	public static GenericContext readGenericArray(Unit unit, Token[] line,
 			GenericContext parentContext, Pointer p, ErrorWrapper errors) throws ParsingException {
 		
 		if(p.position == line.length)
@@ -325,20 +331,46 @@ class AbstractParser {
 			}
 			
 			String name = tk.text;
+			BlueprintRef[] typeRestrictions;
+			
 			if((parentContext != null && parentContext.retrieveGenericType(name) != null) ||
 					generics.containsKey(name)) {
 				errors.add("Cannot use already bound generic '" + name + "':" + tk.getErr());
-			} else {
-				generics.put(name, new VarGenericType(name));
 			}
 			
 			assertHasNext(line, p, "Unfinished generic array", errors);
 			tk = line[p.position++];
 			
+			if(tk.base == TokenBase.TK_COLUMN) {
+				typeRestrictions = readGenericRestriction(unit, line, p, errors);
+				assertHasNext(line, p, "Unfinished generic array", errors);
+				tk = line[p.position++];
+			} else {
+				typeRestrictions = VarGenericType.NO_TYPE_RESTRICTION;
+			}
+
+			generics.put(name, new VarGenericType(name, typeRestrictions));
+			
 			if(tk.base == TokenBase.TK_GENERIC_BINDING_END) {
 				return new GenericContext(parentContext, generics.values().toArray(VarGenericType[]::new));
 			} else if(tk.base != TokenBase.TK_COMMA) {
 				errors.add("Expected ',' in generic array:" + tk.getErr());
+			}
+		}
+	}
+
+	public static BlueprintRef[] readGenericRestriction(Unit unit, Token[] line, Pointer p, ErrorWrapper errors) throws ParsingException {
+		List<BlueprintRef> restrictions = new ArrayList<>();
+		while(true) {
+			Token blueprint = assertToken(line, p, TokenBase.VAR_BLUEPRINT, "Expected blueprint name in generic restrictions", errors);
+			restrictions.add(unit.usedBlueprintTypes.getType(blueprint));
+			assertHasNext(line, p, "Unfinished generic restriction", errors);
+			Token tk = line[p.position];
+			if(tk.base == TokenBase.OP_AND) {
+				p.position++;
+				continue;
+			} else {
+				return restrictions.toArray(BlueprintRef[]::new);
 			}
 		}
 	}

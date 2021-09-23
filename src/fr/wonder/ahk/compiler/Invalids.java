@@ -13,6 +13,7 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.prototypes.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
@@ -20,6 +21,9 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.Blueprint;
+import fr.wonder.ahk.compiled.units.sections.BlueprintImplementation;
+import fr.wonder.ahk.compiled.units.sections.BlueprintOperator;
+import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
@@ -77,7 +81,7 @@ public class Invalids {
 
 	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(SOURCE_REF, TYPE, null) {};
 
-	public static final StructSection STRUCTURE = new StructSection(UNIT, SOURCE_REF, STRING, GENERIC_CONTEXT, MODIFIERS);
+	public static final StructSection STRUCTURE = new StructSection(UNIT, SOURCE_REF, STRING, GENERIC_CONTEXT, new BlueprintRef[0], MODIFIERS);
 	
 	static {
 		STRUCTURE.members = new VariableDeclaration[0];
@@ -86,7 +90,9 @@ public class Invalids {
 	}
 	
 	public static final StructPrototype STRUCT_PROTOTYPE = new StructPrototype(new VariablePrototype[0],
-			new ConstructorPrototype[0], new OverloadedOperatorPrototype[0], GENERIC_CONTEXT, MODIFIERS, SIGNATURE);
+			new ConstructorPrototype[0], new OverloadedOperatorPrototype[0], GENERIC_CONTEXT, new BlueprintImplementation[0], MODIFIERS, SIGNATURE);
+	public static final BlueprintPrototype BLUEPRINT_PROTOTYPE = new BlueprintPrototype(new FunctionPrototype[0],
+			new VariablePrototype[0], new OverloadedOperatorPrototype[0], MODIFIERS, SIGNATURE);
 	
 	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, SOURCE_REF, MODIFIERS, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], MODIFIERS, SIGNATURE);
@@ -101,14 +107,16 @@ public class Invalids {
 	public static final FunctionSection FUNCTION = new FunctionSection(UNIT, SOURCE_REF, GENERIC_CONTEXT, MODIFIERS);
 
 	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(STRUCTURE, SOURCE_REF, Operator.ADD, TYPE, TYPE, TYPE, STRING);
+	public static final OverloadedOperatorPrototype OVERLOADED_OPERATOR_PROTOTYPE = new OverloadedOperatorPrototype(Operator.ADD, TYPE, TYPE, TYPE, SIGNATURE);
 
 	public static final Blueprint BLUEPRINT = new Blueprint(UNIT, STRING, GENERIC_CONTEXT, MODIFIERS, SOURCE_REF);
 	
 	static {
 		BLUEPRINT.variables = new VariableDeclaration[0];
 		BLUEPRINT.functions = new FunctionSection[0];
+		BLUEPRINT.operators = new BlueprintOperator[0];
 	}
 
-	public static final VarGenericType GENERIC_TYPE = new VarGenericType(STRING);
+	public static final VarGenericType GENERIC_TYPE = new VarGenericType(STRING, VarGenericType.NO_TYPE_RESTRICTION);
 	
 }

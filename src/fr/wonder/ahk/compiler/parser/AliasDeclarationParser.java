@@ -96,7 +96,7 @@ public class AliasDeclarationParser extends AbstractParser {
 			try {
 				Pointer p = new Pointer(1);
 				assertHasNext(line, p, "Invalid alias declaration", unitAliases.errors, 2);
-				assertToken(line, p, TokenBase.VAR_UNIT, "Expected alias name", unitAliases.errors);
+				assertToken(line, p, TokenBase.VAR_STRUCT, "Expected alias name", unitAliases.errors);
 				assertToken(line, p, TokenBase.KW_EQUAL, "Expected '='", unitAliases.errors);
 			} catch (ParsingException e) {
 				continue;
@@ -213,7 +213,7 @@ public class AliasDeclarationParser extends AbstractParser {
 			pointer.position++;
 		} else if(firstToken.base == TokenBase.KW_FUNC) {
 			baseType = parseFunctionType(alias, pointer);
-		} else if(firstToken.base == TokenBase.VAR_UNIT) {
+		} else if(firstToken.base == TokenBase.VAR_STRUCT) {
 			baseType = resolveStructOrAlias(alias, firstToken);
 			pointer.position++;
 		} else if(firstToken.base == TokenBase.TK_PARENTHESIS_OPEN) {
@@ -250,7 +250,7 @@ public class AliasDeclarationParser extends AbstractParser {
 				}
 			}
 		}
-		return alias.unit.unit.getStructType(token);
+		return alias.unit.unit.usedStructTypes.getType(token);
 	}
 	
 	/** assumes that line[pointer] is a KW_FUNC */

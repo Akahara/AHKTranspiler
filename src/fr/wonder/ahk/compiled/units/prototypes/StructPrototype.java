@@ -1,16 +1,18 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.sections.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
 
-public class StructPrototype implements Prototype<StructPrototype> {
+public class StructPrototype implements Prototype<StructPrototype>, TypeAccess {
 
 	public final Signature signature;
 	public final VariablePrototype[] members;
 	public final ConstructorPrototype[] constructors;
 	public final OverloadedOperatorPrototype[] overloadedOperators;
 	public final GenericContext genericContext;
+	public final BlueprintImplementation[] implementedBlueprints;
 	public final DeclarationModifiers modifiers;
 	
 	public StructPrototype(
@@ -18,6 +20,7 @@ public class StructPrototype implements Prototype<StructPrototype> {
 			ConstructorPrototype[] constructors,
 			OverloadedOperatorPrototype[] overloadedOperators,
 			GenericContext genericContext,
+			BlueprintImplementation[] implementedBlueprints,
 			DeclarationModifiers modifiers,
 			Signature signature) {
 		
@@ -25,6 +28,7 @@ public class StructPrototype implements Prototype<StructPrototype> {
 		this.constructors = constructors;
 		this.overloadedOperators = overloadedOperators;
 		this.genericContext = genericContext;
+		this.implementedBlueprints = implementedBlueprints;
 		this.modifiers = modifiers;
 		this.signature = signature;
 	}
@@ -39,6 +43,11 @@ public class StructPrototype implements Prototype<StructPrototype> {
 	@Override
 	public Signature getSignature() {
 		return signature;
+	}
+	
+	@Override
+	public DeclarationModifiers getModifiers() {
+		return modifiers;
 	}
 	
 	@Override

@@ -9,6 +9,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
@@ -40,13 +41,22 @@ class StructSectionParser extends AbstractParser {
 			Pointer p = new Pointer(1);
 
 			String structName = assertToken(declaration, p, TokenBase.VAR_STRUCT, "Expected structure name", errors).text;
-			GenericContext genc = readGenericArray(declaration, null, p, errors);
+			GenericContext genc = readGenericArray(unit, declaration, null, p, errors);
+			BlueprintRef[] implementedBlueprints;
+			
+			if(declaration[p.position].base == TokenBase.TK_COLUMN) {
+				p.position++;
+				implementedBlueprints = readGenericRestriction(unit, declaration, p, errors);
+			} else {
+				implementedBlueprints = new BlueprintRef[0];
+			}
 			
 			structure = new StructSection(
 					unit,
 					SourceReference.fromLine(declaration),
 					structName,
 					genc,
+					implementedBlueprints,
 					structModifiers);
 		} catch (ParsingException e) {
 			return Invalids.STRUCTURE;
@@ -120,7 +130,7 @@ class StructSectionParser extends AbstractParser {
 		
 		try {
 			ArgumentList args = readArguments(structure.unit, line,
-					true, structure.genericContext, pointer, errors);
+					true, structure.genericContext, pointer, ALLOW_NONE, errors);
 			FunctionArgument[] arguments = args.toArray(FunctionArgument[]::new);
 			
 			assertNoRemainingTokens(line, pointer, errors);
@@ -192,7 +202,7 @@ class StructSectionParser extends AbstractParser {
 			assertToken(line, p, TokenBase.TK_COLUMN, "Expected ':'", errors);
 			VarType leftOperand = null;
 			if(!Tokens.isOperator(line[p.position].base))
-				leftOperand = parseType(unit, line, structure.genericContext, p, errors);
+				leftOperand = parseType(unit, line, structure.genericContext, p, ALLOW_NONE, errors);
 			assertHasNext(line, p, "Expected overloaded operator", errors);
 			Operator op = Tokens.getOperator(line[p.position].base);
 			if(op == null)
@@ -201,10 +211,10 @@ class StructSectionParser extends AbstractParser {
 				errors.add("The strict equality operator cannot be overridden:" + line[p.position].getErr());
 			p.position++;
 			assertHasNext(line, p, "Incomplete operator declaration", errors);
-			VarType rightOperand = parseType(unit, line, structure.genericContext, p, errors);
+			VarType rightOperand = parseType(unit, line, structure.genericContext, p, ALLOW_NONE, errors);
 			assertToken(line, p, TokenBase.KW_EQUAL, "Expected '='", errors);
 			assertHasNext(line, p, "Expected operator result type", errors);
-			VarType resultType = parseType(unit, line, structure.genericContext, p, errors);
+			VarType resultType = parseType(unit, line, structure.genericContext, p, ALLOW_NONE, errors);
 			assertNoRemainingTokens(line, p, errors);
 			
 			return new OverloadedOperator(structure, SourceReference.fromLine(line),

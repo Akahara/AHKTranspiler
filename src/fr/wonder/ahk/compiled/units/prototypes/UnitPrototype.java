@@ -11,7 +11,8 @@ import fr.wonder.commons.utils.ArrayOperator;
 public class UnitPrototype implements Prototype<UnitPrototype> {
 	
 	public static final UnitPrototype NULL_PROTOTYPE = 
-			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0], new VariablePrototype[0], new StructPrototype[0]);
+			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0],
+					new VariablePrototype[0], new StructPrototype[0], new BlueprintPrototype[0]);
 	
 	public final String base;
 	public final String fullBase;
@@ -20,6 +21,7 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	public final FunctionPrototype[] functions;
 	public final VariablePrototype[] variables;
 	public final StructPrototype[] structures;
+	public final BlueprintPrototype[] blueprints;
 	
 	public final Signature signature;
 	
@@ -30,13 +32,15 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	public Set<Prototype<?>> externalAccesses = new HashSet<>();
 	
 	public UnitPrototype(String fullBase, String[] importations,
-			FunctionPrototype[] functions, VariablePrototype[] variables, StructPrototype[] structures) {
+			FunctionPrototype[] functions, VariablePrototype[] variables,
+			StructPrototype[] structures, BlueprintPrototype[] blueprints) {
 		this.base = fullBase.substring(fullBase.lastIndexOf('.')+1);
 		this.fullBase = fullBase;
 		this.importations = importations;
 		this.functions = functions;
 		this.variables = variables;
 		this.structures = structures;
+		this.blueprints = blueprints;
 		this.signature = Signatures.of(this);
 	}
 	

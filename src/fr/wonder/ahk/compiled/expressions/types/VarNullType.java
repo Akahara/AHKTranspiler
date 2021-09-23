@@ -18,7 +18,7 @@ public class VarNullType extends VarType {
 	
 	@Override
 	public VarType[] getSubTypes() {
-		return new VarType[0];
+		return NO_SUBTYPES;
 	}
 
 	/**

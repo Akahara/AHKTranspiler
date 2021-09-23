@@ -75,7 +75,7 @@ public class StatementParser extends AbstractParser {
 		case TYPE_FLOAT:
 		case TYPE_INT:
 		case TYPE_STR:
-		case VAR_UNIT:
+		case VAR_UNIT: // (Structure token)
 			// FIX statement parsing order bug
 			// something like this will bug because it is considered as a declaration
 			// int:(3) >> Kernel.out;
@@ -128,7 +128,7 @@ public class StatementParser extends AbstractParser {
 			
 			assertHasNext(line, pointer, "Invalid variable declaration", subErrors);
 			
-			VarType type = parseType(unit, line, genc, pointer, subErrors);
+			VarType type = parseType(unit, line, genc, pointer, ALLOW_NONE, subErrors);
 			
 			String varName = assertToken(line, pointer, TokenBase.VAR_VARIABLE, "Expected variable name", subErrors).text;
 			
@@ -302,7 +302,7 @@ public class StatementParser extends AbstractParser {
 				return Invalids.STATEMENT;
 			}
 			pointer.position = 2;
-			VarType type = parseType(unit, line, genc, pointer, errors);
+			VarType type = parseType(unit, line, genc, pointer, ALLOW_NONE, errors);
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors);
 			assertToken(line, pointer, TokenBase.TK_COLUMN, "Expected ':'", errors);
 			VariableDeclaration var = new VariableDeclaration(unit,

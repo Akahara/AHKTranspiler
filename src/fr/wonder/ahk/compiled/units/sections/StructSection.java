@@ -19,6 +19,7 @@ public class StructSection implements SourceElement {
 	public final String name;
 	public final DeclarationModifiers modifiers;
 	public final GenericContext genericContext;
+	public final BlueprintImplementation[] implementedBlueprints;
 	
 	// set by the struct section parser
 	public VariableDeclaration[] members;
@@ -30,6 +31,7 @@ public class StructSection implements SourceElement {
 	
 	public StructSection(Unit unit, SourceReference sourceRef,
 			String structName, GenericContext genericContext,
+			BlueprintRef[] implementedBlueprints,
 			DeclarationModifiers modifiers) {
 		
 		this.sourceRef = sourceRef;
@@ -37,6 +39,8 @@ public class StructSection implements SourceElement {
 		this.name = structName;
 		this.genericContext = genericContext;
 		this.modifiers = modifiers;
+		this.implementedBlueprints = ArrayOperator.map(implementedBlueprints,
+				BlueprintImplementation[]::new, BlueprintImplementation::new);
 	}
 	
 	@Override
@@ -88,6 +92,7 @@ public class StructSection implements SourceElement {
 				ArrayOperator.map(constructors, ConstructorPrototype[]::new, StructConstructor::getPrototype),
 				ArrayOperator.map(operators, OverloadedOperatorPrototype[]::new, OverloadedOperator::getPrototype),
 				genericContext,
+				implementedBlueprints,
 				modifiers,
 				signature);
 	}

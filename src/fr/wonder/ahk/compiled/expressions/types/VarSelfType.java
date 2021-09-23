@@ -1,29 +1,27 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
-public class VarVoidType extends VarType {
-
+public class VarSelfType extends VarType {
+	
+	public static final VarSelfType SELF = new VarSelfType();
+	
 	@Override
 	public String getName() {
-		return "void";
+		return "Self";
 	}
 
 	@Override
 	public String getSignature() {
-		return "v";
+		return "T";
 	}
-	
+
 	@Override
 	public VarType[] getSubTypes() {
 		return NO_SUBTYPES;
 	}
 
-	/**
-	 * A single instance of the void type may exist at any point so '==' can be used
-	 * safely here
-	 */
 	@Override
 	public boolean equals(Object o) {
-		return o == VarType.VOID;
+		return o instanceof VarSelfType;
 	}
-
+	
 }

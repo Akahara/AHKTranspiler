@@ -1,9 +1,7 @@
 package fr.wonder.ahk.compiler.linker;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,7 +14,9 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.prototypes.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.TypeAccess;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -45,7 +45,8 @@ public class Linker {
 	
 	// set by #prelinkUnits
 	UnitPrototype[] prototypes;
-	Map<String, List<StructPrototype>> declaredStructures;
+	Map<String, StructPrototype[]> declaredStructures;
+	Map<String, BlueprintPrototype[]> declaredBlueprints;
 	
 	
 	public Linker(CompiledHandle handle) {
@@ -65,7 +66,6 @@ public class Linker {
 		prelinkUnits(errors);
 		
 		// actually link unit statements and expressions
-		// only link non-native units, natives are already linked
 		for(Unit unit : units) {
 			ErrorWrapper subErrors = errors.subErrors("Unable to link unit " + unit.fullBase);
 			linkUnit(unit, subErrors);
@@ -84,15 +84,16 @@ public class Linker {
 		
 		this.prototypes = ArrayOperator.map(units, UnitPrototype[]::new, u -> u.prototype);
 		this.declaredStructures = new HashMap<>();
+		this.declaredBlueprints = new HashMap<>();
 		
-		// collect global structures
+		// collect global structures and blueprints
 		for(UnitPrototype u : prototypes) {
-			List<StructPrototype> globalStructures = new ArrayList<>();
-			for(StructPrototype s : u.structures) {
-				if(s.modifiers.visibility == DeclarationVisibility.GLOBAL)
-					globalStructures.add(s);
-			}
-			declaredStructures.put(u.fullBase, globalStructures);
+			declaredStructures.put(u.fullBase, u.structures);
+			declaredBlueprints.put(u.fullBase, u.blueprints);
+		}
+		
+		for(Unit unit : units) {
+			prelinker.prelinkTypes(unit, errors.subErrors("Unable to prelink unit " + unit.fullBase + " types"));
 		}
 		
 		for(Unit unit : units) {
@@ -121,7 +122,7 @@ public class Linker {
 		}
 		
 		for(StructSection struct : unit.structures) {
-			structures.linkStructure(unit, unitScope, struct, errors);
+			structures.linkStructure(unit, unitScope, struct, errors.subErrors("Errors in structure " + struct.name));
 		}
 	}
 
@@ -268,17 +269,23 @@ public class Linker {
 	 * imported.
 	 */
 	StructPrototype searchStructSection(Unit unit, String name) {
-		for(StructSection structure : unit.structures) {
-			if(structure.name.equals(name))
-				return structure.getPrototype();
+		return searchTypeAccess(unit, declaredStructures, name);
+	}
+
+	BlueprintPrototype searchBlueprint(Unit unit, String name) {
+		return searchTypeAccess(unit, declaredBlueprints, name);
+	}
+	
+	private <T extends TypeAccess> T searchTypeAccess(Unit unit, Map<String, T[]> declaredAccesses, String name) {
+		for(T t : declaredAccesses.get(unit.fullBase)) {
+			if(t.getSignature().name.equals(name))
+				return t;
 		}
 		for(String imported : unit.importations) {
-			List<StructPrototype> structures = declaredStructures.get(imported);
-			for(StructPrototype structure : structures) {
-				if(structure.getName().equals(name) && (
-						structure.signature.declaringUnit.equals(unit.fullBase) ||
-						structure.modifiers.visibility == DeclarationVisibility.GLOBAL))
-					return structure;
+			for(T t : declaredAccesses.get(imported)) {
+				if(t.getSignature().name.equals(name) &&
+					t.getModifiers().visibility == DeclarationVisibility.GLOBAL)
+					return t;
 			}
 		}
 		return null;

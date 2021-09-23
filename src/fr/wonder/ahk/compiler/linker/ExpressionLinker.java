@@ -71,7 +71,7 @@ class ExpressionLinker {
 				expressions[i] = exp;
 				
 			} else if(exp instanceof OperationExp) {
-				linkOperationExpression(unit, (OperationExp) exp, errors);
+				linkOperationExpression(unit, (OperationExp) exp, genericContext, errors);
 			
 			} else if(exp instanceof ConstructorExp) {
 				linkConstructorExpression(unit, (ConstructorExp) exp, errors);
@@ -180,13 +180,12 @@ class ExpressionLinker {
 		}
 	}
 
-	private void linkOperationExpression(Unit unit, OperationExp exp, ErrorWrapper errors) {
+	private void linkOperationExpression(Unit unit, OperationExp exp, GenericContext context, ErrorWrapper errors) {
 		
-		Operation op = linker.typesTable.getOperation(exp);
+		Operation op = linker.typesTable.getOperation(exp, context);
 		
 		if(op == null) {
 			errors.add("Unimplemented operation! " + exp.operationString() + exp.getErr());
-			linker.typesTable.getOperation(exp);
 			op = Invalids.OPERATION;
 		} else if(op instanceof OverloadedOperatorPrototype) {
 			OverloadedOperatorPrototype oop = (OverloadedOperatorPrototype) op;

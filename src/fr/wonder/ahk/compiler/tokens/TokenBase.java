@@ -9,6 +9,7 @@ public enum TokenBase {
 	VAR_VARIABLE("[a-z]\\w*"),
 	VAR_GENERIC("[A-Z]"),
 	VAR_MODIFIER("@[a-z]\\w*"),
+	VAR_BLUEPRINT("#\\w*"),
 	
 	LIT_INT("\\d+"),
 	LIT_FLOAT("\\d+\\.\\d*"),
@@ -37,6 +38,7 @@ public enum TokenBase {
 	KW_LOCAL("local"),
 	KW_OPERATOR("operator"),
 	KW_BLUEPRINT("blueprint"),
+	KW_SELF("Self"),
 	
 	TYPE_VOID("void"),
 	TYPE_INT("int"),
@@ -92,6 +94,12 @@ public enum TokenBase {
 	OP_SHR(">>"),
 	OP_SHL("<<"),
 	
+	// FIX implement logical and bitwise operators & and |
+	OP_BITWISE_AND("&"),
+	OP_BITWISE_OR("|"),
+	OP_AND("&&"),
+	OP_OR("||"),
+	
 	OP_DIRECT_PLUS("++"),
 	OP_DIRECT_MINUS("--"),
 	
@@ -102,7 +110,6 @@ public enum TokenBase {
 	 * instead of duplicate bases that would mess up the tokenizer.
 	 */
 	
-	// TODO replace VAR_UNIT by VAR_STRUCT everywhere it makes sense
 	public static final TokenBase VAR_STRUCT = VAR_UNIT;
 	
 	public final String syntax;

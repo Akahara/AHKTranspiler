@@ -16,7 +16,6 @@ public class AliasPrototype implements Prototype<AliasPrototype> {
 		this.signature = Signatures.of(this, unitFullBase);
 	}
 	
-
 	@Override
 	public String getName() {
 		return text;

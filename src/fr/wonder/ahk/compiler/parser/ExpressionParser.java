@@ -208,11 +208,11 @@ public class ExpressionParser extends AbstractParser {
 			
 			Token typeToken = line[section.start];
 			VarType type;
-			if(typeToken.base == TokenBase.VAR_UNIT) {
+			if(typeToken.base == TokenBase.VAR_STRUCT) {
 				errors.add("Cannot cast to a struct type:" + typeToken.getErr());
 				type = Invalids.TYPE;
 			} else {
-				type = parseType(unit, line, genc, new Pointer(section.start), errors);
+				type = parseType(unit, line, genc, new Pointer(section.start), ALLOW_NONE, errors);
 			}
 			if(type != null) {
 				Expression casted = parseExpression(lastSection);
@@ -343,7 +343,7 @@ public class ExpressionParser extends AbstractParser {
 		Pointer p = new Pointer(section.start);
 		List<VarType> bindings = new ArrayList<>();
 		while(true) {
-			bindings.add(parseType(unit, line, genc, p, errors));
+			bindings.add(parseType(unit, line, genc, p, ALLOW_NONE, errors));
 			if(p.position == section.stop) {
 				break;
 			} else if(line[p.position].base != TokenBase.TK_COMMA) {
@@ -380,7 +380,7 @@ public class ExpressionParser extends AbstractParser {
 		Section argsSection = section.lastSubsection();
 		Expression[] arguments = parseArgumentList(argsSection);
 		Pointer p = new Pointer(section.start);
-		VarType type = parseType(unit, line, genc, p, errors);
+		VarType type = parseType(unit, line, genc, p, ALLOW_NONE, errors);
 		if(p.position != argsSection.start-1) {
 			errors.add("Unexpected tokens:" + unit.source.getErr(line, p.position, argsSection.start-1));
 			return Invalids.EXPRESSION;

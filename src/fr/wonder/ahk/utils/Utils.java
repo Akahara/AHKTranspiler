@@ -8,10 +8,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-import fr.wonder.ahk.compiled.statements.Statement;
-import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.commons.utils.StringUtils;
@@ -87,20 +83,6 @@ public class Utils {
 		if(sb.length() > 0)
 			sb.setLength(sb.length()-2);
 		return sb.toString();
-	}
-	
-	public static void dump(Unit unit) {
-		System.out.println("-".repeat(20));
-		System.out.println("Unit name: " + unit.name);
-		System.out.println("Unit base: " + unit.base);
-		for(VariableDeclaration var : unit.variables)
-			System.out.println(var.getType() + " " + var.name + " = " + var.getDefaultValue());
-		for(FunctionSection sec : unit.functions) {
-			System.out.println(sec);
-			for(Statement s : sec.body)
-				System.out.println("  "+s+';');
-		}
-		System.out.println("-".repeat(20));
 	}
 	
 	public static <T> void dump(T[] array, int start, int stop) {

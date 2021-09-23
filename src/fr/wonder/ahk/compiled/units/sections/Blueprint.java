@@ -1,9 +1,15 @@
 package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
+import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.prototypes.BlueprintPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class Blueprint implements SourceElement {
 	
@@ -16,6 +22,9 @@ public class Blueprint implements SourceElement {
 	
 	public VariableDeclaration[] variables;
 	public FunctionSection[] functions;
+	public BlueprintOperator[] operators;
+	
+	private BlueprintPrototype prototype;
 	
 	public Blueprint(Unit unit, String name, GenericContext genericContext,
 			DeclarationModifiers modifiers, SourceReference sourceRef) {
@@ -29,6 +38,19 @@ public class Blueprint implements SourceElement {
 	@Override
 	public SourceReference getSourceReference() {
 		return sourceRef;
+	}
+	
+	public void setSignature(Signature signature) {
+		this.prototype = new BlueprintPrototype(
+				ArrayOperator.map(functions, FunctionPrototype[]::new, FunctionSection::getPrototype),
+				ArrayOperator.map(variables, VariablePrototype[]::new, VariableDeclaration::getPrototype),
+				ArrayOperator.map(operators, OverloadedOperatorPrototype[]::new, BlueprintOperator::getPrototype),
+				modifiers,
+				signature);
+	}
+	
+	public BlueprintPrototype getPrototype() {
+		return prototype;
 	}
 	
 }

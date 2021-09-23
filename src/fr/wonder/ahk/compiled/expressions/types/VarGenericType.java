@@ -1,11 +1,17 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
+import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
+
 public class VarGenericType extends VarType {
 	
-	private final String name;
+	public static final BlueprintRef[] NO_TYPE_RESTRICTION = new BlueprintRef[0];
 	
-	public VarGenericType(String name) {
+	public final String name;
+	public final BlueprintRef[] typeRestrictions;
+	
+	public VarGenericType(String name, BlueprintRef[] typeRestrictions) {
 		this.name = name;
+		this.typeRestrictions = typeRestrictions;
 	}
 	
 	@Override
@@ -20,16 +26,12 @@ public class VarGenericType extends VarType {
 
 	@Override
 	public VarType[] getSubTypes() {
-		return new VarType[0];
+		return NO_SUBTYPES;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		return o instanceof VarGenericType && ((VarGenericType) o).name.equals(name); // TODO fix generic type equality
-	}
-
-	public boolean isValidBinding(VarType varType) {
-		return true;
+		return o instanceof VarGenericType && ((VarGenericType) o).name.equals(name);
 	}
 	
 	@Override

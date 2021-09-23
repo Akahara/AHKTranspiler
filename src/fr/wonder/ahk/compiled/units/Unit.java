@@ -1,8 +1,5 @@
 package fr.wonder.ahk.compiled.units;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
@@ -10,6 +7,7 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.Blueprint;
+import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.Prototypes;
@@ -40,7 +38,8 @@ public class Unit {
 	 * and reused wherever the same struct name is used. This instance
 	 * will be linked to its struct declaration by the linker.
 	 */
-	public final Map<String, ExternalStructAccess> usedStructTypes = new HashMap<>();
+	public final ExternalAccesses<VarStructType> usedStructTypes = new ExternalAccesses<>(VarStructType::new);
+	public final ExternalAccesses<BlueprintRef> usedBlueprintTypes = new ExternalAccesses<>(BlueprintRef::new);
 	
 	/** Set by {@link Prototypes#buildPrototype(Unit)} */
 	public UnitPrototype prototype;
@@ -65,7 +64,7 @@ public class Unit {
 	}
 
 	public VarType getStructOrAliasType(Token token) {
-		if(token.base != TokenBase.VAR_UNIT)
+		if(token.base != TokenBase.VAR_STRUCT)
 			throw new IllegalArgumentException("Not a struct token");
 		
 		for(Alias alias : accessibleAliases) {
@@ -73,19 +72,7 @@ public class Unit {
 				return alias.resolvedType;
 		}
 		
-		return getStructType(token);
+		return usedStructTypes.getType(token);
 	}
-	
-	public VarStructType getStructType(Token token) {
-		var knownType = usedStructTypes.get(token.text);
-		if(knownType != null) {
-			knownType.occurrenceCount++;
-			return knownType.structTypeInstance;
-		}
-		
-		VarStructType type = new VarStructType(token.text);
-		usedStructTypes.put(token.text, new ExternalStructAccess(type, token));
-		return type;
-	}
-	
+
 }

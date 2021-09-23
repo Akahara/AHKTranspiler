@@ -46,26 +46,26 @@ class FunctionDeclarationParser extends AbstractParser {
 			
 			Pointer pointer = new Pointer(1);
 			
-			GenericContext genericContext = readGenericArray(declaration, parentGenericContext, pointer, errors);
+			GenericContext genericContext = readGenericArray(unit, declaration, parentGenericContext, pointer, errors);
 			VarType returnType;
 			String funcName;
 			FunctionArgument[] funcArgs;
 			
 			if(declaration[pointer.position].base == TokenBase.TK_PARENTHESIS_OPEN) {
-				ArgumentList args = readArguments(unit, declaration, true, genericContext, pointer, errors);
+				ArgumentList args = readArguments(unit, declaration, true, genericContext, pointer, ALLOW_NONE, errors);
 				returnType = new VarCompositeType(args.getNames(), args.getTypes());
 			} else if(declaration[pointer.position].base == TokenBase.TYPE_VOID) {
 				returnType = VarType.VOID;
 				pointer.position++;
 			} else {
-				returnType = parseType(unit, declaration, genericContext, pointer, errors);
+				returnType = parseType(unit, declaration, genericContext, pointer, ALLOW_NONE, errors);
 			}
 			
 			assertHasNext(declaration, pointer, "Incomplete function declaration", errors, 3);
 			
 			funcName = assertToken(declaration, pointer, TokenBase.VAR_VARIABLE, "Expected function name", errors).text;
 			
-			funcArgs = readArguments(unit, declaration, true, genericContext, pointer, errors).asArray();
+			funcArgs = readArguments(unit, declaration, true, genericContext, pointer, ALLOW_NONE, errors).asArray();
 			
 			if(pointer.position != declarationLength)
 				errors.add("Unexpected tokens" + unit.source.getErr(declaration,

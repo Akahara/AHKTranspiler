@@ -33,10 +33,11 @@ public class Tokens {
 			KW_VAR, KW_IF, KW_ELSE, KW_FOR, KW_FOREACH,			// keywords
 			KW_WHILE, KW_FUNC, KW_STRUCT, KW_CONSTRUCTOR,
 			KW_RETURN, KW_SIZEOF, KW_ALIAS, KW_GLOBAL,
-			KW_LOCAL, KW_OPERATOR, KW_BLUEPRINT,
+			KW_LOCAL, KW_OPERATOR, KW_BLUEPRINT, KW_SELF,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,			// types
 			TYPE_BOOL,
 			VAR_GENERIC, VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,	// variable elements (MUST be read last by the tokenizer)
+			VAR_BLUEPRINT, 
 	};
 	
 	public static final TokenBase[] SPLITS = {
@@ -65,7 +66,7 @@ public class Tokens {
 	/* ----------------------------- Type Tokens ---------------------------- */
 
 	public static boolean isVarType(TokenBase base) {
-		return base == VAR_UNIT || base == VAR_GENERIC || typesMap.containsKey(base);
+		return base == VAR_STRUCT || base == VAR_GENERIC || typesMap.containsKey(base);
 	}
 
 	public static final Map<TokenBase, VarType> typesMap = Map.of(

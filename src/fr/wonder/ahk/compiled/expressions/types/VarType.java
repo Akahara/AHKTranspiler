@@ -10,6 +10,8 @@ public abstract class VarType {
 	public static final VarNativeType BOOL = new VarNativeType("bool");
 	public static final VarStrType STR = new VarStrType();
 	
+	protected static final VarType[] NO_SUBTYPES = new VarType[0];
+	
 	/**
 	 * The null type is only used for {@link NullExp Null expressions}, their
 	 * "actual type" is computed by the linker whenever required, see

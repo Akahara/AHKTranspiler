@@ -15,9 +15,12 @@ import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.sections.BlueprintImplementation;
+import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
+import fr.wonder.commons.utils.StringUtils;
 
 public class GenericBindings {
 	
@@ -50,13 +53,51 @@ public class GenericBindings {
 		
 		boolean validBinding = true;
 		for(int i = 0; i < bindings.length; i++) {
-			if(!context.generics[i].isValidBinding(bindings[i])) {
+			if(!isValidBinding(context.generics[i], bindings[i])) {
 				validBinding = false;
 				errors.add("Invalid binding used: " + bindings[i] +
-						" is not acceptable for generic " + context.generics[i]);
+						" is not acceptable for generic " + context.generics[i] +
+						" (requires " + StringUtils.join(",", context.generics[i].typeRestrictions, bpref->bpref.blueprint.getName()) +
+						")"+ queryElement.getErr());
 			}
 		}
 		return validBinding;
+	}
+	
+	private static boolean isValidBinding(VarGenericType generic, VarType binding) {
+		if(generic.typeRestrictions.length == 0)
+			return true;
+		if(binding instanceof VarStructType) {
+			StructPrototype structure = ((VarStructType) binding).structure;
+			for(BlueprintRef requiredBlueprint : generic.typeRestrictions) {
+				boolean found = false;
+				for(BlueprintImplementation impl : structure.implementedBlueprints) {
+					if(impl.blueprint.equals(requiredBlueprint)) {
+						found = true;
+						break;
+					}
+				}
+				if(!found)
+					return false;
+			}
+			return true;
+		} else if(binding instanceof VarGenericType) {
+			BlueprintRef[] implementedBlueprints = ((VarGenericType) binding).typeRestrictions;
+			for(BlueprintRef requiredBlueprint : generic.typeRestrictions) {
+				boolean found = false;
+				for(BlueprintRef impl : implementedBlueprints) {
+					if(impl.equals(requiredBlueprint)) {
+						found = true;
+						break;
+					}
+				}
+				if(!found)
+					return false;
+			}
+			return true;
+		} else { // TODO native types default blueprints
+			return false;
+		}
 	}
 	
 	public StructPrototype bindGenerics(StructPrototype structure, VarType[] bindings, GenericContext bindingsContext) {
@@ -68,7 +109,7 @@ public class GenericBindings {
 		for(int i = 0; i < boundMembers.length; i++)
 			boundMembers[i] = bindMemberGenerics(structure, structure.members[i], bindings, bindingsContext);
 
-		//		FunctionPrototype[] boundFunctions = new FunctionPrototype[structure.functions.length];
+//		FunctionPrototype[] boundFunctions = new FunctionPrototype[structure.functions.length];
 		
 		OverloadedOperatorPrototype[] boundOperators = new OverloadedOperatorPrototype[structure.overloadedOperators.length];
 		for(int i = 0; i < boundOperators.length; i++)
@@ -83,6 +124,7 @@ public class GenericBindings {
 				boundConstructors,
 				boundOperators,
 				bindingsContext,
+				structure.implementedBlueprints,
 				structure.modifiers,
 				structure);
 	}

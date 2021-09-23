@@ -1,30 +1,55 @@
 module AHKTranspiler {
 	exports fr.wonder.ahk.compiler.tokens;
+	opens fr.wonder.ahk.compiler.tokens;
 	exports fr.wonder.ahk.transpilers.asm_x64.natives;
+	opens fr.wonder.ahk.transpilers.asm_x64.natives;
 	exports fr.wonder.ahk.transpilers.asm_x64.writers;
+	opens fr.wonder.ahk.transpilers.asm_x64.writers;
 	exports fr.wonder.ahk.utils;
+	opens fr.wonder.ahk.utils;
 	exports fr.wonder.ahk.compiled.expressions;
+	opens fr.wonder.ahk.compiled.expressions;
 	exports fr.wonder.ahk.transpilers.asm_x64.units.modifiers;
+	opens fr.wonder.ahk.transpilers.asm_x64.units.modifiers;
 	exports fr.wonder.ahk.compiler.types;
+	opens fr.wonder.ahk.compiler.types;
 	exports fr.wonder.ahk;
+	opens fr.wonder.ahk;
 	exports fr.wonder.ahk.compiled;
+	opens fr.wonder.ahk.compiled;
 	exports fr.wonder.ahk.compiled.units;
+	opens fr.wonder.ahk.compiled.units;
 	exports fr.wonder.ahk.compiled.statements;
+	opens fr.wonder.ahk.compiled.statements;
 	exports fr.wonder.ahk.compiler.linker;
+	opens fr.wonder.ahk.compiler.linker;
 	exports fr.wonder.ahk.transpilers;
+	opens fr.wonder.ahk.transpilers;
 //	exports fr.wonder.ahk.transpilers.python;
+//	opens fr.wonder.ahk.transpilers.python;
 	exports fr.wonder.ahk.compiler;
+	opens fr.wonder.ahk.compiler;
 	exports fr.wonder.ahk.compiled.expressions.types;
+	opens fr.wonder.ahk.compiled.expressions.types;
 	exports fr.wonder.ahk.transpilers.asm_x64;
+	opens fr.wonder.ahk.transpilers.asm_x64;
 	exports fr.wonder.ahk.transpilers.asm_x64.writers.operations;
+	opens fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 	exports fr.wonder.ahk.compiled.units.sections;
+	opens fr.wonder.ahk.compiled.units.sections;
 	exports fr.wonder.ahk.handles;
+	opens fr.wonder.ahk.handles;
 	exports fr.wonder.ahk.compiled.units.prototypes;
+	opens fr.wonder.ahk.compiled.units.prototypes;
 	exports fr.wonder.ahk.transpilers.common_x64;
+	opens fr.wonder.ahk.transpilers.common_x64;
 	exports fr.wonder.ahk.transpilers.common_x64.addresses;
+	opens fr.wonder.ahk.transpilers.common_x64.addresses;
 	exports fr.wonder.ahk.transpilers.common_x64.declarations;
+	opens fr.wonder.ahk.transpilers.common_x64.declarations;
 	exports fr.wonder.ahk.transpilers.common_x64.instructions;
-
+	opens fr.wonder.ahk.transpilers.common_x64.instructions;
+	
 	requires transitive fr.wonder.commons;
 	requires transitive fr.wonder.commons.systems;
 }

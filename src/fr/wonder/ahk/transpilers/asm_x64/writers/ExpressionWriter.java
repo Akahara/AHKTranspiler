@@ -21,6 +21,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.prototypes.BoundOverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiler.types.CompositionOperation;
@@ -119,6 +120,9 @@ public class ExpressionWriter {
 	private void writeOperationExp(OperationExp exp, ErrorWrapper errors) {
 		Operation operation = exp.getOperation();
 		if(operation instanceof OverloadedOperatorPrototype) {
+			if(operation instanceof BoundOverloadedOperatorPrototype) {
+				// FIX
+			}
 			writeFunctionExp(new FunctionExp(exp), errors);
 		} else if(operation instanceof FunctionOperation) {
 			writer.closureWriter.writeFuncOperation(exp, errors);

@@ -64,6 +64,8 @@ public class AHKTranspiler {
 			LinkedHandle handle = project
 				.compile(new ErrorWrapper("Unable to compile", true))
 				.link(new ErrorWrapper("Unable to link", true));
+//			InstancePrinter.dump(handle); // print data structure
+//			System.exit(0);
 			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export", true));
 			if(exec == null)
 				return;
