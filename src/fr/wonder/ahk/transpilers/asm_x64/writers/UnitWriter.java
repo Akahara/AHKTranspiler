@@ -309,7 +309,7 @@ public class UnitWriter {
 			ConcreteType concreteType = types.getConcreteType(struct);
 			String nullLabel = registries.getStructNullRegistry(struct.getPrototype());
 			MemAddress nullAddress = new MemAddress(new LabelAddress(nullLabel));
-			instructions.comment("init " + struct.name + " null"); // FIX include generic types in null struct instances
+			instructions.comment("init " + struct.name + " null");
 			for(VariableDeclaration member : struct.members) {
 				ConstructorDefaultValue nullField = struct.getNullField(member.name);
 				Expression nullMemberValue = nullField == null ? member.getDefaultValue() : nullField.getValue();
@@ -374,7 +374,7 @@ public class UnitWriter {
 	public void callAlloc(OperationParameter size) {
 		instructions.push(size);
 		instructions.call(requireExternLabel(GlobalLabels.SPECIAL_ALLOC));
-		// TODO0 implement other calling conventions (__stdcall currently)
+		// FUTURE implement other calling conventions (__stdcall currently)
 		testThrowError();
 	}
 	

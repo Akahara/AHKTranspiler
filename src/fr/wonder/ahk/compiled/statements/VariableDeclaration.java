@@ -11,7 +11,7 @@ import fr.wonder.commons.annotations.Nullable;
 
 public class VariableDeclaration extends Statement {
 	
-	public final Unit unit; // TODO check why the unit is kept here
+	public final Unit unit;
 	public final String name;
 	private final VarType type;
 	public final DeclarationModifiers modifiers;

@@ -169,7 +169,7 @@ class Prelinker {
 				VarBoundStructType boundType = parametrizedInstance.type;
 				if(structure == Invalids.STRUCT_PROTOTYPE) {
 					boundType.structure = Invalids.STRUCT_PROTOTYPE;
-				} else if(GenericBindings.validateBindings(structure.genericContext, // FIX
+				} else if(GenericBindings.validateBindings(structure.genericContext,
 						boundType.boundTypes, parametrizedInstance.occurrence, errors)) {
 					boundType.structure = linker.typesTable.genericBindings.bindGenerics(
 							structure, boundType.boundTypes, parametrizedInstance.genericContext);

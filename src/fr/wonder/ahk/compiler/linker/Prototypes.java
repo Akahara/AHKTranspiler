@@ -12,7 +12,7 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class Prototypes {
 
-	// TODO rework the #getRecompilableUnits method
+	// FUTURE rework the #getRecompilableUnits method
 	
 	public static List<UnitPrototype> getRecompilableUnits(
 			List<UnitPrototype> units,

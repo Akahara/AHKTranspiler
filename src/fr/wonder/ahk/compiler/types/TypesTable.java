@@ -176,7 +176,7 @@ public class TypesTable {
 			errors.add("No known function operation for " + query.fullErr());
 			return null;
 		}
-		VarFunctionType funcType = new VarFunctionType(resultOp.resultType, funcTypeArgs, GenericContext.EMPTY_CONTEXT);
+		VarFunctionType funcType = new VarFunctionType(resultOp.resultType, funcTypeArgs, GenericContext.NO_CONTEXT);
 		FunctionOperation funcOperation = new FunctionOperation(query.lo, query.ro, resultOp, funcType);
 		functionOperations.put(opKey(query.lo, query.ro, query.operator), funcOperation);
 		return funcOperation;
@@ -235,7 +235,7 @@ public class TypesTable {
 			for(OverloadedOperatorPrototype op : r.blueprint.operators) {
 				if(op.operator == query.operator && 
 						isCompatibleGenericOperand(op.loType, query.lo) &&
-						isCompatibleGenericOperand(op.roType, query.ro)) // TODO add conversions
+						isCompatibleGenericOperand(op.roType, query.ro)) // TODO add conversions in generics operations
 					return createBoundOperator(query.lo, query.ro, genericType, r.blueprint, op);
 			}
 		}

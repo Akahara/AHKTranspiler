@@ -161,7 +161,7 @@ public class GenericBindings {
 		VarType boundLeft = bindType(structure.genericContext, operator.loType, bindings, selfBinding, bindingsContext);
 		VarType boundRight = bindType(structure.genericContext, operator.roType, bindings, selfBinding, bindingsContext);
 		VarType boundResult = bindType(structure.genericContext, operator.resultType, bindings, selfBinding, bindingsContext);
-		FunctionPrototype boundFunc = bindFunctionGenerics(structure.genericContext, operator.function, bindings, selfBinding, bindingsContext); // FIX wrong context
+		FunctionPrototype boundFunc = bindFunctionGenerics(structure.genericContext, operator.function, bindings, selfBinding, bindingsContext);
 		
 		if(boundLeft == operator.loType && boundRight == operator.roType && boundResult == operator.roType &&
 				boundFunc == operator.function)

@@ -266,7 +266,7 @@ public class AliasDeclarationParser extends AbstractParser {
 			throw new ParsingException();
 		}
 		
-		return new VarFunctionType(returnType, arguments.getTypes(), GenericContext.EMPTY_CONTEXT);
+		return new VarFunctionType(returnType, arguments.getTypes(), GenericContext.NO_CONTEXT);
 	}
 	
 	private static VarType parseCompositeType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {

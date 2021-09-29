@@ -76,7 +76,7 @@ public class StatementParser extends AbstractParser {
 		case TYPE_INT:
 		case TYPE_STR:
 		case VAR_UNIT: // (Structure token)
-			// FIX statement parsing order bug
+			// TODO fix statement parsing order
 			// something like this will bug because it is considered as a declaration
 			// int:(3) >> Kernel.out;
 			return parseVariableDeclaration(0, line.length, DeclarationModifiers.NONE, errors);

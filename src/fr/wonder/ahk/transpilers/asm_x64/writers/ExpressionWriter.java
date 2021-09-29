@@ -315,7 +315,6 @@ public class ExpressionWriter {
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
 		} else if(actualType instanceof VarGenericType) {
 			writer.instructions.clearRegister(Register.RAX);
-			// TODO when generic types have type requirements, fix null instances
 		} else {
 			throw new UnreachableException("Unimplemented null: " + actualType);
 		}

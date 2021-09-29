@@ -24,7 +24,7 @@ public class GlobalLabels {
 	/** The special throw method label */
 	public static final String SPECIAL_THROW = "error_throw";
 	
-	/** TODO0 comment closure_run_composed */
+	/** FUTURE comment closure_run_composed */
 	public static final String CLOSURE_RUN_COMPOSED = "closure_run_composed";
 	public static final String CLOSURE_RUN_CONSTANT = "closure_run_constant";
 	public static final String CLOSURE_RUN_OPERATION_1 = "closure_run_operation_1";

@@ -122,7 +122,7 @@ public class Linker {
 		}
 		
 		for(VariableDeclaration var : unit.variables) {
-			expressions.linkExpressions(unit, unitScope, var, GenericContext.EMPTY_CONTEXT, errors);
+			expressions.linkExpressions(unit, unitScope, var, GenericContext.NO_CONTEXT, errors);
 			checkAffectationType(var, 0, var.getType(), errors);
 		}
 		

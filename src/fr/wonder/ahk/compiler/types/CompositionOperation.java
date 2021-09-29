@@ -44,9 +44,9 @@ public class CompositionOperation extends Operation {
 		if(l.genericContext.hasGenericMembers() || r.genericContext.hasGenericMembers())
 			throw new UnimplementedException("Generic functions composition"); // TODO implement generic function composition
 		if(o == Operator.SHR) {
-			return new VarFunctionType(r.returnType, l.arguments, GenericContext.EMPTY_CONTEXT);
+			return new VarFunctionType(r.returnType, l.arguments, GenericContext.NO_CONTEXT);
 		} else {
-			return new VarFunctionType(l.returnType, r.arguments, GenericContext.EMPTY_CONTEXT);
+			return new VarFunctionType(l.returnType, r.arguments, GenericContext.NO_CONTEXT);
 		}
 	}
 	

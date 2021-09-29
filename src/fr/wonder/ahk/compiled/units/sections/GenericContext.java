@@ -14,7 +14,6 @@ public class GenericContext {
 	
 	public static final VarGenericType[] NO_GENERICS = new VarGenericType[0];
 	public static final GenericContext NO_CONTEXT = new NoContext();
-	public static final GenericContext EMPTY_CONTEXT = new GenericContext(null, NO_GENERICS); // FIX remove empty generic context
 	
 	public final VarGenericType[] generics;
 	public final GenericContext parentContext;
