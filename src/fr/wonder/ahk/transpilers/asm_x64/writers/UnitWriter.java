@@ -15,8 +15,10 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -25,7 +27,6 @@ import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
-import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -39,6 +40,7 @@ import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarReservation;
+import fr.wonder.ahk.transpilers.common_x64.declarations.Label;
 import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.instructions.Instruction;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
@@ -79,11 +81,7 @@ public class UnitWriter {
 	public final LinkedHandle project;
 	public final Unit unit;
 	
-	public final MemoryManager mem;
 	public final RegistryManager registries;
-	public final ExpressionWriter expWriter;
-	public final AsmOperationWriter opWriter;
-	public final AsmClosuresWriter closureWriter;
 	
 	public final ConcreteTypesTable types;
 	
@@ -98,11 +96,7 @@ public class UnitWriter {
 	private UnitWriter(LinkedHandle handle, Unit unit, ConcreteTypesTable types) {
 		this.project = handle;
 		this.unit = unit;
-		this.mem = new MemoryManager(this);
 		this.registries = new RegistryManager(this);
-		this.expWriter = new ExpressionWriter(this);
-		this.opWriter = new AsmOperationWriter(this);
-		this.closureWriter = new AsmClosuresWriter(this);
 		this.types = types;
 	}
 	
@@ -213,6 +207,8 @@ public class UnitWriter {
 			for(Statement st : func.body)
 				collectStrConstants(st);
 		}
+		if(!strConstants.isEmpty())
+			instructions.comment("str constants");
 		for(StrLiteral cst : strConstants)
 			instructions.add(new StringDefinition(getLabel(cst), cst.value));
 		if(!strConstants.isEmpty())
@@ -230,10 +226,28 @@ public class UnitWriter {
 		if(unit.variables.length != 0)
 			instructions.skip();
 		
+		if(unit.functions.length != 0)
+			instructions.comment("Functions closures");
 		for(FunctionSection func : unit.functions) {
 			String closure = RegistryManager.getClosureRegistry(func.getPrototype());
 			String address = RegistryManager.getGlobalRegistry(func.getPrototype());
 			instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, address));
+		}
+		if(unit.functions.length != 0)
+			instructions.skip();
+		
+		instructions.comment("Structures blueprints implementations");
+		for(StructSection struct : unit.structures) {
+			for(BlueprintImplementation bp : struct.implementedBlueprints) {
+				String bpImplReg = RegistryManager.getStructBlueprintImplRegistry(bp);
+				instructions.add(new Label(bpImplReg));
+				// FIX add variables and functions in blueprint implementations
+				for(OverloadedOperatorPrototype oop : bp.operators) {
+					if(project.manifest.DEBUG_SYMBOLS)
+						instructions.comment(oop.getName(), 2);
+					instructions.add(new GlobalVarDeclaration(MemSize.POINTER, RegistryManager.getFunctionRegistry(oop.function)));
+				}
+			}
 		}
 		
 		instructions.skip(2);
@@ -285,11 +299,11 @@ public class UnitWriter {
 		instructions.skip();
 		
 		FunctionSection initFunction = FunctionSection.dummyFunction();
+		FunctionWriter initFunctionWriter = new FunctionWriter(this, initFunction);
 		
 		// write the initialization function
 		instructions.label(RegistryManager.getUnitInitFunctionRegistry(unit));
 		instructions.createStackFrame();
-		mem.enterFunction(initFunction, 0);
 		
 		for(StructSection struct : unit.structures) {
 			ConcreteType concreteType = types.getConcreteType(struct);
@@ -300,7 +314,7 @@ public class UnitWriter {
 				ConstructorDefaultValue nullField = struct.getNullField(member.name);
 				Expression nullMemberValue = nullField == null ? member.getDefaultValue() : nullField.getValue();
 				Address fieldAddress = nullAddress.addOffset(concreteType.getOffset(member.name));
-				mem.writeTo(fieldAddress, nullMemberValue, errors);
+				initFunctionWriter.mem.writeTo(fieldAddress, nullMemberValue, errors);
 			}
 		}
 		for(VariableDeclaration var : initializableVariables) {
@@ -313,7 +327,7 @@ public class UnitWriter {
 				Expression defaultVal = var.getDefaultValue();
 				if(defaultVal == null)
 					defaultVal = new NoneExp();
-				mem.writeTo(address, defaultVal, errors);
+				initFunctionWriter.mem.writeTo(address, defaultVal, errors);
 			}
 		}
 		
@@ -321,24 +335,18 @@ public class UnitWriter {
 		instructions.ret();
 		instructions.skip();
 		
-//		for(StructSection structure : unit.structures) {
-//			String nullLabel = registries.getStructNullRegistry(structure.getPrototype());
-//			for(int i = 0; i < VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT; i++) {
-//				String label = registries.getFunctionNullRegistry(structure.getPrototype(), i);
-//				instructions.label(label);
-//				instructions.mov(Register.RAX, nullLabel);
-//				instructions.ret(i*MemSize.POINTER_SIZE);
-//			}
-//		}
-//		if(unit.structures.length != 0)
-//			instructions.skip(2);
-		
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE))
 				continue;
 			
+			if(project.manifest.DEBUG_SYMBOLS) {
+				instructions.comment("-".repeat(60));
+				instructions.comment(func.toString());
+				instructions.comment("-".repeat(60));
+			}
 			instructions.label(RegistryManager.getGlobalRegistry(func.getPrototype()));
-			FunctionWriter.writeFunction(this, func, errors);
+			FunctionWriter writer = new FunctionWriter(this, func);
+			writer.writeFunction(errors);
 			instructions.skip();
 		}
 		

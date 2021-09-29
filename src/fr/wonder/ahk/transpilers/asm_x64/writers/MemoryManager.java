@@ -7,7 +7,6 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
@@ -21,15 +20,12 @@ import fr.wonder.commons.exceptions.UnreachableException;
 
 public class MemoryManager {
 	
-	private final UnitWriter writer;
+	private final FunctionWriter writer;
 	private Scope currentScope;
 	
-	public MemoryManager(UnitWriter writer) {
+	public MemoryManager(FunctionWriter writer, int stackSpace) {
 		this.writer = writer;
-	}
-	
-	public void enterFunction(FunctionSection func, int stackSpace) {
-		currentScope = new Scope(writer, func, stackSpace);
+		currentScope = new Scope(writer.unitWriter, writer.func, stackSpace);
 	}
 	
 	public void updateScope(boolean beginNewScope) {
@@ -53,7 +49,7 @@ public class MemoryManager {
 			// note: "NONE" is a nasm macro that resolve to "0"
 			writeMov(loc, "NONE");
 		} else if(exp instanceof LiteralExp) {
-			writeMov(loc, writer.getValueString((LiteralExp<?>) exp));
+			writeMov(loc, writer.unitWriter.getValueString((LiteralExp<?>) exp));
 		} else if(exp instanceof VarExp) {
 			moveData(loc, currentScope.getVarAddress(((VarExp) exp).declaration));
 		} else {
@@ -149,7 +145,7 @@ public class MemoryManager {
 			
 		} else if(variable instanceof DirectAccessExp) {
 			DirectAccessExp exp = (DirectAccessExp) variable;
-			ConcreteType structType = writer.types.getConcreteType(exp.getStructType());
+			ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType());
 			writer.expWriter.writeExpression(exp.getStruct(), errors);
 			writer.instructions.push(Register.RAX);
 			addStackOffset(8);
@@ -196,7 +192,7 @@ public class MemoryManager {
 				
 			} else if(variable instanceof DirectAccessExp) {
 				DirectAccessExp exp = (DirectAccessExp) variable;
-				ConcreteType structType = writer.types.getConcreteType(exp.getStructType());
+				ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType());
 				writeTo(varAdd, exp.getStruct(), errors);
 				variableAccesses[i] = new MemAddress(varAdd, structType.getOffset(exp.memberName));
 				

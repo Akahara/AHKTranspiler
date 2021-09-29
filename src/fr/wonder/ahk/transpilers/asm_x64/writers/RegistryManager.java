@@ -5,6 +5,7 @@ import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
@@ -53,7 +54,7 @@ public class RegistryManager {
 			localRegistry = ((VariablePrototype) var).getName();
 		} else if(var instanceof FunctionPrototype) {
 			FunctionPrototype f = (FunctionPrototype) var;
-			localRegistry = f.getName() + "_" + f.getType().getSignature();
+			localRegistry = f.signature.computedSignature;
 		} else {
 			throw new IllegalArgumentException("Unimplemented registry " + var.getClass());
 		}
@@ -78,4 +79,9 @@ public class RegistryManager {
 		return "closure_op_" + op.loType + op.operator.name() + op.roType;
 	}
 	
+	public static String getStructBlueprintImplRegistry(BlueprintImplementation bpImpl) {
+		return getUnitRegistry(bpImpl.structure.getSignature().declaringUnit) + "@"
+				+ bpImpl.structure.getName() + "_bpimpl_" + bpImpl.bpRef.name;
+	}
+
 }

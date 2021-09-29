@@ -1,6 +1,6 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
-import fr.wonder.ahk.compiled.units.sections.BlueprintImplementation;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
 

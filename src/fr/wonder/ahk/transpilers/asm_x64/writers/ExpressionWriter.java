@@ -23,13 +23,16 @@ import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.BoundOverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter;
 import fr.wonder.ahk.compiler.types.CompositionOperation;
 import fr.wonder.ahk.compiler.types.FunctionOperation;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -38,9 +41,9 @@ import fr.wonder.commons.exceptions.UnreachableException;
 
 public class ExpressionWriter {
 	
-	private final UnitWriter writer;
+	private final FunctionWriter writer;
 	
-	public ExpressionWriter(UnitWriter writer) {
+	public ExpressionWriter(FunctionWriter writer) {
 		this.writer = writer;
 	}
 	
@@ -76,43 +79,104 @@ public class ExpressionWriter {
 			throw new UnreachableException("Unknown expression type " + exp.getClass());
 	}
 
-	public void writeFunctionExp(FunctionExpression function,  ErrorWrapper errors) {
-		switch(writer.project.manifest.callingConvention) {
-		case __stdcall: {
-			
-			Expression[] arguments = function.getArguments();
-			int argsSpace = arguments.length * MemSize.POINTER_SIZE;
-			if(argsSpace != 0) {
-				writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
-				writer.mem.addStackOffset(argsSpace);
-				for(int i = 0; i < arguments.length; i++) {
-					Expression arg = arguments[i];
-					writer.mem.writeTo(new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE), arg, errors);
-				}
-			}
-			
-			if(function instanceof FunctionExp) {
-				writer.instructions.call(RegistryManager.getFunctionRegistry(((FunctionExp) function).function));
-			} else if(function instanceof FunctionCallExp) { // FIX compute the function BEFORE the arguments
-				writeExpression(((FunctionCallExp) function).getFunction(), errors);
-				writer.instructions.call(new MemAddress(Register.RAX));
-				// when called, the function will have access to the closure in rax
-			} else {
-				throw new UnreachableException("Invalid function type " + function.getClass());
-			}
-			
-			writer.mem.addStackOffset(-argsSpace);
-			break;
-			
+	public void writeFunctionExp(FunctionExpression functionExpression, ErrorWrapper errors) {
+		
+		Expression[] arguments;
+		BlueprintTypeParameter[] typesParameters = null;
+		int argsSpace;
+		
+		FunctionPrototype fexpFunctionPrototype = null;	// only used by FunctionExp
+		MemAddress fcexpClosurePointer = null;			// only used by FunctionCallExp
+		
+		// prepare call
+		if(functionExpression instanceof FunctionExp) {
+			FunctionExp fexp = (FunctionExp) functionExpression;
+			arguments = fexp.getArguments();
+			fexpFunctionPrototype = fexp.function;
+			typesParameters = fexp.typesParameters;
+			argsSpace = computeFunctionCallStackSpace(typesParameters, arguments, false);
+		} else if(functionExpression instanceof FunctionCallExp) {
+			arguments = ((FunctionCallExp) functionExpression).getArguments();
+			argsSpace = computeFunctionCallStackSpace(null, arguments, true);
+			fcexpClosurePointer = new MemAddress(Register.RSP, argsSpace-MemSize.POINTER_SIZE);
+		} else {
+			throw new IllegalArgumentException("Expression is not callable: " + functionExpression.getClass());
 		}
-		default:
-			throw new IllegalStateException("Unimplemented calling convention " + writer.project.manifest.callingConvention);
+		
+		if(argsSpace != 0) {
+			writer.mem.addStackOffset(argsSpace);
+			writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
+		}
+		
+		if(functionExpression instanceof FunctionCallExp) {
+			// write and store closure
+			writeExpression(((FunctionCallExp) functionExpression).getFunction(), errors);
+			writer.instructions.mov(fcexpClosurePointer, Register.RAX);
+		}
+		
+		writeFunctionArguments(typesParameters, arguments, errors);
+			
+		if(functionExpression instanceof FunctionExp) {
+			writer.instructions.call(RegistryManager.getFunctionRegistry(fexpFunctionPrototype));
+		} else if(functionExpression instanceof FunctionCallExp) {
+			writer.instructions.mov(Register.RAX, fcexpClosurePointer);
+			writer.instructions.call(new MemAddress(Register.RAX));
+			// when called, the function will have access to the closure in rax
+		}
+		
+		writer.mem.addStackOffset(-argsSpace);
+	}
+	
+	private void writeOperatorFunction(OperationExp exp, ErrorWrapper errors) {
+		int argsSpace = computeFunctionCallStackSpace(null, exp.getExpressions(), false);
+		writer.mem.addStackOffset(argsSpace);
+		writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
+		writeFunctionArguments(null, exp.getOperands(), errors);
+		OverloadedOperatorPrototype op = (OverloadedOperatorPrototype) exp.getOperation();
+		if(op instanceof BoundOverloadedOperatorPrototype) {
+			BoundOverloadedOperatorPrototype bop = (BoundOverloadedOperatorPrototype) op;
+			writer.writeGIPToRAX(bop.genericType, bop.usedBlueprint);
+			int offsetInGIP = bop.usedBlueprint.getUniqueIdOfPrototype(bop.originalOperator);
+			writer.instructions.call(new MemAddress(Register.RAX, offsetInGIP*MemSize.POINTER_SIZE));
+		} else {
+			writer.instructions.call(RegistryManager.getFunctionRegistry(op.function));
+		}
+		writer.mem.addStackOffset(-argsSpace);
+	}
+	
+	private int computeFunctionCallStackSpace(
+			BlueprintTypeParameter[] typesParameters,
+			Expression[] args,
+			boolean reserveClosureSpace) {
+		int argsSpace = 0;
+		if(reserveClosureSpace)     argsSpace += MemSize.POINTER_SIZE;
+		if(typesParameters != null) argsSpace += typesParameters.length * MemSize.POINTER_SIZE;
+		argsSpace += args.length * MemSize.POINTER_SIZE;
+		return argsSpace;
+	}
+	
+	private void writeFunctionArguments(
+			BlueprintTypeParameter[] typesParameters,
+			Expression[] args,
+			ErrorWrapper errors) {
+		
+		for(int i = 0; i < args.length; i++) {
+			Expression arg = args[i];
+			Address argAddress = new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE);
+			writer.mem.writeTo(argAddress, arg, errors);
+		}
+		
+		if(typesParameters != null) {
+			for(int i = 0; i < typesParameters.length; i++) {
+				String typeImplReg = RegistryManager.getStructBlueprintImplRegistry(typesParameters[i].implementation);
+				writer.instructions.mov(new MemAddress(Register.RSP, (args.length+i) * MemSize.POINTER_SIZE), typeImplReg);
+			}
 		}
 	}
 
 	private void writeDirectAccessExp(DirectAccessExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getStruct(), errors);
-		ConcreteType structType = writer.types.getConcreteType((VarStructType) exp.getStruct().getType());
+		ConcreteType structType = writer.unitWriter.types.getConcreteType((VarStructType) exp.getStruct().getType());
 		int offset = structType.getOffset(exp.memberName);
 		writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, offset));
 	}
@@ -120,10 +184,7 @@ public class ExpressionWriter {
 	private void writeOperationExp(OperationExp exp, ErrorWrapper errors) {
 		Operation operation = exp.getOperation();
 		if(operation instanceof OverloadedOperatorPrototype) {
-			if(operation instanceof BoundOverloadedOperatorPrototype) {
-				// FIX
-			}
-			writeFunctionExp(new FunctionExp(exp), errors);
+			writeOperatorFunction(exp, errors);
 		} else if(operation instanceof FunctionOperation) {
 			writer.closureWriter.writeFuncOperation(exp, errors);
 		} else if(operation instanceof CompositionOperation) {
@@ -140,7 +201,7 @@ public class ExpressionWriter {
 	}
 	
 	private void writeArrayExp(ArrayExp exp, ErrorWrapper errors) {
-		writer.callAlloc(exp.getLength() * MemSize.POINTER_SIZE);
+		writer.unitWriter.callAlloc(exp.getLength() * MemSize.POINTER_SIZE);
 		if(exp.getLength() != 0) {
 			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 			writer.instructions.push(Register.RAX);
@@ -173,12 +234,12 @@ public class ExpressionWriter {
 	 */
 	public MemAddress writeArrayIndex(Expression index, ErrorWrapper errors) {
 		if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
-			String errLabel = writer.getSpecialLabel();
+			String errLabel = writer.unitWriter.getSpecialLabel();
 			writer.instructions.mov(Register.RBX, new MemAddress(Register.RAX, -8));
 			writer.instructions.test(Register.RBX);
 			writer.instructions.add(OpCode.JNZ, errLabel);
 			writer.instructions.mov(Register.RAX, -6); // TODO add specific error code
-			writer.instructions.call(writer.requireExternLabel(GlobalLabels.SPECIAL_THROW));
+			writer.instructions.call(writer.unitWriter.requireExternLabel(GlobalLabels.SPECIAL_THROW));
 			writer.instructions.label(errLabel);
 			return new MemAddress(Register.RAX, Register.RBX, 1, -8);
 		} else {
@@ -200,15 +261,15 @@ public class ExpressionWriter {
 	 * (multiplied by 8).
 	 */
 	public void checkOOB() {
-		String errLabel = writer.getSpecialLabel();
-		String successLabel = writer.getSpecialLabel();
+		String errLabel = writer.unitWriter.getSpecialLabel();
+		String successLabel = writer.unitWriter.getSpecialLabel();
 		writer.instructions.test(Register.RBX);
 		writer.instructions.add(OpCode.JS, errLabel);
 		writer.instructions.cmp(Register.RBX, new MemAddress(Register.RAX, -8));
 		writer.instructions.add(OpCode.JL, successLabel);
 		writer.instructions.label(errLabel);
 		writer.instructions.mov(Register.RAX, -5); // TODO add specific error code (oob)
-		writer.instructions.call(writer.requireExternLabel(GlobalLabels.SPECIAL_THROW));
+		writer.instructions.call(writer.unitWriter.requireExternLabel(GlobalLabels.SPECIAL_THROW));
 		writer.instructions.label(successLabel);
 	}
 
@@ -225,9 +286,9 @@ public class ExpressionWriter {
 	}
 
 	private void writeConstructorExp(ConstructorExp exp, ErrorWrapper errors) {
-		ConcreteType type = writer.types.getConcreteType(exp.getType());
+		ConcreteType type = writer.unitWriter.types.getConcreteType(exp.getType());
 		ConstructorPrototype constructor = exp.constructor;
-		writer.callAlloc(type.size);
+		writer.unitWriter.callAlloc(type.size);
 		if(constructor.argNames.length == 0)
 			return;
 		writer.mem.addStackOffset(MemSize.POINTER_SIZE);
@@ -245,10 +306,10 @@ public class ExpressionWriter {
 	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
 		VarType actualType = exp.getType();
 		if(actualType instanceof VarStructType) {
-			String nullLabel = writer.registries.getStructNullRegistry(((VarStructType) actualType).structure);
+			String nullLabel = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) actualType).structure);
 			writer.instructions.mov(Register.RAX, nullLabel);
 		} else if(actualType instanceof VarArrayType) {
-			writer.instructions.mov(Register.RAX, writer.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
+			writer.instructions.mov(Register.RAX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(actualType instanceof VarFunctionType) {
 			VarFunctionType funcType = (VarFunctionType) actualType;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);

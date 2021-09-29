@@ -11,7 +11,7 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 class Conversions {
 
 	static void conv_intTOfloat(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		MemAddress floatst = asmWriter.writer.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
 		asmWriter.writer.instructions.mov(floatst, Register.RAX);
 		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, floatst);
 		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
@@ -19,7 +19,7 @@ class Conversions {
 	}
 
 	static void conv_floatTOint(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		MemAddress floatst = asmWriter.writer.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
 		asmWriter.writer.instructions.mov(floatst, Register.RAX);
 		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
 		asmWriter.writer.instructions.addCasted(OpCode.FISTP, MemSize.QWORD, floatst);

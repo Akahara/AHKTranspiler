@@ -43,6 +43,16 @@ public class OperationExp extends Expression {
 			new Expression[] { expressions[1], expressions[0] };
 	}
 	
+	/**
+	 * This method will return an array containing this operation's operands
+	 * <b>from right to left</b>, use {@link #getOperands()} to get theim in
+	 * the natural order
+	 */
+	@Override
+	public Expression[] getExpressions() {
+		return super.getExpressions();
+	}
+	
 	public void setOperation(Operation op) {
 		this.operation = op;
 		if(op == Invalids.OPERATION)

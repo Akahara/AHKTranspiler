@@ -12,18 +12,22 @@ import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.handles.ExecutableHandle;
 import fr.wonder.ahk.handles.LinkedHandle;
 import fr.wonder.ahk.transpilers.Transpiler;
+import fr.wonder.ahk.transpilers.asm_x64.natives.CallingConvention;
 import fr.wonder.ahk.transpilers.asm_x64.natives.ProcessFiles;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.ConcreteTypesTable;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.files.FilesUtils;
 import fr.wonder.commons.systems.process.ProcessUtils;
 import fr.wonder.commons.utils.ArrayOperator;
 
 public class AsmX64Transpiler implements Transpiler {
+	
+	// FIX fix the kernel print_dec assembly, the '-' sign does not appear
 	
 	@Override
 	public String getName() {
@@ -34,6 +38,11 @@ public class AsmX64Transpiler implements Transpiler {
 	public ExecutableHandle exportProject(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
 		validateProject(handle, errors);
 		errors.assertNoErrors();
+		
+		if(handle.manifest.callingConvention != CallingConvention.__stdcall) {
+			throw new UnimplementedException("Unimplemented calling convention " +
+					handle.manifest.callingConvention);
+		}
 		
 		String[] files = new String[handle.units.length];
 		

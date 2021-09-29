@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
+import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -20,7 +21,11 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
+import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
@@ -30,33 +35,53 @@ import fr.wonder.commons.exceptions.UnimplementedException;
 
 public class FunctionWriter {
 	
-	private final UnitWriter writer;
-	private final FunctionSection func;
+	public final FunctionSection func;
+	public final InstructionSet instructions;
+	
+	public final UnitWriter unitWriter;
+	public final ExpressionWriter expWriter;
+	public final MemoryManager mem;
+	public final AsmOperationWriter opWriter;
+	public final AsmClosuresWriter closureWriter;
+	
+	private final int stackSpace;
+	
 	/** list of labels local to the function (all are starting with a dot) */
 	private final Map<Statement, String> labelsMap = new HashMap<>();
 	
 	private int debugLabelIndex = 0;
 	
-	private FunctionWriter(UnitWriter writer, FunctionSection func) {
-		this.writer = writer;
+	public FunctionWriter(UnitWriter writer, FunctionSection func) {
 		this.func = func;
+		this.instructions = writer.instructions;
+		this.unitWriter = writer;
+		this.stackSpace = getMaxStackSize(func.body);
+		this.expWriter = new ExpressionWriter(this);
+		this.opWriter = new AsmOperationWriter(this);
+		this.closureWriter = new AsmClosuresWriter(this);
+		this.mem = new MemoryManager(this, stackSpace);
 		fillLabelsMap();
 	}
-	
-	public static void writeFunction(UnitWriter writer, FunctionSection func, ErrorWrapper errors) {
-		new FunctionWriter(writer, func).writeFunction(errors);
+
+	public void writeGIPToRAX(VarGenericType genericInstance, BlueprintPrototype blueprint) {
+		for(int i = 0; i < func.genericContext.gips.length; i++) {
+			GenericImplementationParameter gip = func.genericContext.gips[i];
+			if(gip.genericType.equals(genericInstance) &&
+					gip.typeRequirement.blueprint.matchesPrototype(blueprint)) {
+				instructions.mov(Register.RAX, new MemAddress(Register.RBP, 16+(func.arguments.length+i) * MemSize.POINTER_SIZE));
+				return;
+			}
+		}
+		throw new IllegalStateException("Blueprint " + genericInstance + ":" + blueprint + " is not implemented in function " + func);
 	}
-	
-	private void writeFunction(ErrorWrapper errors) {
-		writer.instructions.createStackFrame();
+
+	public void writeFunction(ErrorWrapper errors) {
+		instructions.createStackFrame();
 		
-		int stackSpace = getMaxStackSize(func.body);
 		if(stackSpace != 0)
-			writer.instructions.add(OpCode.SUB, Register.RSP, stackSpace);
+			instructions.add(OpCode.SUB, Register.RSP, stackSpace);
 		
-		writer.mem.enterFunction(func, stackSpace);
-		
-		int argsSpace = func.getPrototype().functionType.arguments.length * MemSize.POINTER_SIZE;
+		int argsSpace = (func.arguments.length + func.genericContext.gips.length) * MemSize.POINTER_SIZE;
 		
 		boolean needsRetLabel = false;
 		
@@ -64,13 +89,13 @@ public class FunctionWriter {
 			Statement st = func.body[i];
 			boolean scopeUpdated = false;
 			
-			if(writer.project.manifest.DEBUG_SYMBOLS) {
+			if(unitWriter.project.manifest.DEBUG_SYMBOLS) {
 				if(st.sourceRef.stop != -1)
-					writer.instructions.comment(st.sourceRef.getLine().strip());
+					instructions.comment(st.sourceRef.getLine().strip());
 				else
-					writer.instructions.comment("~ " + st.toString());
+					instructions.comment("~ " + st.toString());
 			}
-			writer.instructions.label(".dbg_"+(debugLabelIndex++));
+			instructions.label(".dbg_"+(debugLabelIndex++));
 			
 			if(st instanceof SectionEndSt) {
 				writeSectionEndStatement((SectionEndSt) st, errors);
@@ -88,12 +113,12 @@ public class FunctionWriter {
 				writeWhileStatement((WhileSt) st, errors);
 				
 			} else if(st instanceof ForSt) {
-				writer.mem.updateScope(true);
+				mem.updateScope(true);
 				scopeUpdated = true;
 				writeForStatement((ForSt) st, errors);
 				
 			} else if(st instanceof RangedForSt) {
-				writer.mem.updateScope(true);
+				mem.updateScope(true);
 				scopeUpdated = true;
 				writeRangedForStatement((RangedForSt) st, errors);
 				
@@ -119,22 +144,16 @@ public class FunctionWriter {
 			
 			if(!scopeUpdated) {
 				if(st instanceof SectionEndSt)
-					writer.mem.updateScope(false);
+					mem.updateScope(false);
 				else if(st instanceof LabeledStatement)
-					writer.mem.updateScope(true);
+					mem.updateScope(true);
 			}
 		}
 		
 		if(needsRetLabel)
-			writer.instructions.label(".ret");
-		writer.instructions.endStackFrame();
-		switch(writer.project.manifest.callingConvention) {
-		case __stdcall:
-			writer.instructions.ret(argsSpace);
-			break;
-		default:
-			throw new IllegalStateException("Unimplemented calling convention " + writer.project.manifest.callingConvention);
-		}
+			instructions.label(".ret");
+		instructions.endStackFrame();
+		instructions.ret(argsSpace);
 	}
 
 	private static int getMaxStackSize(Statement[] statements) {
@@ -186,20 +205,20 @@ public class FunctionWriter {
 	
 	private void writeSectionEndStatement(SectionEndSt st, ErrorWrapper errors) {
 		if(st.closedStatement instanceof ForSt || st.closedStatement instanceof RangedForSt)
-			writer.instructions.jmp(getLabel(st.closedStatement));
+			instructions.jmp(getLabel(st.closedStatement));
 		else if(st.closedStatement instanceof IfSt && ((IfSt)st.closedStatement).elseStatement != null)
-			writer.instructions.jmp(getLabel(((IfSt)st.closedStatement).elseStatement.sectionEnd));
+			instructions.jmp(getLabel(((IfSt)st.closedStatement).elseStatement.sectionEnd));
 		else if(st.closedStatement instanceof WhileSt)
-			writer.instructions.jmp(getLabel(st.closedStatement));
-		writer.instructions.label(getLabel(st));
+			instructions.jmp(getLabel(st.closedStatement));
+		instructions.label(getLabel(st));
 	}
 	
 	private void writeVarDeclaration(VariableDeclaration st, ErrorWrapper errors) {
-		writer.mem.writeDeclaration(st, errors);
+		mem.writeDeclaration(st, errors);
 	}
 	
 	private void writeIfStatement(IfSt st, ErrorWrapper errors) {
-		writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
+		opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 	}
 	
 	private void writeElseStatement(ElseSt st, ErrorWrapper errors) {
@@ -207,8 +226,8 @@ public class FunctionWriter {
 	}
 	
 	private void writeWhileStatement(WhileSt st, ErrorWrapper errors) {
-		writer.instructions.label(getLabel(st));
-		writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
+		instructions.label(getLabel(st));
+		opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 	}
 	
 	private void writeForStatement(ForSt st, ErrorWrapper errors) {
@@ -216,25 +235,25 @@ public class FunctionWriter {
 	}
 	
 	private void writeRangedForStatement(RangedForSt st, ErrorWrapper errors) {
-		MemAddress varAddress = writer.mem.writeDeclaration(st.getVariableDeclaration(), errors);
-		writer.mem.declareDummyStackVariable("RangedFor.Step");
-		writer.mem.declareDummyStackVariable("RangedFor.Max");
+		MemAddress varAddress = mem.writeDeclaration(st.getVariableDeclaration(), errors);
+		mem.declareDummyStackVariable("RangedFor.Step");
+		mem.declareDummyStackVariable("RangedFor.Max");
 		MemAddress stepAddress = varAddress.addOffset(-8);
 		MemAddress maxAddress = varAddress.addOffset(-16);
-		writer.mem.writeTo(stepAddress, st.getStep(), errors);
-		writer.mem.writeTo(maxAddress, st.getMax(), errors);
+		mem.writeTo(stepAddress, st.getStep(), errors);
+		mem.writeTo(maxAddress, st.getMax(), errors);
 		String label = getLabel(st);
-		writer.mem.getVarAddress(st.getVariableDeclaration().getPrototype());
-		writer.instructions.mov(Register.RAX, varAddress);
-		writer.instructions.jmp(label + "_firstpass");
-		writer.instructions.label(label);
-		writer.instructions.mov(Register.RAX, varAddress);
-		writer.instructions.add(OpCode.ADD, Register.RAX, stepAddress);
-		writer.instructions.mov(varAddress, Register.RAX);
-		writer.instructions.label(label + "_firstpass");
-		writer.instructions.mov(Register.RBX, maxAddress);
-		writer.instructions.cmp(Register.RAX, Register.RBX);
-		writer.instructions.add(OpCode.JGE, getLabel(st.sectionEnd));
+		mem.getVarAddress(st.getVariableDeclaration().getPrototype());
+		instructions.mov(Register.RAX, varAddress);
+		instructions.jmp(label + "_firstpass");
+		instructions.label(label);
+		instructions.mov(Register.RAX, varAddress);
+		instructions.add(OpCode.ADD, Register.RAX, stepAddress);
+		instructions.mov(varAddress, Register.RAX);
+		instructions.label(label + "_firstpass");
+		instructions.mov(Register.RBX, maxAddress);
+		instructions.cmp(Register.RAX, Register.RBX);
+		instructions.add(OpCode.JGE, getLabel(st.sectionEnd));
 	}
 	
 	/**
@@ -246,39 +265,39 @@ public class FunctionWriter {
 		if(st.declaration != null)
 			writeVarDeclaration(st.declaration, errors);
 		if(st.affectation != null)
-			writer.instructions.jmp(label + "_firstpass");
-		writer.instructions.label(label);
+			instructions.jmp(label + "_firstpass");
+		instructions.label(label);
 		if(st.affectation != null) {
 			writeAffectationStatement(st.affectation, errors);
-			writer.instructions.label(label + "_firstpass");
+			instructions.label(label + "_firstpass");
 		}
 		if(st.getCondition() instanceof BoolLiteral && ((BoolLiteral) st.getCondition()).value) {
-			writer.instructions.jmp(label);
+			instructions.jmp(label);
 		} else {
-			writer.opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
+			opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
 		}
 	}
 	
 	private void writeReturnStatement(ReturnSt st, boolean writeJmp, ErrorWrapper errors) {
-		writer.expWriter.writeExpression(st.getExpression(), errors);
+		expWriter.writeExpression(st.getExpression(), errors);
 		if(writeJmp)
-			writer.instructions.jmp(".ret");
+			instructions.jmp(".ret");
 	}
 	
 	private void writeFunctionStatement(FunctionSt st, ErrorWrapper errors) {
-		writer.expWriter.writeExpression(st.getFunction(), errors);
+		expWriter.writeExpression(st.getFunction(), errors);
 	}
 	
 	private void writeAffectationStatement(AffectationSt st, ErrorWrapper errors) {
-		writer.mem.writeAffectationTo(st.getVariable(), st.getValue(), errors);
+		mem.writeAffectationTo(st.getVariable(), st.getValue(), errors);
 	}
 	
 	private void writeMultipleAffectationSt(MultipleAffectationSt st, ErrorWrapper errors) {
-		writer.mem.writeMultipleAffectationTo(st.getVariables(), st.getValues(), errors);
+		mem.writeMultipleAffectationTo(st.getVariables(), st.getValues(), errors);
 	}
 	
 	private void writeOperationStatement(OperationSt st, ErrorWrapper errors) {
-		writer.expWriter.writeExpression(st.getOperation(), errors);
+		expWriter.writeExpression(st.getOperation(), errors);
 	}
 	
 }

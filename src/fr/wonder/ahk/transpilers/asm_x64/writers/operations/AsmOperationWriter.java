@@ -16,9 +16,9 @@ import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
+import fr.wonder.ahk.transpilers.asm_x64.writers.FunctionWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
-import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
-import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.FunctionWriter;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.NativeFunctionWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.OperationWriter;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
@@ -63,9 +63,9 @@ public class AsmOperationWriter {
 		conversions.put(new Tuple<>(VarType.BOOL, VarType.INT), (from, to, writer, errors) -> {}); // NOOP
 	}
 	
-	final UnitWriter writer;
+	final FunctionWriter writer;
 	
-	public AsmOperationWriter(UnitWriter writer) {
+	public AsmOperationWriter(FunctionWriter writer) {
 		this.writer = writer;
 	}
 
@@ -74,7 +74,7 @@ public class AsmOperationWriter {
 		InstructionSet instructions = new InstructionSet();
 		instructions.skip(); // begin by an empty line
 		
-		for(Entry<NativeOperation, FunctionWriter> writer : Operations.nativeFunctions.entrySet()) {
+		for(Entry<NativeOperation, NativeFunctionWriter> writer : Operations.nativeFunctions.entrySet()) {
 			String label = RegistryManager.getOperationClosureRegistry(writer.getKey());
 			globalLabels.append("global " + label + "\n");
 			instructions.label(label);
@@ -113,7 +113,7 @@ public class AsmOperationWriter {
 		}
 		writer.mem.writeTo(Register.RAX, e1, errors);
 		if(e2 instanceof LiteralExp) {
-			return new ImmediateValue(writer.getValueString((LiteralExp<?>) e2));
+			return new ImmediateValue(writer.unitWriter.getValueString((LiteralExp<?>) e2));
 		} else if(e2 instanceof VarExp) {
 			return writer.mem.getVarAddress(((VarExp) e2).declaration);
 		} else {
@@ -137,7 +137,7 @@ public class AsmOperationWriter {
 	
 	void simpleFPUOperation(Expression e1, Expression e2, boolean commutativeOperation, OpCode opCode, ErrorWrapper errors) {
 		OperationParameter ro = prepareRAXRBX(e1, e2, commutativeOperation, errors);
-		MemAddress floatst = writer.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		MemAddress floatst = writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
 		writer.instructions.mov(floatst, Register.RAX);
 		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
 		writer.mem.moveData(floatst, ro);

@@ -6,22 +6,22 @@ public class VarGenericType extends VarType {
 	
 	public static final BlueprintRef[] NO_TYPE_RESTRICTION = new BlueprintRef[0];
 	
-	public final String name;
+	public final char name;
 	public final BlueprintRef[] typeRestrictions;
 	
-	public VarGenericType(String name, BlueprintRef[] typeRestrictions) {
+	public VarGenericType(char name, BlueprintRef[] typeRestrictions) {
 		this.name = name;
 		this.typeRestrictions = typeRestrictions;
 	}
 	
 	@Override
 	public String getName() {
-		return name;
+		return String.valueOf(name);
 	}
 
 	@Override
 	public String getSignature() {
-		return "G0";
+		return "G" + name;
 	}
 
 	@Override
@@ -31,7 +31,7 @@ public class VarGenericType extends VarType {
 
 	@Override
 	public boolean equals(Object o) {
-		return o instanceof VarGenericType && ((VarGenericType) o).name.equals(name);
+		return o instanceof VarGenericType && ((VarGenericType) o).name == name;
 	}
 	
 	@Override

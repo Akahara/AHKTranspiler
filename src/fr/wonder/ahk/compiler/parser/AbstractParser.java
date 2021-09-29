@@ -313,7 +313,7 @@ public class AbstractParser {
 			return new GenericContext(parentContext, GenericContext.NO_GENERICS);
 		p.position++;
 		
-		Map<String, VarGenericType> generics = new LinkedHashMap<>();
+		Map<Character, VarGenericType> generics = new LinkedHashMap<>();
 		
 		assertHasNext(line, p, "Expected generic array", errors);
 		if(line[p.position].base == TokenBase.TK_GENERIC_BINDING_END) {
@@ -330,7 +330,9 @@ public class AbstractParser {
 				continue;
 			}
 			
-			String name = tk.text;
+			Assertions.assertTrue(tk.text.length() == 1, "A generic has a non 1-length name");
+			char name = tk.text.charAt(0);
+			
 			BlueprintRef[] typeRestrictions;
 			
 			if((parentContext != null && parentContext.retrieveGenericType(name) != null) ||

@@ -14,6 +14,10 @@ public class GlobalVarDeclaration implements Declaration {
 		this.value = value;
 	}
 	
+	public GlobalVarDeclaration(MemSize size, String value) {
+		this(" ", size, value);
+	}
+	
 	@Override
 	public String toString() {
 		return label + " " + size.declaration + " " + value;

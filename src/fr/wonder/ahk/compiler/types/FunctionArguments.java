@@ -83,7 +83,7 @@ public class FunctionArguments {
 		if(multipleMatches) {
 			errors.add("Multiple functions match given parameters:" + callingElement.getErr());
 		} else if(validFunc == null) {
-			errors.add("No matching function match given parameters:" + callingElement.getErr());
+			errors.add("No function matching given parameters:" + callingElement.getErr());
 		}
 		return validFunc;
 	}

@@ -60,6 +60,7 @@ public class InstructionSet {
 	
 	public void section(String section) { add(new SectionDeclaration(section)); }
 	public void comment(String text) { add(new Comment(text)); }
+	public void comment(String text, int indentation) { add(new Comment(text, indentation)); }
 	public void label(String label) { add(new Label(label)); }
 	public void ret() { add(RET); }
 	public void ret(int stackSize) { add(RET, stackSize); }

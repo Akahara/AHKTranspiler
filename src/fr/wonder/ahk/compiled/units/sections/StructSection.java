@@ -9,6 +9,7 @@ import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -95,6 +96,8 @@ public class StructSection implements SourceElement {
 				implementedBlueprints,
 				modifiers,
 				signature);
+		for(BlueprintImplementation bpImpl : implementedBlueprints)
+			bpImpl.structure = prototype;
 	}
 	
 	public StructPrototype getPrototype() {

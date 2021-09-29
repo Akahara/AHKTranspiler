@@ -1,6 +1,6 @@
 package fr.wonder.ahk.compiled.units.sections;
 
-import fr.wonder.ahk.compiled.units.prototypes.BlueprintPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 
 public class BlueprintRef {
 	
@@ -14,6 +14,11 @@ public class BlueprintRef {
 	@Override
 	public boolean equals(Object obj) {
 		return obj instanceof BlueprintRef && blueprint.matchesPrototype(((BlueprintRef) obj).blueprint);
+	}
+	
+	@Override
+	public String toString() {
+		return name;
 	}
 	
 }

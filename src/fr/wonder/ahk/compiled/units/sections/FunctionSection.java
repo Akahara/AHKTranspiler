@@ -39,12 +39,16 @@ public class FunctionSection implements SourceElement {
 	}
 	
 	public static FunctionSection dummyFunction() {
-		return new FunctionSection(Invalids.UNIT, Invalids.SOURCE_REF, Invalids.GENERIC_CONTEXT, DeclarationModifiers.NONE);
+		FunctionSection func = new FunctionSection(
+				Invalids.UNIT, Invalids.SOURCE_REF,
+				Invalids.GENERIC_CONTEXT, DeclarationModifiers.NONE);
+		func.body = new Statement[0];
+		return func;
 	}
 	
 	@Override
 	public String toString() {
-		return "func " + returnType + " " + name + "(" + Utils.toString(arguments) + ")";
+		return "func" + genericContext + " " + returnType + " " + name + "(" + Utils.toString(arguments) + ")";
 	}
 	
 	@Override

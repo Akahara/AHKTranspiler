@@ -13,15 +13,15 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.Blueprint;
-import fr.wonder.ahk.compiled.units.sections.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.BlueprintOperator;
 import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
@@ -117,6 +117,6 @@ public class Invalids {
 		BLUEPRINT.operators = new BlueprintOperator[0];
 	}
 
-	public static final VarGenericType GENERIC_TYPE = new VarGenericType(STRING, VarGenericType.NO_TYPE_RESTRICTION);
+	public static final VarGenericType GENERIC_TYPE = new VarGenericType('@', VarGenericType.NO_TYPE_RESTRICTION);
 	
 }

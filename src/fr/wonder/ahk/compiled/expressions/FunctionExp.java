@@ -1,8 +1,9 @@
 package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter;
 import fr.wonder.ahk.utils.Utils;
+import fr.wonder.commons.annotations.Nullable;
 
 /**
  * Replaces {@link FunctionCallExp} when the {@link FunctionCallExp#getFunction() function argument}
@@ -17,19 +18,13 @@ import fr.wonder.ahk.utils.Utils;
 public class FunctionExp extends FunctionExpression {
 	
 	public final FunctionPrototype function;
+	@Nullable
+	public final BlueprintTypeParameter[] typesParameters;
 
-	public FunctionExp(FunctionCallExp funcCall, FunctionPrototype function) {
+	public FunctionExp(FunctionCallExp funcCall, FunctionPrototype function, BlueprintTypeParameter[] typesParameters) {
 		super(funcCall.sourceRef, funcCall.getArguments());
 		this.function = function;
-	}
-	
-	/**
-	 * Can only be used for linked operation expressions referring to overloaded
-	 * operators.
-	 */
-	public FunctionExp(OperationExp operation) {
-		super(operation.sourceRef, operation.getOperands());
-		this.function = ((OverloadedOperatorPrototype) operation.getOperation()).function;
+		this.typesParameters = typesParameters;
 	}
 	
 	@Override

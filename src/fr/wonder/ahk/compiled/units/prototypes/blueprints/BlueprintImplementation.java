@@ -1,13 +1,17 @@
-package fr.wonder.ahk.compiled.units.sections;
+package fr.wonder.ahk.compiled.units.prototypes.blueprints;
 
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
+import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
+import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 
 /**
+ * <b>BPI</b>
+ * <br>
  * The BlueprintImplementation class is the concrete link between a structure
- * declaring it implements a certain blueprint and said blueprint.
+ * declaring it implements a certain blueprint and that blueprint.
  * 
  * <p>
  * At parsing time the structure only knows the names of the blueprints it
@@ -33,26 +37,33 @@ import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
  */
 public class BlueprintImplementation {
 
-	public final BlueprintRef blueprint;
+	/** Set by the prelinker via Structure#setSignature (when computing prototypes) */
+	public StructPrototype structure;
+	public final BlueprintRef bpRef;
 
 	public VariablePrototype[] variables;
 	public FunctionPrototype[] functions;
 	public OverloadedOperatorPrototype[] operators;
 
 	public BlueprintImplementation(BlueprintRef blueprint) {
-		this.blueprint = blueprint;
+		this.bpRef = blueprint;
+	}
+	
+	@Override
+	public String toString() {
+		return structure.toString() + ":" + bpRef.toString();
 	}
 
 	public VariablePrototype getImplementation(VariablePrototype blueprintVar) {
-		return getImplementation(variables, blueprint.blueprint.variables, blueprintVar);
+		return getImplementation(variables, bpRef.blueprint.variables, blueprintVar);
 	}
 
 	public FunctionPrototype getImplementation(FunctionPrototype blueprintFunc) {
-		return getImplementation(functions, blueprint.blueprint.functions, blueprintFunc);
+		return getImplementation(functions, bpRef.blueprint.functions, blueprintFunc);
 	}
 
 	public OverloadedOperatorPrototype getImplementation(OverloadedOperatorPrototype blueprintOperator) {
-		return getImplementation(operators, blueprint.blueprint.operators, blueprintOperator);
+		return getImplementation(operators, bpRef.blueprint.operators, blueprintOperator);
 	}
 
 	private static <T extends Prototype<T>> T getImplementation(

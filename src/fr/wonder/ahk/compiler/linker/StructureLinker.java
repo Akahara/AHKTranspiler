@@ -5,13 +5,13 @@ import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiled.units.sections.BlueprintImplementation;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.OverloadedOperator;
@@ -27,26 +27,20 @@ class StructureLinker {
 	StructureLinker(Linker linker) {
 		this.linker = linker;
 	}
-	
-	void linkStructure(Unit unit, UnitScope unitScope, StructSection struct, ErrorWrapper errors) {
-		for(ConstructorDefaultValue nullField : struct.nullFields) {
-			linker.expressions.linkExpressions(unit, unitScope, nullField, struct.genericContext, errors);
-			VariableDeclaration member = struct.getMember(nullField.name);
-			linker.checkAffectationType(nullField, 0, member.getType(), errors);
-		}
-		for(VariableDeclaration member : struct.members) {
-			linker.expressions.linkExpressions(unit, unitScope, member, struct.genericContext, errors);
-			linker.checkAffectationType(member, 0, member.getType(), errors);
-		}
+
+	void prelinkStructure(Unit unit, StructSection struct, ErrorWrapper errors) {
 		for(OverloadedOperator operator : struct.operators) {
 			linkOperator(unit, struct, operator, errors);
 		}
-		for(BlueprintImplementation bpImpl : struct.implementedBlueprints) {
-			linkBlueprintImplementation(struct, bpImpl, errors.subErrors("Invalid implementation of blueprint " + bpImpl.blueprint.name));
-		}
 	}
-
+	
+	/**
+	 * Operators are linked after types and prototypes were computed
+	 * but before expressions, this way operator expressions can safely
+	 * refer to operator's functions.
+	 */
 	private void linkOperator(Unit unit, StructSection struct, OverloadedOperator operator, ErrorWrapper errors) {
+		operator.prototype.function = Invalids.FUNCTION_PROTO;
 		FunctionPrototype func = unit.prototype.getFunction(operator.functionName);
 		if(func == null) {
 			errors.add("Undefined function for operator overload:" + operator.getErr());
@@ -57,6 +51,7 @@ class StructureLinker {
 		}
 		OverloadedOperatorPrototype op = operator.prototype;
 		op.function = func;
+		
 		VarType[] args = func.functionType.arguments;
 		if(args.length != op.argCount()) {
 			errors.add("Invalid function for operator overload, operator takes " + op.argCount() +
@@ -71,6 +66,21 @@ class StructureLinker {
 		if(!funcRO.equals(op.roType))
 			errors.add("Invalid function for operator overload, left operand type mismatch " +
 					op.roType + " against " + funcRO + operator.getErr());
+	}
+	
+	void linkStructure(Unit unit, UnitScope unitScope, StructSection struct, ErrorWrapper errors) {
+		for(ConstructorDefaultValue nullField : struct.nullFields) {
+			linker.expressions.linkExpressions(unit, unitScope, nullField, struct.genericContext, errors);
+			VariableDeclaration member = struct.getMember(nullField.name);
+			linker.checkAffectationType(nullField, 0, member.getType(), errors);
+		}
+		for(VariableDeclaration member : struct.members) {
+			linker.expressions.linkExpressions(unit, unitScope, member, struct.genericContext, errors);
+			linker.checkAffectationType(member, 0, member.getType(), errors);
+		}
+		for(BlueprintImplementation bpImpl : struct.implementedBlueprints) {
+			linkBlueprintImplementation(struct, bpImpl, errors.subErrors("Invalid implementation of blueprint " + bpImpl.bpRef.name));
+		}
 	}
 
 	public void collectOverloadedOperators(ErrorWrapper errors) {
@@ -92,7 +102,7 @@ class StructureLinker {
 	private void linkBlueprintImplementation(StructSection struct,
 			BlueprintImplementation bpImpl, ErrorWrapper errors) {
 		
-		BlueprintPrototype bp = bpImpl.blueprint.blueprint;
+		BlueprintPrototype bp = bpImpl.bpRef.blueprint;
 		
 		bpImpl.variables = new VariablePrototype[bp.variables.length];
 		for(int i = 0; i < bp.variables.length; i++)

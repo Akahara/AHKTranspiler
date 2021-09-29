@@ -17,12 +17,10 @@ import fr.wonder.commons.utils.ArrayOperator;
  */
 public abstract class FunctionExpression extends Expression {
 
-	/** {@link FunctionCallExp} constructor */
 	public FunctionExpression(SourceReference sourceRef, Expression function, Expression[] arguments) {
 		super(sourceRef, function, arguments);
 	}
 	
-	/** {@link FunctionExp} constructor */
 	public FunctionExpression(SourceReference sourceRef, Expression[] arguments) {
 		super(sourceRef, arguments);
 	}

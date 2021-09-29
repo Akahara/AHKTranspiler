@@ -34,16 +34,16 @@ class Operations {
 		
 	}
 	
-	static interface FunctionWriter {
+	static interface NativeFunctionWriter {
 		
 		void write(InstructionSet instructions);
 		
 	}
 	
 	static final Map<NativeOperation, OperationWriter> nativeOperations = new HashMap<>();
-	static final Map<NativeOperation, FunctionWriter> nativeFunctions = new HashMap<>();
+	static final Map<NativeOperation, NativeFunctionWriter> nativeFunctions = new HashMap<>();
 	
-	private static void putOperation(VarType l, VarType r, Operator o, OperationWriter opWriter, FunctionWriter funcWriter) {
+	private static void putOperation(VarType l, VarType r, Operator o, OperationWriter opWriter, NativeFunctionWriter funcWriter) {
 		NativeOperation op = NativeOperation.getOperation(l, r, o, false);
 		if(op == null)
 			throw new IllegalStateException("An unimplemented native operation was given an asm implementation");
@@ -244,7 +244,7 @@ class Operations {
 
 	static void op_nullSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
-		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, asmWriter.writer.requireExternLabel(GlobalLabels.ADDRESS_FSIGNBIT));
+		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FSIGNBIT));
 	}
 	
 	static void fc_nullSUBfloat(InstructionSet is) {
@@ -300,7 +300,7 @@ class Operations {
 
 	static void op_strADDstr(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
-		addStrings(asmWriter.writer.instructions, asmWriter.writer::callAlloc);
+		addStrings(asmWriter.writer.instructions, asmWriter.writer.unitWriter::callAlloc);
 	}
 	
 	static void fc_strADDstr(InstructionSet is) {

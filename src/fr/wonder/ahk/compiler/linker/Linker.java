@@ -14,10 +14,10 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.TypeAccess;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
@@ -70,8 +70,8 @@ public class Linker {
 			ErrorWrapper subErrors = errors.subErrors("Unable to link unit " + unit.fullBase);
 			linkUnit(unit, subErrors);
 		}
-		errors.assertNoErrors();
 		
+		errors.assertNoErrors();
 		return new LinkedHandle(units, projectHandle.manifest);
 	}
 
@@ -100,6 +100,12 @@ public class Linker {
 			prelinker.prelinkUnit(unit, errors.subErrors("Unable to prelink unit " + unit.fullBase));
 		}
 		
+		for(Unit unit : units) {
+			for(StructSection struct : unit.structures) {
+				structures.prelinkStructure(unit, struct, errors);
+			}
+		}
+		
 		structures.collectOverloadedOperators(errors);
 		
 		errors.assertNoErrors();
@@ -111,6 +117,10 @@ public class Linker {
 	private void linkUnit(Unit unit, ErrorWrapper errors) {
 		UnitScope unitScope = new UnitScope(unit.prototype, unit.prototype.filterImportedUnits(prototypes));
 		
+		for(StructSection struct : unit.structures) {
+			structures.linkStructure(unit, unitScope, struct, errors.subErrors("Errors in structure " + struct.name));
+		}
+		
 		for(VariableDeclaration var : unit.variables) {
 			expressions.linkExpressions(unit, unitScope, var, GenericContext.EMPTY_CONTEXT, errors);
 			checkAffectationType(var, 0, var.getType(), errors);
@@ -119,10 +129,6 @@ public class Linker {
 		for(FunctionSection func : unit.functions) {
 			ErrorWrapper ferrors = errors.subErrors("Errors in function " + func.getSignature().computedSignature);
 			statements.linkStatements(unit, unitScope.innerScope(), func, ferrors);
-		}
-		
-		for(StructSection struct : unit.structures) {
-			structures.linkStructure(unit, unitScope, struct, errors.subErrors("Errors in structure " + struct.name));
 		}
 	}
 

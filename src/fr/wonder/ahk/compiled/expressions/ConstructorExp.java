@@ -7,20 +7,22 @@ import fr.wonder.ahk.utils.Utils;
 
 public class ConstructorExp extends Expression {
 	
-	/** Reference to the structure type, validated by the linker */
 	public final VarType constructorType;
+	public final VarType[] genericBindings;
 	
 	/** Set by the linker */
 	public ConstructorPrototype constructor;
 	
-	public ConstructorExp(SourceReference sourceRef, VarType type, Expression[] arguments) {
+	public ConstructorExp(SourceReference sourceRef, VarType constructorType,
+			VarType[] genericBindings, Expression[] arguments) {
 		super(sourceRef, arguments);
-		this.constructorType = type;
+		this.constructorType = constructorType;
+		this.genericBindings = genericBindings;
 	}
 	
 	@Override
 	public String toString() {
-		return constructorType + "(" + Utils.toString(expressions) + ")";
+		return constructorType + Utils.genericBindingsString(genericBindings) + "(" + Utils.toString(expressions) + ")";
 	}
 
 }

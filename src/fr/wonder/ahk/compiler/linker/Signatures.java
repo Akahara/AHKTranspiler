@@ -80,11 +80,12 @@ public class Signatures {
 	}
 	
 	public static Signature of(OverloadedOperatorPrototype operator, StructSection structure) {
+		String computedSignature = "operator_"+operator.loType+"_"+operator.operator+"_"+
+				operator.roType+"_"+operator.resultType;
 		return new Signature(
 				structSig(structure),
-				"operator_"+operator.operator.toString(),
-				"operator_"+operator.loType+"_"+operator.operator+"_"+
-						operator.roType+"_"+operator.resultType);
+				computedSignature,
+				computedSignature);
 	}
 	
 	private static String bpSig(Blueprint bp) {
@@ -121,6 +122,10 @@ public class Signatures {
 	}
 
 	public static Signature of(BlueprintOperator op, Blueprint bp) {
-		return null;
+		return new Signature(
+				bpSig(bp),
+				"operator_"+op.operator.toString(),
+				"operator_"+op.leftOperand+"_"+op.operator+"_"+
+						op.rightOperand+"_"+op.resultType);
 	}
 }

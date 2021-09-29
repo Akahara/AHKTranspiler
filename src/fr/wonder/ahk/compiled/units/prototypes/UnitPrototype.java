@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import fr.wonder.ahk.compiled.units.Signature;
+import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiler.linker.Signatures;
 import fr.wonder.commons.utils.ArrayOperator;
@@ -29,7 +30,14 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	 * The list of variables and functions used but not contained by this unit.
 	 * This list may not contain {@link FunctionArgument}s.
 	 */
-	public Set<Prototype<?>> externalAccesses = new HashSet<>();
+	public Set<Prototype<?>> externalAccesses = new HashSet<>() {
+		private static final long serialVersionUID = 1L;
+		public boolean add(Prototype<?> e) {
+			if(e == null)
+				throw new NullPointerException("Null external access");
+			return super.add(e);
+		};
+	};
 	
 	public UnitPrototype(String fullBase, String[] importations,
 			FunctionPrototype[] functions, VariablePrototype[] variables,

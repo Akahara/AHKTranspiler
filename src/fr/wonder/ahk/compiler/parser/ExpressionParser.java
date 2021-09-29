@@ -380,12 +380,18 @@ public class ExpressionParser extends AbstractParser {
 		Section argsSection = section.lastSubsection();
 		Expression[] arguments = parseArgumentList(argsSection);
 		Pointer p = new Pointer(section.start);
-		VarType type = parseType(unit, line, genc, p, ALLOW_NONE, errors);
+		VarType structType = unit.getStructOrAliasType(line[p.position++]);
+		VarType[] genericBindings = null;
+		if(section.subsections.size() != 1) {
+			Section genericsSection = section.subsections.get(section.subsections.size()-2);
+			genericBindings = parseGenericBindings(genericsSection);
+			p.position = genericsSection.stop+1;
+		}
 		if(p.position != argsSection.start-1) {
 			errors.add("Unexpected tokens:" + unit.source.getErr(line, p.position, argsSection.start-1));
 			return Invalids.EXPRESSION;
 		}
-		return new ConstructorExp(sourceRefOfSection(section), type, arguments);
+		return new ConstructorExp(sourceRefOfSection(section), structType, genericBindings, arguments);
 	}
 	
 	/** Assumes that the last subsection is a generic binding */
