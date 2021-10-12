@@ -12,7 +12,6 @@ import fr.wonder.commons.utils.Assertions;
 
 public class GenericContext {
 	
-	public static final VarGenericType[] NO_GENERICS = new VarGenericType[0];
 	public static final GenericContext NO_CONTEXT = new NoContext();
 	
 	public final VarGenericType[] generics;

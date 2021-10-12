@@ -142,6 +142,11 @@ public class NativeOperation extends Operation {
 				X,X,X,
 				X,I,X,
 				X,X,X
+			},
+			{ // || &&
+				B,I,X,
+				I,B,X,
+				X,X,X,
 			}
 	};
 	
@@ -238,8 +243,11 @@ public class NativeOperation extends Operation {
 		case SHL:
 		case SHR:
 			return 3;
-		case NOT:
+		case OR:
+		case AND:
 			return 4;
+		case NOT:
+			throw new UnreachableException("The not operator was not taken care of");
 		}
 		throw new UnreachableException(o.toString());
 	}

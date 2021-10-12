@@ -235,12 +235,10 @@ public class FunctionWriter {
 	}
 	
 	private void writeRangedForStatement(RangedForSt st, ErrorWrapper errors) {
+		// TODO the for-in-range statement can be optimized a bit with the 'loop' instruction
 		MemAddress varAddress = mem.writeDeclaration(st.getVariableDeclaration(), errors);
-		mem.declareDummyStackVariable("RangedFor.Step");
 		mem.declareDummyStackVariable("RangedFor.Max");
-		MemAddress stepAddress = varAddress.addOffset(-8);
-		MemAddress maxAddress = varAddress.addOffset(-16);
-		mem.writeTo(stepAddress, st.getStep(), errors);
+		MemAddress maxAddress = varAddress.addOffset(-8);
 		mem.writeTo(maxAddress, st.getMax(), errors);
 		String label = getLabel(st);
 		mem.getVarAddress(st.getVariableDeclaration().getPrototype());
@@ -248,12 +246,13 @@ public class FunctionWriter {
 		instructions.jmp(label + "_firstpass");
 		instructions.label(label);
 		instructions.mov(Register.RAX, varAddress);
-		instructions.add(OpCode.ADD, Register.RAX, stepAddress);
+		instructions.add(OpCode.ADD, Register.RAX, unitWriter.getValueString(st.getStep()));
 		instructions.mov(varAddress, Register.RAX);
 		instructions.label(label + "_firstpass");
 		instructions.mov(Register.RBX, maxAddress);
 		instructions.cmp(Register.RAX, Register.RBX);
-		instructions.add(OpCode.JGE, getLabel(st.sectionEnd));
+		OpCode jmpCode = st.isIncrementing() ? OpCode.JGE : OpCode.JL;
+		instructions.add(jmpCode, getLabel(st.sectionEnd));
 	}
 	
 	/**
@@ -279,7 +278,10 @@ public class FunctionWriter {
 	}
 	
 	private void writeReturnStatement(ReturnSt st, boolean writeJmp, ErrorWrapper errors) {
-		expWriter.writeExpression(st.getExpression(), errors);
+		if(st.getExpression() == null)
+			instructions.clearRegister(Register.RAX);
+		else
+			expWriter.writeExpression(st.getExpression(), errors);
 		if(writeJmp)
 			instructions.jmp(".ret");
 	}

@@ -1,0 +1,12 @@
+-  There is currently no garbage collector
+
+-  The || (or) and && (and) operators, when used whith non-functions types, 
+will only compute one operand if possible: when ORing two things, if the
+first one is False there is no need to compute the second one. On the
+other hand when used with functions, BOTH operands are computed (executed
+even, as they are functions)
+
+-  In for-in-range statements, the first bound is always included but the
+second one is only if the step is negative (the loop decrements):
+for(int i : 0..5) will run for 0,1,2,3,4
+for(int i : 5..-1..0) wil run for 5,4,3,2,1,0

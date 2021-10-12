@@ -1,7 +1,20 @@
 package fr.wonder.ahk.compiled.expressions;
 
 public enum Operator {
+
+	OR			(-30, false),
+	AND			(-30, false),
 	
+	/** Strict egality check '===' */
+	STRICTEQUALS(-20, false),
+	
+	EQUALS		(-20, false),
+	GREATER		(-20, false),
+	LOWER		(-20, false),
+	GEQUALS		(-20, false),
+	LEQUALS		(-20, false),
+	NEQUALS		(-20, false),
+
 	POWER		(-10, false),
 	NOT			(-10, true),
 
@@ -13,15 +26,6 @@ public enum Operator {
 	MULTIPLY	(20, false),
 	DIVIDE		(20, false),
 	MOD			(30, false),
-	
-	EQUALS		(50, false),
-	GREATER		(50, false),
-	LOWER		(50, false),
-	GEQUALS		(50, false),
-	LEQUALS		(50, false),
-	NEQUALS		(50, false),
-	/** Strict egality check '===' */
-	STRICTEQUALS		(60, false),
 	
 	;
 	

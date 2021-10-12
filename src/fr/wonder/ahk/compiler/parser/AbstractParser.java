@@ -308,9 +308,9 @@ public class AbstractParser {
 			GenericContext parentContext, Pointer p, ErrorWrapper errors) throws ParsingException {
 		
 		if(p.position == line.length)
-			return new GenericContext(parentContext, GenericContext.NO_GENERICS);
+			throw new IllegalArgumentException("No generic context");
 		if(line[p.position].base != TokenBase.TK_GENERIC_BINDING_BEGIN)
-			return new GenericContext(parentContext, GenericContext.NO_GENERICS);
+			return GenericContext.NO_CONTEXT;
 		p.position++;
 		
 		Map<Character, VarGenericType> generics = new LinkedHashMap<>();

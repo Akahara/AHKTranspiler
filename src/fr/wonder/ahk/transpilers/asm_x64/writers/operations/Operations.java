@@ -80,6 +80,11 @@ class Operations {
 		
 		putOperation(null, BOOL, NOT, Operations::op_nullNOTbool, Operations::fc_nullNOTbool);
 		putOperation(STR, STR, ADD, Operations::op_strADDstr, Operations::fc_strADDstr);
+
+		putOperation(BOOL, BOOL, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
+		putOperation(INT, INT, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
+		putOperation(BOOL, BOOL, AND, Operations::op_boolANDbool, Operations::fc_boolANDbool);
+		putOperation(INT, INT, AND, Operations::op_boolANDbool, Operations::fc_boolANDbool);
 	}
 
 	/** the address of the first operand for operations closures */
@@ -380,6 +385,36 @@ class Operations {
 		is.cmp(Register.RAX, fcOp2);
 		is.mov(Register.RAX, 0); // clear rax without setting rflags
 		is.add(OpCode.SETNE, Register.AL);
+		is.ret(16);
+	}
+	
+	static void op_boolORbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		String specialLabel = asmWriter.writer.unitWriter.getSpecialLabel();
+		asmWriter.writer.expWriter.writeExpression(leftOperand, errors);
+		asmWriter.writer.instructions.test(Register.RAX);
+		asmWriter.writer.instructions.add(OpCode.JNZ, specialLabel);
+		asmWriter.writer.expWriter.writeExpression(rightOperand, errors);
+		asmWriter.writer.instructions.label(specialLabel);
+	}
+	
+	static void fc_boolORbool(InstructionSet is) {
+		is.mov(Register.RAX, fcOp1);
+		is.add(OpCode.OR, Register.RAX, fcOp2);
+		is.ret(16);
+	}
+	
+	static void op_boolANDbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		String specialLabel = asmWriter.writer.unitWriter.getSpecialLabel();
+		asmWriter.writer.expWriter.writeExpression(leftOperand, errors);
+		asmWriter.writer.instructions.test(Register.RAX);
+		asmWriter.writer.instructions.add(OpCode.JZ, specialLabel);
+		asmWriter.writer.expWriter.writeExpression(rightOperand, errors);
+		asmWriter.writer.instructions.label(specialLabel);
+	}
+	
+	static void fc_boolANDbool(InstructionSet is) {
+		is.mov(Register.RAX, fcOp1);
+		is.add(OpCode.AND, Register.RAX, fcOp2);
 		is.ret(16);
 	}
 

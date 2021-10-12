@@ -108,6 +108,8 @@ public class ExpressionOptimizer {
 				isFloatPrecision ? ln.doubleValue() < rn.doubleValue() : ln.longValue() < rn.longValue());
 		case STRICTEQUALS: return new BoolLiteral(exp.sourceRef,
 				isFloatPrecision ? ln.doubleValue() == rn.doubleValue() : ln.longValue() == rn.longValue());
+		case AND: return new BoolLiteral(exp.sourceRef, ln.longValue() != 0 && rn.longValue() != 0);
+		case OR: return new BoolLiteral(exp.sourceRef, ln.longValue() != 0 || rn.longValue() != 0);
 		case NOT:
 			throw new UnreachableException();
 		}

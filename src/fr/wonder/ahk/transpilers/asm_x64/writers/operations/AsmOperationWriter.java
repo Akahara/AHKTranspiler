@@ -1,7 +1,8 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 
 import static fr.wonder.ahk.compiled.expressions.Operator.EQUALS;
-import static fr.wonder.ahk.compiled.expressions.Operator.LOWER;
+import static fr.wonder.ahk.compiled.expressions.Operator.GREATER;
+import static fr.wonder.ahk.compiled.expressions.Operator.*;
 import static fr.wonder.ahk.compiled.expressions.Operator.NEQUALS;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
 
@@ -53,6 +54,9 @@ public class AsmOperationWriter {
 		conditionalJumps.put(NativeOperation.getOperation(INT, INT, EQUALS, false), Jumps::jump_intEQUint);
 		conditionalJumps.put(NativeOperation.getOperation(INT, INT, NEQUALS, false), Jumps::jump_intNEQUint);
 		conditionalJumps.put(NativeOperation.getOperation(INT, INT, LOWER, false), Jumps::jump_intLTint);
+		conditionalJumps.put(NativeOperation.getOperation(INT, INT, LEQUALS, false), Jumps::jump_intLEint);
+		conditionalJumps.put(NativeOperation.getOperation(INT, INT, GREATER, false), Jumps::jump_intGTint);
+		conditionalJumps.put(NativeOperation.getOperation(INT, INT, GEQUALS, false), Jumps::jump_intGEint);
 		
 		Assertions.assertNull(conditionalJumps.get(null), "An unimplemented native operation was given an asm jump implementation");
 	}

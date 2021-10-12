@@ -1,6 +1,7 @@
 package fr.wonder.ahk.compiled.statements;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
+import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.VarExp;
@@ -23,7 +24,7 @@ public class RangedForSt extends LabeledStatement {
 	private final VariableDeclaration variable;
 	
 	public RangedForSt(Unit unit, SourceReference sourceRef, boolean singleLine,
-			String varName, Expression min, Expression max, Expression step) {
+			String varName, Expression min, Expression max, LiteralExp<? extends Number> step) {
 		super(sourceRef, singleLine, min, max, step);
 		this.variable = new VariableDeclaration(unit, sourceRef,
 				varName, VarType.INT, DeclarationModifiers.NONE, getMin());
@@ -41,8 +42,14 @@ public class RangedForSt extends LabeledStatement {
 		return expressions[1];
 	}
 	
-	public Expression getStep() {
-		return expressions[2];
+	@SuppressWarnings("unchecked")
+	public LiteralExp<? extends Number> getStep() {
+		return (LiteralExp<? extends Number>) expressions[2];
+	}
+	
+	/** Returns true iff the step is positive, false iff negative (cannot be 0) */
+	public boolean isIncrementing() {
+		return getStep().value.doubleValue() > 0;
 	}
 	
 	public ForSt toComplexFor() {

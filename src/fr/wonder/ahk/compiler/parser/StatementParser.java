@@ -3,6 +3,7 @@ package fr.wonder.ahk.compiler.parser;
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
+import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
@@ -111,14 +112,14 @@ public class StatementParser extends AbstractParser {
 	}
 
 	private AffectationSt parseDirectAffectationStatement(int begin, int end, ErrorWrapper subErrors) {
-		Expression leftOperand = ExpressionParser.parseExpression(unit, line, genc, begin, end-2, subErrors);
+		Expression leftOperand = ExpressionParser.parseExpression(unit, line, genc, begin, end-1, subErrors);
 		if(!subErrors.noErrors())
 			return Invalids.AFFECTATION_STATEMENT;
 		Token last = line[end-1];
 		Expression rightOperand = new IntLiteral(last.sourceRef, 1);
 		Operator op = Tokens.getDirectOperation(last.base);
-		Expression affectation = new OperationExp(SourceReference.fromLine(line, begin, end), op, leftOperand, rightOperand);
-		return new AffectationSt(SourceReference.fromLine(line, begin, end), leftOperand, affectation);
+		Expression affectation = new OperationExp(SourceReference.fromLine(line, begin, end-1), op, leftOperand, rightOperand);
+		return new AffectationSt(SourceReference.fromLine(line, begin, end-1), leftOperand, affectation);
 	}
 	
 	private VariableDeclaration parseVariableDeclaration(int begin, int end, DeclarationModifiers modifiers, ErrorWrapper subErrors) {
@@ -261,6 +262,7 @@ public class StatementParser extends AbstractParser {
 				singleLine, declaration, condition, affectation);
 	}
 
+	@SuppressWarnings("unchecked")
 	private Statement parseRangedFor(int conditionEnd, int simpleRangeMarker, boolean singleLine) {
 		int simpleRangeSecond = Utils.getTokenIdx(line, TokenBase.TK_DOUBLE_DOT, simpleRangeMarker+1);
 		int equalsMarker = Utils.getTokenIdx(line, TokenBase.KW_EQUAL, 2);
@@ -278,15 +280,25 @@ public class StatementParser extends AbstractParser {
 			return Invalids.STATEMENT;
 		}
 		VariableDeclaration declaration = parseVariableDeclaration(2, simpleRangeMarker, DeclarationModifiers.NONE, errors);
-		int maxStop = simpleRangeSecond == -1 ? conditionEnd : simpleRangeSecond;
-		Expression maximum = ExpressionParser.parseExpression(unit, line, genc, simpleRangeMarker+1, maxStop, errors);
-		Expression increment;
-		if(simpleRangeSecond != -1)
-			increment = ExpressionParser.parseExpression(unit, line, genc, simpleRangeSecond+1, conditionEnd, errors);
-		else
-			increment = new IntLiteral(line[conditionEnd].sourceRef, 1);
+		int maxBegin = simpleRangeSecond == -1 ? simpleRangeMarker+1 : simpleRangeSecond+1;
+		Expression maximum = ExpressionParser.parseExpression(unit, line, genc, maxBegin, conditionEnd, errors);
+		LiteralExp<? extends Number> step;
+		if(simpleRangeSecond != -1) {
+			Expression increment = ExpressionParser.parseExpression(unit, line, genc, simpleRangeMarker+1, simpleRangeSecond, errors);
+			if(!(increment instanceof IntLiteral) && !(increment instanceof FloatLiteral)) {
+				errors.add("Invalid step in for statement, expected float or int literal:" + increment.getErr());
+				return Invalids.STATEMENT;
+			}
+			step = (LiteralExp<? extends Number>) increment;
+			if(step.value.doubleValue() == 0) {
+				errors.add("Invalid step in for statement, the step cannot be zero:" + increment.getErr());
+				return Invalids.STATEMENT;
+			}
+		} else {
+			step = new IntLiteral(line[conditionEnd].sourceRef, 1);
+		}
 		return new RangedForSt(unit, SourceReference.fromLine(line),
-				singleLine, declaration.name, declaration.getDefaultValue(), maximum, increment);
+				singleLine, declaration.name, declaration.getDefaultValue(), maximum, step);
 	}
 
 	/** Assumes that the first token is KW_FOREACH */
@@ -365,7 +377,7 @@ public class StatementParser extends AbstractParser {
 		Expression rightOperand = ExpressionParser.parseExpression(unit, line, genc, opPos+1, valueEnd, subErrors);
 		if(line[opPos].base != TokenBase.KW_EQUAL) {
 			Operator op = Tokens.getAffectationOperator(line[opPos].base);
-			rightOperand = new OperationExp(SourceReference.fromLine(line, variableBegin, valueEnd),
+			rightOperand = new OperationExp(SourceReference.fromLine(line, variableBegin, valueEnd-1),
 					op, leftOperand, rightOperand);
 		}
 		return new AffectationSt(SourceReference.fromLine(line),
