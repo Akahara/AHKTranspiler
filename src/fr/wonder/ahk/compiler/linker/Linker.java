@@ -8,6 +8,8 @@ import java.util.Set;
 import fr.wonder.ahk.compiled.expressions.ConversionExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.NullExp;
+import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
+import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarNullType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
@@ -23,6 +25,7 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Compiler;
+import fr.wonder.ahk.compiler.parser.StatementParser;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.TypesTable;
 import fr.wonder.ahk.handles.CompiledHandle;
@@ -153,28 +156,60 @@ public class Linker {
 	 */
 	void checkAffectationType(ExpressionHolder valueHolder, int valueIndex,
 			VarType validType, ErrorWrapper errors) {
-		
+
 		Expression value = valueHolder.getExpressions()[valueIndex];
-		if(value instanceof NullExp) {
-			if(!VarNullType.isAcceptableNullType(validType)) {
-				errors.add("Type mismatch, cannot use null with type " + validType + valueHolder.getErr());
-			} else {
-				((NullExp) value).setNullType(validType);
-			}
+		
+		if(tryCheckSetableAffectationType(value.type, validType, value, errors))
 			return;
-		}
+		
 //		if(validType instanceof VarStructType && ((VarStructType) validType).structure.hasGenericBindings()) {
 //			errors.add("Type " + validType + " must be parametrized before affectation:" + valueHolder.getErr());
 //			return;
 //		}
-		if(value.getType().equals(validType))
+		
+		if(value.type == VarArrayType.EMPTY_ARRAY) {
+			if(!(value instanceof UninitializedArrayExp)) {
+				errors.add("Invalid expression holding empty array type");
+			} else if(validType instanceof VarArrayType) {
+				value.type = validType; // update array type safely
+				VarType componentType = ((VarArrayType) validType).componentType;
+				Expression defaultComponentValue = StatementParser.getDefaultValue(
+						componentType, value.sourceRef.source, value.sourceRef.start);
+				if(!tryCheckSetableAffectationType(defaultComponentValue.type, componentType, value, errors))
+					errors.add("Invalid component type for empty array: " + componentType + value.getErr());
+				((UninitializedArrayExp) value).setDefaultComponentValue(defaultComponentValue);
+			} else {
+				errors.add("Type mismatch, cannot use an array type for " + validType + value.getErr());
+			}
 			return;
+		}
+		
 		if(ConversionTable.canConvertImplicitely(value.getType(), validType)) {
 			value = new ConversionExp(value, validType);
 			valueHolder.getExpressions()[valueIndex] = value;
 		} else {
 			errors.add("Type mismatch, cannot convert " + value.getType() + " to " + validType + value.getErr());
 		}
+	}
+	
+	/**
+	 * Has the same function as {@link #checkAffectationType(ExpressionHolder, int, VarType, ErrorWrapper)}
+	 * but works with types without expressions. This is required 
+	 */
+	private boolean tryCheckSetableAffectationType(VarType provided, VarType required, SourceElement queryElement, ErrorWrapper errors) {
+		if(provided.equals(required))
+			return true;
+		
+		if(provided instanceof VarNullType) {
+			if(VarNullType.isAcceptableNullType(required)) {
+				((VarNullType) provided).setActualType(required);
+			} else {
+				errors.add("Type mismatch, cannot use null with type " + required + queryElement.getErr());
+			}
+			return true;
+		}
+		
+		return false;
 	}
 	
 	/**

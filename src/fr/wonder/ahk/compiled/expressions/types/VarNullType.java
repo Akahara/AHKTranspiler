@@ -2,13 +2,23 @@ package fr.wonder.ahk.compiled.expressions.types;
 
 public class VarNullType extends VarType {
 
-	public static final VarNullType INSTANCE = new VarNullType();
+	private VarType actualType;
 	
-	private VarNullType() {}
+	public VarNullType() {
+		
+	}
 	
 	@Override
 	public String getName() {
 		return "null";
+	}
+	
+	public VarType getActualType() {
+		return actualType;
+	}
+	
+	public void setActualType(VarType actualType) {
+		this.actualType = actualType;
 	}
 
 	@Override
@@ -16,18 +26,18 @@ public class VarNullType extends VarType {
 		throw new IllegalAccessError("The null type does not have a signature");
 	}
 	
+	/**
+	 * This method returns no sub types as the actual type is
+	 * computed using types that the enclosing unit can access.
+	 */
 	@Override
 	public VarType[] getSubTypes() {
 		return NO_SUBTYPES;
 	}
 
-	/**
-	 * A single instance of the null type may exist at any point so '==' can be used
-	 * safely here
-	 */
 	@Override
 	public boolean equals(Object o) {
-		return o == this;
+		return o instanceof VarNullType && ((VarNullType) o).actualType.equals(actualType);
 	}
 
 	/**

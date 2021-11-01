@@ -236,7 +236,7 @@ public class UnitWriter {
 		if(unit.functions.length != 0)
 			instructions.skip();
 		
-		instructions.comment("Structures blueprints implementations");
+		instructions.comment("Structures blueprints implementations"); // TODO check if comment is necessary
 		for(StructSection struct : unit.structures) {
 			for(BlueprintImplementation bp : struct.implementedBlueprints) {
 				String bpImplReg = RegistryManager.getStructBlueprintImplRegistry(bp);

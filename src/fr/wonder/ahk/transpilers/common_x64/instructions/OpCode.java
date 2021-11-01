@@ -73,4 +73,7 @@ public enum OpCode {
 	/** string operation: move byte */
 	MOVSB,
 	
+	/** loop, decrement rcx and jumps to the provided label if zero */
+	LOOP,
+	
 }

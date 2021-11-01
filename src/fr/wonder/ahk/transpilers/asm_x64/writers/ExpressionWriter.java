@@ -15,6 +15,7 @@ import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.ParametrizedExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
+import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
@@ -65,6 +66,8 @@ public class ExpressionWriter {
 			writeConversionExp((ConversionExp) exp, errors);
 		else if(exp instanceof ArrayExp)
 			writeArrayExp((ArrayExp) exp, errors);
+		else if(exp instanceof UninitializedArrayExp)
+			writeUninitializedArrayExp((UninitializedArrayExp) exp, errors);
 		else if(exp instanceof IndexingExp)
 			writeIndexingExp((IndexingExp) exp, errors);
 		else if(exp instanceof SizeofExp)
@@ -214,6 +217,22 @@ public class ExpressionWriter {
 		}
 	}
 	
+	private void writeUninitializedArrayExp(UninitializedArrayExp exp, ErrorWrapper errors) {
+		writeExpression(exp.getDefaultComponentValue(), errors);
+		writer.instructions.push(Register.RAX);
+		writeExpression(exp.getSize(), errors);
+		writer.instructions.push(Register.RAX);
+		writer.instructions.add(OpCode.SHL, Register.RAX, 3); // multiply by 8 (element count to byte count)
+		writer.unitWriter.callAlloc(Register.RAX);
+		writer.instructions.pop(Register.RCX);
+		writer.instructions.pop(Register.RBX);
+		String specialLabel = writer.unitWriter.getSpecialLabel();
+		writer.instructions.label(specialLabel);
+		MemAddress elementAddress = new MemAddress(Register.RAX, Register.RCX, MemSize.POINTER_SIZE, -MemSize.POINTER_SIZE);
+		writer.instructions.mov(elementAddress, Register.RBX);
+		writer.instructions.add(OpCode.LOOP, specialLabel);
+	}
+	
 	private void writeIndexingExp(IndexingExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getArray(), errors);
 		for(Expression index : exp.getIndices()) {
@@ -304,19 +323,21 @@ public class ExpressionWriter {
 	}
 	
 	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
-		VarType actualType = exp.getType();
-		if(actualType instanceof VarStructType) {
-			String nullLabel = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) actualType).structure);
+		VarType type = exp.getType().getActualType();
+		
+		if(type instanceof VarStructType) {
+			String nullLabel = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) type).structure);
 			writer.instructions.mov(Register.RAX, nullLabel);
-		} else if(actualType instanceof VarArrayType) {
+		} else if(type instanceof VarArrayType) {
 			writer.instructions.mov(Register.RAX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
-		} else if(actualType instanceof VarFunctionType) {
-			VarFunctionType funcType = (VarFunctionType) actualType;
+		} else if(type instanceof VarFunctionType) {
+			VarFunctionType funcType = (VarFunctionType) type;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
-		} else if(actualType instanceof VarGenericType) {
-			writer.instructions.clearRegister(Register.RAX);
+		} else if(type instanceof VarGenericType) {
+			throw new UnimplementedException("Generic type null instance");
+			
 		} else {
-			throw new UnreachableException("Unimplemented null: " + actualType);
+			throw new UnreachableException("Unimplemented null: " + type);
 		}
 	}
 

@@ -4,7 +4,16 @@ public class VarArrayType extends VarType {
 	
 	public final VarType componentType;
 	
-	public static final VarArrayType EMPTY_ARRAY = new VarArrayType(VarType.VOID);
+	public static final VarArrayType EMPTY_ARRAY = new VarArrayType(null) {
+		@Override
+		public String getName() {
+			return "any[]";
+		}
+		@Override
+		public VarType[] getSubTypes() {
+			return NO_SUBTYPES;
+		}
+	};
 	
 	public VarArrayType(VarType componentType) {
 		this.componentType = componentType;

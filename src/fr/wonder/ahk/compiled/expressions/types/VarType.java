@@ -1,7 +1,5 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
-import fr.wonder.ahk.compiled.expressions.NullExp;
-
 public abstract class VarType {
 	
 	public static final VarVoidType VOID = new VarVoidType();
@@ -11,13 +9,6 @@ public abstract class VarType {
 	public static final VarStrType STR = new VarStrType();
 	
 	protected static final VarType[] NO_SUBTYPES = new VarType[0];
-	
-	/**
-	 * The null type is only used for {@link NullExp Null expressions}, their
-	 * "actual type" is computed by the linker whenever required, see
-	 * Linker#checkAffectationType (package method so no link available)
-	 */
-	public static final VarNullType NULL = VarNullType.INSTANCE;
 	
 	/** Returns the user-friendly name of this type */
 	public abstract String getName();

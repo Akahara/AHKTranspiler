@@ -20,6 +20,7 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.ParametrizedExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
+import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
@@ -234,7 +235,7 @@ public class ExpressionParser extends AbstractParser {
 		}
 		
 		// parse function and arrays
-		if(lastSection != null) {
+		if(lastSection != null && lastSection.stop == section.stop - 1) {
 			if(lastSection.type == SectionToken.SEC_PARENTHESIS) {
 				if(line[section.start].base == TokenBase.VAR_UNIT)
 					return parseConstructorExpression(section);
@@ -414,8 +415,13 @@ public class ExpressionParser extends AbstractParser {
 	
 	private Expression parseArrayExpression(Section section) {
 		Section brackets = section.lastSubsection();
-		Expression[] values = parseArgumentList(brackets);
-		return new ArrayExp(sourceRefOfSection(section), values);
+		if(line[brackets.start].base == TokenBase.TK_COLUMN) {
+			Expression size = parseExpression(brackets.getSubSection(brackets.start+1, brackets.stop));
+			return new UninitializedArrayExp(sourceRefOfSection(section), size);
+		} else {
+			Expression[] values = parseArgumentList(brackets);
+			return new ArrayExp(sourceRefOfSection(section), values);
+		}
 	}
 	
 }

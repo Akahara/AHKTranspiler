@@ -81,7 +81,7 @@ public class StatementsFinalizer {
 			for(int s = idx+1; s < statements.size(); s++) {
 				Statement st = statements.get(s);
 				if(st instanceof LabeledStatement) {
-					s = closeStatement(statements, s);
+					s = closeStatement(statements, s) - 1;
 				} else if(st instanceof SectionEndSt) {
 					s++;
 					// handle section-end special cases

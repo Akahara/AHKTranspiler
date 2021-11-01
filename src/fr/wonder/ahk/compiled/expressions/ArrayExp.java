@@ -6,9 +6,6 @@ import fr.wonder.ahk.utils.Utils;
 
 public class ArrayExp extends Expression {
 	
-	/** Set by the linker */
-	public VarArrayType type;
-
 	public ArrayExp(SourceReference sourceRef, Expression[] values) {
 		super(sourceRef, values);
 	}
@@ -29,6 +26,6 @@ public class ArrayExp extends Expression {
 	/** Override to cast to an Array type */
 	@Override
 	public VarArrayType getType() {
-		return type;
+		return (VarArrayType) type;
 	}
 }

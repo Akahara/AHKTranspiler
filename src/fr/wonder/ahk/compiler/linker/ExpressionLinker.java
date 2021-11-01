@@ -14,6 +14,7 @@ import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.ParametrizedExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
+import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
@@ -64,6 +65,9 @@ class ExpressionLinker {
 			} else if(exp instanceof ArrayExp) {
 				linkArrayExpression((ArrayExp) exp, errors);
 				
+			} else if(exp instanceof UninitializedArrayExp) {
+				linkUninitializedArrayExp((UninitializedArrayExp) exp, errors);
+				
 			} else if(exp instanceof IndexingExp) {
 				linkIndexingExpression((IndexingExp) exp, errors);
 				
@@ -100,7 +104,7 @@ class ExpressionLinker {
 			linker.requireType(unit, exp.getType(), exp, errors);
 		}
 	}
-	
+
 	private void linkVariableExpression(Unit unit, Scope scope, VarExp exp, ErrorWrapper errors) {
 		// search for the variable/function declaration
 		VarAccess var = scope.getVariable(exp.variable);
@@ -132,6 +136,15 @@ class ExpressionLinker {
 			}
 			exp.type = new VarArrayType(componentsType);
 		}
+	}
+	
+	private void linkUninitializedArrayExp(UninitializedArrayExp exp, ErrorWrapper errors) {
+		Expression size = exp.getSize();
+		if(size.getType() != VarType.INT) {
+			errors.add("Arrays must be initialized with an integer size, "
+					+ size.getType().getName() + " was provided" + exp.getErr());
+		}
+		exp.type = VarArrayType.EMPTY_ARRAY;
 	}
 
 	private void linkIndexingExpression(IndexingExp exp, ErrorWrapper errors) {
