@@ -25,7 +25,6 @@ public class AHKTranspiler {
 	/*
 	 * TODO > x64 files
 	 * TODO > lambdas
-	 * TODO > generics
 	 * TODO > create a new x64 transpiler, based on an abstract intermediate language
 	 * TODO > rework project handles
 	 */

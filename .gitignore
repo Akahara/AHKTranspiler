@@ -26,4 +26,5 @@ hs_err_pid*
 .pydevproject
 bin/
 exported_*/
-
+.project
+.classpath
