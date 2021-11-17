@@ -28,3 +28,4 @@ bin/
 exported_*/
 .project
 .classpath
+.settings/
