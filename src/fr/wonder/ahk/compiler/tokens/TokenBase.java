@@ -73,8 +73,10 @@ public enum TokenBase {
 	TK_DOUBLE_QUOTE("\""),
 	TK_APOSTROPHE("'"),
 	TK_BACK_APOSTROPHE("`"),
+	
 	TK_GENERIC_BINDING_BEGIN("<["),
 	TK_GENERIC_BINDING_END("]>"),
+	TK_LAMBDA_ACTION("=>"),
 	
 	/** not to mistake with {@link #KW_EQUAL}, this one is <code>==</code> */
 	OP_EQUALS("=="),

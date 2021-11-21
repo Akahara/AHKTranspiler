@@ -25,6 +25,7 @@ public enum SectionToken {
 	SEC_PARENTHESIS	(TK_PARENTHESIS_OPEN, TK_PARENTHESIS_CLOSE),
 	
 	SEC_GENERIC_BINDING (TK_GENERIC_BINDING_BEGIN, TK_GENERIC_BINDING_END),
+	SEC_LAMBDA_ACTION	(TK_LAMBDA_ACTION),
 	
 	/*
 	 * do not mistake a direct operator with its 'indirect' counterpart,

@@ -7,6 +7,7 @@ import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 
@@ -82,6 +83,13 @@ public class RegistryManager {
 	public static String getStructBlueprintImplRegistry(BlueprintImplementation bpImpl) {
 		return getUnitRegistry(bpImpl.structure.getSignature().declaringUnit) + "@"
 				+ bpImpl.structure.getName() + "_bpimpl_" + bpImpl.bpRef.name;
+	}
+	
+	public static String getLambdaRegistry(Unit unit, SimpleLambda lambda) {
+		int idx = unit.lambdas.indexOf(lambda);
+		if(idx == -1)
+			throw new IllegalArgumentException("Lambda does not exist in given unit");
+		return "lambda_@" + idx;
 	}
 
 }

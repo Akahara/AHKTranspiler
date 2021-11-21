@@ -38,10 +38,6 @@ public class Utils {
 	}
 	
 	public static <T> List<T> asList(T[] array) {
-//		List<T> list = new ArrayList<>();
-//		for(T t : array)
-//			list.add(t);
-//		return list;
 		return new ArrayList<>(Arrays.asList(array));
 	}
 

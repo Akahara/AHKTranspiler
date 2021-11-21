@@ -13,7 +13,8 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
-import fr.wonder.ahk.compiled.expressions.ParametrizedExp;
+import fr.wonder.ahk.compiled.expressions.ParameterizedExp;
+import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
@@ -76,8 +77,10 @@ public class ExpressionWriter {
 			writeConstructorExp((ConstructorExp) exp, errors);
 		else if(exp instanceof NullExp)
 			writeNullExp((NullExp) exp, errors);
-		else if(exp instanceof ParametrizedExp)
-			writeParametrizedExp((ParametrizedExp) exp, errors);
+		else if(exp instanceof ParameterizedExp)
+			writeParameterizedExp((ParameterizedExp) exp, errors);
+		else if(exp instanceof SimpleLambdaExp)
+			writeSimpleLambdaExp((SimpleLambdaExp) exp, errors);
 		else
 			throw new UnreachableException("Unknown expression type " + exp.getClass());
 	}
@@ -341,8 +344,14 @@ public class ExpressionWriter {
 		}
 	}
 
-	private void writeParametrizedExp(ParametrizedExp exp, ErrorWrapper errors) {
-		throw new UnimplementedException("Parametrized expressions");
+	private void writeParameterizedExp(ParameterizedExp exp, ErrorWrapper errors) {
+		throw new UnimplementedException("Parametrized expressions"); // FIX implement asm parameterized expressions
+		// FIX fix typo: change 'parametrized' to parameterized everywhere
+		// (fixed only here)
+	}
+	
+	private void writeSimpleLambdaExp(SimpleLambdaExp exp, ErrorWrapper errors) {
+		throw new UnimplementedException("TODO: write lambdas");
 	}
 
 }

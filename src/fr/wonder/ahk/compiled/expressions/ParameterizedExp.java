@@ -5,12 +5,12 @@ import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter;
 import fr.wonder.ahk.utils.Utils;
 
-public class ParametrizedExp extends Expression {
+public class ParameterizedExp extends Expression {
 	
 	public final VarType[] genericBindings;
 	public BlueprintTypeParameter[] typesParameters;
 	
-	public ParametrizedExp(SourceReference sourceRef, Expression target, VarType[] genericBindings) {
+	public ParameterizedExp(SourceReference sourceRef, Expression target, VarType[] genericBindings) {
 		super(sourceRef, target);
 		this.genericBindings = genericBindings;
 	}

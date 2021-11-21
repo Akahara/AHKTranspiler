@@ -1,5 +1,8 @@
 package fr.wonder.ahk.compiled.units;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
@@ -9,6 +12,7 @@ import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.Blueprint;
 import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.Prototypes;
 import fr.wonder.ahk.compiler.tokens.Token;
@@ -27,6 +31,7 @@ public class Unit {
 	public FunctionSection[] functions;
 	public StructSection[] structures;
 	public Blueprint[] blueprints;
+	public List<SimpleLambda> lambdas = new ArrayList<>();
 	
 	public Alias[] accessibleAliases;
 	public final int declaredAliasCount;

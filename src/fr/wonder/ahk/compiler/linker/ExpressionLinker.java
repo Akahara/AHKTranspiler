@@ -12,7 +12,8 @@ import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
-import fr.wonder.ahk.compiled.expressions.ParametrizedExp;
+import fr.wonder.ahk.compiled.expressions.ParameterizedExp;
+import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
@@ -38,6 +39,7 @@ import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.utils.ArrayOperator;
+import fr.wonder.commons.utils.Assertions;
 
 class ExpressionLinker {
 
@@ -90,8 +92,11 @@ class ExpressionLinker {
 			} else if(exp instanceof SizeofExp) {
 				linkSizeofExp((SizeofExp) exp, errors);
 				
-			} else if(exp instanceof ParametrizedExp) {
-				linkParametrizedExp((ParametrizedExp) exp, genericContext, errors);
+			} else if(exp instanceof ParameterizedExp) {
+				linkParametrizedExp((ParameterizedExp) exp, genericContext, errors);
+				
+			} else if(exp instanceof SimpleLambdaExp) {
+				linkSimpleLambdaExp(unit, scope.getUnitScope(), (SimpleLambdaExp) exp, errors);
 				
 			} else if(exp instanceof NullExp || exp instanceof LiteralExp<?>) {
 				// pass
@@ -101,6 +106,7 @@ class ExpressionLinker {
 				
 			}
 			
+			Assertions.assertNonNull("An expression was not given its type: " + exp.getClass(), exp.getType());
 			linker.requireType(unit, exp.getType(), exp, errors);
 		}
 	}
@@ -275,9 +281,9 @@ class ExpressionLinker {
 			FunctionExp functionExpression = new FunctionExp(fexp, function, null);
 			finalFunction = functionExpression;
 			functionType = function.functionType;
-		} else if(fexp.getFunction() instanceof ParametrizedExp && ((ParametrizedExp) fexp.getFunction()).getTarget() instanceof VarExp &&
-				((VarExp) ((ParametrizedExp) fexp.getFunction()).getTarget()).declaration instanceof FunctionPrototype) {
-			ParametrizedExp pexp = (ParametrizedExp) fexp.getFunction();
+		} else if(fexp.getFunction() instanceof ParameterizedExp && ((ParameterizedExp) fexp.getFunction()).getTarget() instanceof VarExp &&
+				((VarExp) ((ParameterizedExp) fexp.getFunction()).getTarget()).declaration instanceof FunctionPrototype) {
+			ParameterizedExp pexp = (ParameterizedExp) fexp.getFunction();
 			VarExp parametrized = (VarExp) pexp.getTarget();
 			FunctionPrototype parametrizedFunc = (FunctionPrototype) parametrized.declaration;
 			
@@ -339,7 +345,7 @@ class ExpressionLinker {
 			errors.add("Type " + mesured + " is not mesurable:" + exp.getErr());
 	}
 	
-	private void linkParametrizedExp(ParametrizedExp exp, GenericContext genericContext, ErrorWrapper errors) {
+	private void linkParametrizedExp(ParameterizedExp exp, GenericContext genericContext, ErrorWrapper errors) {
 		VarType targetType = exp.getTarget().getType();
 		exp.type = Invalids.TYPE;
 		if(!(targetType instanceof VarFunctionType)) {
@@ -357,6 +363,11 @@ class ExpressionLinker {
 			return;
 		exp.typesParameters = linker.typesTable.genericBindings.createBPTPs(genc, bindings);
 		exp.type = linker.typesTable.genericBindings.bindType(genc, fType, bindings, null, genericContext);
+	}
+	
+	private void linkSimpleLambdaExp(Unit unit, Scope currentScope, SimpleLambdaExp exp, ErrorWrapper errors) {
+		linker.linkLambda(unit, currentScope, exp.lambda, errors);
+		exp.type = exp.lambda.lambdaFunctionType;
 	}
 
 }

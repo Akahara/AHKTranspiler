@@ -21,8 +21,10 @@ import fr.wonder.ahk.compiled.units.prototypes.TypeAccess;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
+import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
+import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Compiler;
 import fr.wonder.ahk.compiler.parser.StatementParser;
@@ -133,6 +135,13 @@ public class Linker {
 			ErrorWrapper ferrors = errors.subErrors("Errors in function " + func.getSignature().computedSignature);
 			statements.linkStatements(unit, unitScope.innerScope(), func, ferrors);
 		}
+	}
+
+	void linkLambda(Unit unit, Scope currentScope, SimpleLambda lambda, ErrorWrapper errors) {
+		Scope lambdaScope = currentScope.getUnitScope().innerScope();
+		for(FunctionArgument arg : lambda.args)
+			lambdaScope.registerVariable(arg);
+		expressions.linkExpressions(unit, lambdaScope, lambda, GenericContext.NO_CONTEXT, errors);
 	}
 
 	/**

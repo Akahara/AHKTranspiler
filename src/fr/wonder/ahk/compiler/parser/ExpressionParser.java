@@ -18,7 +18,8 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
-import fr.wonder.ahk.compiled.expressions.ParametrizedExp;
+import fr.wonder.ahk.compiled.expressions.ParameterizedExp;
+import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
@@ -26,6 +27,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
+import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
 import fr.wonder.ahk.compiler.tokens.Token;
@@ -166,13 +168,19 @@ public class ExpressionParser extends AbstractParser {
 		return SourceReference.fromLine(line, section.start, section.stop-1);
 	}
 	
+	private Expression withError(String error) {
+		errors.add(error);
+		return Invalids.EXPRESSION;
+	}
+	
+	private String getSectionErr(Section section, boolean whole) {
+		return unit.source.getErr(line, section.start + (whole ? -1 : 0), section.stop + (whole ? 1 : 0));
+	}
 	
 	private Expression parseExpression(Section section) {
 //		Utils.dump(line, section.start, section.stop);
-		if(section.stop == section.start) {
-			errors.add("Empty expression:" + line[section.start].getErr());
-			return Invalids.EXPRESSION;
-		}
+		if(section.stop == section.start)
+			return withError("Empty expression:" + line[section.start].getErr());
 		
 		// remove extra parenthesis
 		{
@@ -197,8 +205,7 @@ public class ExpressionParser extends AbstractParser {
 				return new VarExp(tk.sourceRef, line[section.start].text);
 			else if(Tokens.isLiteral(tk.base))
 				return parseLiteral(line[section.start], errors);
-			errors.add("Unknown expression type" + tk.getErr());
-			return Invalids.EXPRESSION;
+			return withError("Unknown expression type" + tk.getErr());
 		}
 
 		Section lastSection = section.subsections.isEmpty() ? null : section.lastSubsection();
@@ -219,8 +226,7 @@ public class ExpressionParser extends AbstractParser {
 				Expression casted = parseExpression(lastSection);
 				return new ConversionExp(sourceRefOfSection(section), type, casted, false);
 			}
-			errors.add("Expected a type to cast to:" + typeToken.getErr());
-			return Invalids.EXPRESSION;
+			return withError("Expected a type to cast to:" + typeToken.getErr());
 		}
 		
 		// parse sizeof
@@ -233,6 +239,11 @@ public class ExpressionParser extends AbstractParser {
 		if(section.stop-section.start >= 3 && line[section.stop-2].base == TokenBase.TK_DOT) {
 			return parseDirectAccessExpression(section);
 		}
+		
+		// parse lambdas
+		int lambdaOperatorIndex = findLambdaOperatorIndex(section);
+		if(lambdaOperatorIndex != -1)
+			return parseLambdaExpression(section, lambdaOperatorIndex);
 		
 		// parse function and arrays
 		if(lastSection != null && lastSection.stop == section.stop - 1) {
@@ -252,8 +263,7 @@ public class ExpressionParser extends AbstractParser {
 			throw new UnreachableException("Invalid section type " + lastSection.type);
 		}
 		
-		errors.add("Unknown expression type:" + sourceRefOfSection(section).getErr());
-		return Invalids.EXPRESSION;
+		return withError("Unknown expression type:" + sourceRefOfSection(section).getErr());
 	}
 
 	public static LiteralExp<?> parseLiteral(Token t, ErrorWrapper errors) {
@@ -360,8 +370,7 @@ public class ExpressionParser extends AbstractParser {
 	private Expression parseDirectAccessExpression(Section section) {
 		Token memberToken = line[section.stop-1];
 		if(memberToken.base != TokenBase.VAR_VARIABLE) {
-			errors.add("Expected a struct member name:" + memberToken.getErr());
-			return Invalids.EXPRESSION;
+			return withError("Expected a struct member name:" + memberToken.getErr());
 		}
 		Expression structInstance = parseExpression(section.getSubSection(section.start, section.stop-2));
 		String memberName = memberToken.text;
@@ -388,10 +397,8 @@ public class ExpressionParser extends AbstractParser {
 			genericBindings = parseGenericBindings(genericsSection);
 			p.position = genericsSection.stop+1;
 		}
-		if(p.position != argsSection.start-1) {
-			errors.add("Unexpected tokens:" + unit.source.getErr(line, p.position, argsSection.start-1));
-			return Invalids.EXPRESSION;
-		}
+		if(p.position != argsSection.start-1)
+			return withError("Unexpected tokens:" + unit.source.getErr(line, p.position, argsSection.start-1));
 		return new ConstructorExp(sourceRefOfSection(section), structType, genericBindings, arguments);
 	}
 	
@@ -400,7 +407,7 @@ public class ExpressionParser extends AbstractParser {
 		Section bindingsSection = section.lastSubsection();
 		Expression target = parseExpression(section.getSubSection(section.start, bindingsSection.start-1));
 		VarType[] bindings = parseGenericBindings(bindingsSection);
-		return new ParametrizedExp(sourceRefOfSection(section), target, bindings);
+		return new ParameterizedExp(sourceRefOfSection(section), target, bindings);
 	}
 	
 	/** Assumes that the last subsection is a bracket section */
@@ -422,6 +429,40 @@ public class ExpressionParser extends AbstractParser {
 			Expression[] values = parseArgumentList(brackets);
 			return new ArrayExp(sourceRefOfSection(section), values);
 		}
+	}
+	
+	private int findLambdaOperatorIndex(Section section) {
+		for(int i = section.start; i < section.stop; i++) {
+			if(line[i].base == TokenBase.TK_LAMBDA_ACTION)
+				return i;
+		}
+		return -1;
+	}
+	
+	private Expression parseLambdaExpression(Section section, int lambdaOperatorIndex) {
+		Section argsParentheses = section.firstSubsection();
+		if(argsParentheses == null || argsParentheses.start > lambdaOperatorIndex)
+			return withError("Expected lambda type" + line[lambdaOperatorIndex].getErr());
+		if(argsParentheses.type != SectionToken.SEC_PARENTHESIS)
+			return withError("Expected lambda type" + getSectionErr(argsParentheses, true));
+		if(argsParentheses.start != section.start+1)
+			return withError("Unexpected tokens before lambda" + unit.source.getErr(line, section.start, argsParentheses.start-1));
+		ArgumentList args;
+		VarType returnType;
+		try {
+			Pointer p = new Pointer(argsParentheses.start-1);
+			args = readArguments(unit, line, true, GenericContext.NO_CONTEXT, p, ALLOW_NONE, errors);
+			assertToken(line, p, TokenBase.TK_COLUMN, "Expected return type of lambda", errors);
+			returnType = parseType(unit, line, GenericContext.NO_CONTEXT, p, ALLOW_NONE, errors);
+			assertToken(line, p, TokenBase.TK_LAMBDA_ACTION, "Unexpected token after lambda type", errors);
+		} catch (ParsingException x) {
+			return Invalids.EXPRESSION;
+		}
+		Expression body = parseExpression(section.getSubSection(lambdaOperatorIndex+1, section.stop));
+		SourceReference lambdaSourceRef = sourceRefOfSection(section);
+		SimpleLambda lambda = new SimpleLambda(lambdaSourceRef, returnType, args.asArray(), body);
+		unit.lambdas.add(lambda);
+		return new SimpleLambdaExp(lambdaSourceRef, lambda);
 	}
 	
 }

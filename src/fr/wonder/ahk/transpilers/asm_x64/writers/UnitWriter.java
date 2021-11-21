@@ -23,6 +23,7 @@ import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.handles.LinkedHandle;
@@ -317,6 +318,7 @@ public class UnitWriter {
 				initFunctionWriter.mem.writeTo(fieldAddress, nullMemberValue, errors);
 			}
 		}
+		
 		for(VariableDeclaration var : initializableVariables) {
 			instructions.comment("init " + var.name);
 			Address address = new MemAddress(new LabelAddress(registries.getRegistry(var.getPrototype())));
@@ -334,6 +336,12 @@ public class UnitWriter {
 		instructions.endStackFrame();
 		instructions.ret();
 		instructions.skip();
+		
+		for(SimpleLambda lambda : unit.lambdas) {
+			LambdaWriter writer = new LambdaWriter(this, lambda);
+			writer.writeLambda(errors);
+			instructions.skip();
+		}
 		
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE))
