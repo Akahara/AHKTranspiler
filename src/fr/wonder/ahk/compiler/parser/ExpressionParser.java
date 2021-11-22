@@ -90,9 +90,9 @@ public class ExpressionParser extends AbstractParser {
 		}
 		
 		void advancePointer(Pointer p) {
-			boolean updated = true;
+			boolean updated;
 			p.position++;
-			while(updated) {
+			do {
 				updated = false;
 				for(Section s : subsections) {
 					if(s.start-1 == p.position) {
@@ -101,7 +101,13 @@ public class ExpressionParser extends AbstractParser {
 						break;
 					}
 				}
-			}
+			} while(updated);
+		}
+
+		public Pointer makePointer() {
+			Pointer p = new Pointer(start-1);
+			advancePointer(p);
+			return p;
 		}
 		
 	}
@@ -192,10 +198,6 @@ public class ExpressionParser extends AbstractParser {
 			}
 		}
 		
-		// parse operation
-		if(!section.operators.isEmpty())
-			return parseOperationExpression(section);
-		
 		// parse single token expression
 		if(section.stop-section.start == 1) {
 			Token tk = line[section.start];
@@ -207,6 +209,15 @@ public class ExpressionParser extends AbstractParser {
 				return parseLiteral(line[section.start], errors);
 			return withError("Unknown expression type" + tk.getErr());
 		}
+		
+		// parse lambdas
+		int lambdaOperatorIndex = findLambdaOperatorIndex(section);
+		if(lambdaOperatorIndex != -1)
+			return parseLambdaExpression(section, lambdaOperatorIndex);
+		
+		// parse operation
+		if(!section.operators.isEmpty())
+			return parseOperationExpression(section);
 
 		Section lastSection = section.subsections.isEmpty() ? null : section.lastSubsection();
 		
@@ -239,11 +250,6 @@ public class ExpressionParser extends AbstractParser {
 		if(section.stop-section.start >= 3 && line[section.stop-2].base == TokenBase.TK_DOT) {
 			return parseDirectAccessExpression(section);
 		}
-		
-		// parse lambdas
-		int lambdaOperatorIndex = findLambdaOperatorIndex(section);
-		if(lambdaOperatorIndex != -1)
-			return parseLambdaExpression(section, lambdaOperatorIndex);
 		
 		// parse function and arrays
 		if(lastSection != null && lastSection.stop == section.stop - 1) {
@@ -432,9 +438,9 @@ public class ExpressionParser extends AbstractParser {
 	}
 	
 	private int findLambdaOperatorIndex(Section section) {
-		for(int i = section.start; i < section.stop; i++) {
-			if(line[i].base == TokenBase.TK_LAMBDA_ACTION)
-				return i;
+		for(Pointer p = section.makePointer(); p.position < section.stop; section.advancePointer(p)) {
+			if(line[p.position].base == TokenBase.TK_LAMBDA_ACTION)
+				return p.position;
 		}
 		return -1;
 	}

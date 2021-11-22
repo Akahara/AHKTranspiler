@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
-import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.ElseSt;
 import fr.wonder.ahk.compiled.statements.ForSt;
@@ -21,11 +20,7 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
-import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
@@ -33,16 +28,9 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
 
-public class FunctionWriter {
+public class FunctionWriter extends AbstractWriter {
 	
-	public final FunctionSection func;
-	public final InstructionSet instructions;
-	
-	public final UnitWriter unitWriter;
-	public final ExpressionWriter expWriter;
-	public final MemoryManager mem;
-	public final AsmOperationWriter opWriter;
-	public final AsmClosuresWriter closureWriter;
+	private final FunctionSection func;
 	
 	private final int stackSpace;
 	
@@ -51,28 +39,15 @@ public class FunctionWriter {
 	
 	private int debugLabelIndex = 0;
 	
-	public FunctionWriter(UnitWriter writer, FunctionSection func) {
-		this.func = func;
-		this.instructions = writer.instructions;
-		this.unitWriter = writer;
-		this.stackSpace = getMaxStackSize(func.body);
-		this.expWriter = new ExpressionWriter(this);
-		this.opWriter = new AsmOperationWriter(this);
-		this.closureWriter = new AsmClosuresWriter(this);
-		this.mem = new MemoryManager(this, stackSpace);
-		fillLabelsMap();
+	public FunctionWriter(UnitWriter unitWriter, FunctionSection func) {
+		this(unitWriter, func, getMaxStackSize(func.body));
 	}
-
-	public void writeGIPToRAX(VarGenericType genericInstance, BlueprintPrototype blueprint) {
-		for(int i = 0; i < func.genericContext.gips.length; i++) {
-			GenericImplementationParameter gip = func.genericContext.gips[i];
-			if(gip.genericType.equals(genericInstance) &&
-					gip.typeRequirement.blueprint.matchesPrototype(blueprint)) {
-				instructions.mov(Register.RAX, new MemAddress(Register.RBP, 16+(func.arguments.length+i) * MemSize.POINTER_SIZE));
-				return;
-			}
-		}
-		throw new IllegalStateException("Blueprint " + genericInstance + ":" + blueprint + " is not implemented in function " + func);
+	
+	private FunctionWriter(UnitWriter unitWriter, FunctionSection func, int functionStackSpace) {
+		super(unitWriter, new FunctionArgumentsLayout(func.arguments, func.genericContext.gips), functionStackSpace);
+		this.stackSpace = functionStackSpace;
+		this.func = func;
+		fillLabelsMap();
 	}
 
 	public void writeFunction(ErrorWrapper errors) {
@@ -80,8 +55,6 @@ public class FunctionWriter {
 		
 		if(stackSpace != 0)
 			instructions.add(OpCode.SUB, Register.RSP, stackSpace);
-		
-		int argsSpace = (func.arguments.length + func.genericContext.gips.length) * MemSize.POINTER_SIZE;
 		
 		boolean needsRetLabel = false;
 		
@@ -153,7 +126,7 @@ public class FunctionWriter {
 		if(needsRetLabel)
 			instructions.label(".ret");
 		instructions.endStackFrame();
-		instructions.ret(argsSpace);
+		instructions.ret(sectionArguments.getArgsStackSpace());
 	}
 
 	private static int getMaxStackSize(Statement[] statements) {

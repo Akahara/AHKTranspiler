@@ -15,6 +15,7 @@ public class SimpleLambda implements ExpressionHolder {
 	public final VarType returnType;
 	public final FunctionArgument[] args;
 	private final Expression[] body; // is an array to match the ExpressionHolder interface, use #getBody
+	public final LambdaClosureArgument[] closureArguments = new LambdaClosureArgument[0]; // TODO implement lambda closure arguments
 	
 	public final VarFunctionType lambdaFunctionType;
 	
@@ -47,6 +48,10 @@ public class SimpleLambda implements ExpressionHolder {
 	
 	public VarType[] getLambdaArgsTypes() {
 		return ArrayOperator.map(args, VarType[]::new, FunctionArgument::getType);
+	}
+
+	public boolean hasClosureArguments() {
+		return closureArguments.length != 0;
 	}
 	
 }

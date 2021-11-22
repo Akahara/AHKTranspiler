@@ -85,11 +85,17 @@ public class RegistryManager {
 				+ bpImpl.structure.getName() + "_bpimpl_" + bpImpl.bpRef.name;
 	}
 	
-	public static String getLambdaRegistry(Unit unit, SimpleLambda lambda) {
-		int idx = unit.lambdas.indexOf(lambda);
+	public String getLambdaRegistry(SimpleLambda lambda) {
+		int idx = writer.unit.lambdas.indexOf(lambda);
 		if(idx == -1)
 			throw new IllegalArgumentException("Lambda does not exist in given unit");
 		return "lambda_@" + idx;
+	}
+	
+	public String getLambdaClosureRegistry(SimpleLambda lambda) {
+		if(lambda.hasClosureArguments())
+			throw new IllegalArgumentException("Cannot use a lambda closure with arguments directly");
+		return getLambdaRegistry(lambda) + "_closure";
 	}
 
 }

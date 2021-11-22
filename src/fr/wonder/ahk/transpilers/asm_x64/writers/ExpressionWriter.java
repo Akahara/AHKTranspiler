@@ -35,6 +35,7 @@ import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
+import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -43,9 +44,9 @@ import fr.wonder.commons.exceptions.UnreachableException;
 
 public class ExpressionWriter {
 	
-	private final FunctionWriter writer;
+	private final AbstractWriter writer;
 	
-	public ExpressionWriter(FunctionWriter writer) {
+	public ExpressionWriter(AbstractWriter writer) {
 		this.writer = writer;
 	}
 	
@@ -141,7 +142,7 @@ public class ExpressionWriter {
 		OverloadedOperatorPrototype op = (OverloadedOperatorPrototype) exp.getOperation();
 		if(op instanceof BoundOverloadedOperatorPrototype) {
 			BoundOverloadedOperatorPrototype bop = (BoundOverloadedOperatorPrototype) op;
-			writer.writeGIPToRAX(bop.genericType, bop.usedBlueprint);
+			writer.mem.moveData(Register.RAX, writer.sectionArguments.getGIPLocation(bop.genericType, bop.usedBlueprint));
 			int offsetInGIP = bop.usedBlueprint.getUniqueIdOfPrototype(bop.originalOperator);
 			writer.instructions.call(new MemAddress(Register.RAX, offsetInGIP*MemSize.POINTER_SIZE));
 		} else {
@@ -176,6 +177,9 @@ public class ExpressionWriter {
 			for(int i = 0; i < typesParameters.length; i++) {
 				String typeImplReg = RegistryManager.getStructBlueprintImplRegistry(typesParameters[i].implementation);
 				writer.instructions.mov(new MemAddress(Register.RSP, (args.length+i) * MemSize.POINTER_SIZE), typeImplReg);
+				// TODO make some form of global layout for arguments
+				// currently both MemoryManager~#Scope and this method rely on a
+				// particular layout that must be maintained in both files
 			}
 		}
 	}
@@ -351,7 +355,10 @@ public class ExpressionWriter {
 	}
 	
 	private void writeSimpleLambdaExp(SimpleLambdaExp exp, ErrorWrapper errors) {
-		throw new UnimplementedException("TODO: write lambdas");
+		if(exp.lambda.hasClosureArguments())
+			throw new UnimplementedException("lambda with closure arguments"); // TODO implement lambda closure arguments
+		String lambdaLabel = writer.unitWriter.registries.getLambdaClosureRegistry(exp.lambda);
+		writer.instructions.mov(Register.RAX, new LabelAddress(lambdaLabel));
 	}
 
 }

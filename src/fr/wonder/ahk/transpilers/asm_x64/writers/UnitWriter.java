@@ -226,16 +226,23 @@ public class UnitWriter {
 		}
 		if(unit.variables.length != 0)
 			instructions.skip();
-		
-		if(unit.functions.length != 0)
+
+		if(unit.functions.length != 0) {
 			instructions.comment("Functions closures");
-		for(FunctionSection func : unit.functions) {
-			String closure = RegistryManager.getClosureRegistry(func.getPrototype());
-			String address = RegistryManager.getGlobalRegistry(func.getPrototype());
-			instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, address));
-		}
-		if(unit.functions.length != 0)
+			for(FunctionSection func : unit.functions) {
+				String closure = RegistryManager.getClosureRegistry(func.getPrototype());
+				String address = RegistryManager.getGlobalRegistry(func.getPrototype());
+				instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, address));
+			}
 			instructions.skip();
+		}
+		// TODO add data section comments for lambdas...
+		for(SimpleLambda lambda : unit.lambdas) {
+			String closure = registries.getLambdaClosureRegistry(lambda);
+			String lambdaFunctionLabel = registries.getLambdaRegistry(lambda);
+			instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, lambdaFunctionLabel));
+			instructions.skip(); // ...and also correctly skip lines
+		}
 		
 		instructions.comment("Structures blueprints implementations"); // TODO check if comment is necessary
 		for(StructSection struct : unit.structures) {
@@ -337,12 +344,6 @@ public class UnitWriter {
 		instructions.ret();
 		instructions.skip();
 		
-		for(SimpleLambda lambda : unit.lambdas) {
-			LambdaWriter writer = new LambdaWriter(this, lambda);
-			writer.writeLambda(errors);
-			instructions.skip();
-		}
-		
 		for(FunctionSection func : unit.functions) {
 			if(func.modifiers.hasModifier(Modifier.NATIVE))
 				continue;
@@ -355,6 +356,18 @@ public class UnitWriter {
 			instructions.label(RegistryManager.getGlobalRegistry(func.getPrototype()));
 			FunctionWriter writer = new FunctionWriter(this, func);
 			writer.writeFunction(errors);
+			instructions.skip();
+		}
+		
+		for(SimpleLambda lambda : unit.lambdas) {
+			if(project.manifest.DEBUG_SYMBOLS) {
+				instructions.comment("-".repeat(60));
+				instructions.comment(lambda.toString());
+				instructions.comment("-".repeat(60));
+			}
+			instructions.label(registries.getLambdaRegistry(lambda));
+			LambdaWriter writer = new LambdaWriter(this, lambda);
+			writer.writeLambda(errors);
 			instructions.skip();
 		}
 		

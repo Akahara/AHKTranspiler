@@ -6,7 +6,7 @@ import java.util.List;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
@@ -16,7 +16,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 class Scope {
 	
 	private final UnitWriter writer;
-	private final FunctionSection func;
+	private final FunctionArgumentsLayout sectionArguments;
 	private final int stackSpace;
 	
 	private final List<VariableDeclaration> variables = new ArrayList<>();
@@ -25,10 +25,10 @@ class Scope {
 	
 	private int stackOffset = 0;
 	
-	Scope(UnitWriter writer, FunctionSection func, int stackSpace) {
+	Scope(UnitWriter writer, FunctionArgumentsLayout sectionArguments, int sectionStackSpace) {
 		this.writer = writer;
-		this.func = func;
-		this.stackSpace = stackSpace;
+		this.sectionArguments = sectionArguments;
+		this.stackSpace = sectionStackSpace;
 	}
 	
 	MemAddress declareVariable(VariableDeclaration var) {
@@ -39,10 +39,9 @@ class Scope {
 	
 	Address getVarAddress(VarAccess var) {
 		// search through the function arguments
-		for(int i = 0; i < func.arguments.length; i++) {
-			if(var == func.arguments[i])
-				return new MemAddress(Register.RBP, (i+2)*MemSize.POINTER_SIZE);
-		}
+		if(var instanceof FunctionArgument)
+			return sectionArguments.getArgumentLocation((FunctionArgument) var);
+		
 		// search through the stack frame
 		for(int i = 0; i < variables.size(); i++) {
 			if(var == variables.get(i).getPrototype())

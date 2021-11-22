@@ -1,9 +1,6 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 
-import static fr.wonder.ahk.compiled.expressions.Operator.EQUALS;
-import static fr.wonder.ahk.compiled.expressions.Operator.GREATER;
 import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.Operator.NEQUALS;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
 
 import java.util.HashMap;
@@ -17,7 +14,7 @@ import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
-import fr.wonder.ahk.transpilers.asm_x64.writers.FunctionWriter;
+import fr.wonder.ahk.transpilers.asm_x64.writers.AbstractWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.NativeFunctionWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.OperationWriter;
@@ -67,9 +64,9 @@ public class AsmOperationWriter {
 		conversions.put(new Tuple<>(VarType.BOOL, VarType.INT), (from, to, writer, errors) -> {}); // NOOP
 	}
 	
-	final FunctionWriter writer;
+	final AbstractWriter writer;
 	
-	public AsmOperationWriter(FunctionWriter writer) {
+	public AsmOperationWriter(AbstractWriter writer) {
 		this.writer = writer;
 	}
 

@@ -27,6 +27,7 @@ public class AHKTranspiler {
 	 * TODO > lambdas
 	 * TODO > create a new x64 transpiler, based on an abstract intermediate language
 	 * TODO > rework project handles
+	 * FIX > link lambdas outside of the expression linker
 	 */
 	
 //	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);

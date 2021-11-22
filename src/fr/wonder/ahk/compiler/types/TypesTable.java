@@ -145,7 +145,7 @@ public class TypesTable {
 		} else if(query.lo instanceof VarFunctionType) {
 			// func + obj
 			VarFunctionType f = (VarFunctionType) query.lo;
-			resultOp = getOperation(query, errors);
+			resultOp = getOperation(new OperationQuery(f.returnType, query.ro, query.operator, query.queryElement), errors);
 			funcTypeArgs = f.arguments;
 			if(resultOp != null && !resultOp.loType.equals(f.returnType)) {
 				errors.add("Invalid constant type " + resultOp.loType + 

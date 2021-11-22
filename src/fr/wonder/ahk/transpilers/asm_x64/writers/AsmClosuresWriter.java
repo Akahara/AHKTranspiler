@@ -20,9 +20,9 @@ import fr.wonder.commons.exceptions.UnreachableException;
 
 public class AsmClosuresWriter {
 
-	private final FunctionWriter writer;
+	private final AbstractWriter writer;
 	
-	public AsmClosuresWriter(FunctionWriter writer) {
+	public AsmClosuresWriter(AbstractWriter writer) {
 		this.writer = writer;
 	}
 	

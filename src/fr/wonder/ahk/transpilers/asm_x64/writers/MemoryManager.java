@@ -20,12 +20,12 @@ import fr.wonder.commons.exceptions.UnreachableException;
 
 public class MemoryManager {
 	
-	private final FunctionWriter writer;
+	private final AbstractWriter writer;
 	private Scope currentScope;
 	
-	public MemoryManager(FunctionWriter writer, int stackSpace) {
+	public MemoryManager(AbstractWriter writer, FunctionArgumentsLayout sectionArguments, int sectionStackSpace) {
 		this.writer = writer;
-		currentScope = new Scope(writer.unitWriter, writer.func, stackSpace);
+		this.currentScope = new Scope(writer.unitWriter, sectionArguments, sectionStackSpace);
 	}
 	
 	public void updateScope(boolean beginNewScope) {
