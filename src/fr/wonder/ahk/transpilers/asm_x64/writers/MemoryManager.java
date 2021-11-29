@@ -7,6 +7,10 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteType;
+import fr.wonder.ahk.transpilers.asm_x64.units.DummyVariableDeclaration;
+import fr.wonder.ahk.transpilers.asm_x64.units.FunctionArgumentsLayout;
+import fr.wonder.ahk.transpilers.asm_x64.units.NoneExp;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
@@ -145,7 +149,7 @@ public class MemoryManager {
 			
 		} else if(variable instanceof DirectAccessExp) {
 			DirectAccessExp exp = (DirectAccessExp) variable;
-			ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType());
+			ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType().structure);
 			writer.expWriter.writeExpression(exp.getStruct(), errors);
 			writer.instructions.push(Register.RAX);
 			addStackOffset(8);
@@ -192,7 +196,7 @@ public class MemoryManager {
 				
 			} else if(variable instanceof DirectAccessExp) {
 				DirectAccessExp exp = (DirectAccessExp) variable;
-				ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType());
+				ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType().structure);
 				writeTo(varAdd, exp.getStruct(), errors);
 				variableAccesses[i] = new MemAddress(varAdd, structType.getOffset(exp.memberName));
 				

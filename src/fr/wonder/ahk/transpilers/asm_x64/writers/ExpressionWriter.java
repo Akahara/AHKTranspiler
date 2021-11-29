@@ -31,6 +31,7 @@ import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter
 import fr.wonder.ahk.compiler.types.CompositionOperation;
 import fr.wonder.ahk.compiler.types.FunctionOperation;
 import fr.wonder.ahk.compiler.types.Operation;
+import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteType;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
@@ -186,7 +187,7 @@ public class ExpressionWriter {
 
 	private void writeDirectAccessExp(DirectAccessExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getStruct(), errors);
-		ConcreteType structType = writer.unitWriter.types.getConcreteType((VarStructType) exp.getStruct().getType());
+		ConcreteType structType = writer.unitWriter.types.getConcreteType(((VarStructType) exp.getStruct().getType()).structure);
 		int offset = structType.getOffset(exp.memberName);
 		writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, offset));
 	}
@@ -312,7 +313,7 @@ public class ExpressionWriter {
 	}
 
 	private void writeConstructorExp(ConstructorExp exp, ErrorWrapper errors) {
-		ConcreteType type = writer.unitWriter.types.getConcreteType(exp.getType());
+		ConcreteType type = writer.unitWriter.types.getConcreteType(exp.getType().structure);
 		ConstructorPrototype constructor = exp.constructor;
 		writer.unitWriter.callAlloc(type.size);
 		if(constructor.argNames.length == 0)
@@ -341,7 +342,7 @@ public class ExpressionWriter {
 			VarFunctionType funcType = (VarFunctionType) type;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
 		} else if(type instanceof VarGenericType) {
-			throw new UnimplementedException("Generic type null instance");
+			throw new UnimplementedException("Generic type null instance" + exp.getErr());
 			
 		} else {
 			throw new UnreachableException("Unimplemented null: " + type);

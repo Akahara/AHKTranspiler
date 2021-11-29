@@ -2,6 +2,7 @@ package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
+import fr.wonder.ahk.transpilers.asm_x64.units.FunctionArgumentsLayout;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class LambdaWriter extends AbstractWriter {

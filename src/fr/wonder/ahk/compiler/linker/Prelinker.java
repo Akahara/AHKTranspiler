@@ -276,7 +276,7 @@ class Prelinker {
 			for(int j = 0; j < i; j++) {
 				OverloadedOperator o2 = structure.operators[j];
 				OverloadedOperatorPrototype op2 = o2.prototype;
-				if(op1.loType.equals(op2.loType) && op1.roType.equals(op2.roType))
+				if(op1.loType.equals(op2.loType) && op1.roType.equals(op2.roType) && op1.operator == op2.operator)
 					errors.add("Duplicate operator found:" + o1.getErr() + o2.getErr());
 			}
 			// check types

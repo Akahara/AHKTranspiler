@@ -1,8 +1,9 @@
-package fr.wonder.ahk.transpilers.asm_x64.writers;
+package fr.wonder.ahk.transpilers.asm_x64.units;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.Invalids;
+import fr.wonder.ahk.transpilers.asm_x64.writers.MemoryManager;
 
 /**
  * Used by the {@link MemoryManager} to write <i>null</i> as a default value for variable declarations without default value

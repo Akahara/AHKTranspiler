@@ -1,5 +1,6 @@
 package fr.wonder.ahk.compiled.expressions;
 
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
@@ -18,6 +19,11 @@ public class ConstructorExp extends Expression {
 		super(sourceRef, arguments);
 		this.constructorType = constructorType;
 		this.genericBindings = genericBindings;
+	}
+	
+	@Override
+	public VarStructType getType() {
+		return (VarStructType) type;
 	}
 	
 	@Override

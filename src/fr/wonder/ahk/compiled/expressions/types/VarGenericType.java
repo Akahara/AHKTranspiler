@@ -1,6 +1,7 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
 import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
+import fr.wonder.ahk.utils.Utils;
 
 public class VarGenericType extends VarType {
 	
@@ -17,6 +18,10 @@ public class VarGenericType extends VarType {
 	@Override
 	public String getName() {
 		return String.valueOf(name);
+	}
+	
+	public String getExpandedName() {
+		return name + (typeRestrictions.length == 0 ? "" : ":" + Utils.toString(typeRestrictions));
 	}
 
 	@Override

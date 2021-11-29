@@ -187,7 +187,7 @@ public class GenericBindings {
 			int index = context.indexOf((VarGenericType) type);
 			if(index == -1)
 				return type; // this generic is declared in another context
-			// ie. struct<X> that declare a generic function f<Y> that has nothing to do with X
+							 // ie. struct<X> that declare a generic function f<Y> that has nothing to do with X
 			return bindings[index];
 			
 		} else if(type instanceof VarNativeType) {
@@ -246,7 +246,8 @@ public class GenericBindings {
 		BlueprintTypeParameter[] typesParameters = new BlueprintTypeParameter[genericContext.gips.length];
 		int gipIndex = 0;
 		for(int i = 0; i < genericContext.gips.length; i++) {
-			typesParameters[gipIndex++] = getBPTP(genericContext.gips[i], (VarStructType) genericBindings[i]);
+			int bindingIndex = genericContext.indexOf(genericContext.gips[i].genericType);
+			typesParameters[gipIndex++] = getBPTP(genericContext.gips[i], (VarStructType) genericBindings[bindingIndex]);
 		}
 		return typesParameters;
 	}

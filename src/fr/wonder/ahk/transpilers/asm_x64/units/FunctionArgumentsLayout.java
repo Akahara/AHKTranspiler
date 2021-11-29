@@ -1,4 +1,4 @@
-package fr.wonder.ahk.transpilers.asm_x64.writers;
+package fr.wonder.ahk.transpilers.asm_x64.units;
 
 import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;

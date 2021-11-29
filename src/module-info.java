@@ -51,6 +51,8 @@ module AHKTranspiler {
 	opens fr.wonder.ahk.transpilers.common_x64.instructions;
 	exports fr.wonder.ahk.compiled.units.prototypes.blueprints;
 	opens fr.wonder.ahk.compiled.units.prototypes.blueprints;
+	exports fr.wonder.ahk.transpilers.asm_x64.units;
+	opens fr.wonder.ahk.transpilers.asm_x64.units;
 	
 	requires transitive fr.wonder.commons;
 	requires transitive fr.wonder.commons.systems;

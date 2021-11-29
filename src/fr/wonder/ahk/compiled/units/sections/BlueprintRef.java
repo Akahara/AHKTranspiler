@@ -4,6 +4,7 @@ import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 
 public class BlueprintRef {
 	
+	/** The blueprint name */
 	public final String name;
 	public BlueprintPrototype blueprint;
 	

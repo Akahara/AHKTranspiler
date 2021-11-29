@@ -27,6 +27,9 @@ import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.handles.LinkedHandle;
+import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteType;
+import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteTypesTable;
+import fr.wonder.ahk.transpilers.asm_x64.units.NoneExp;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
@@ -314,7 +317,9 @@ public class UnitWriter {
 		instructions.createStackFrame();
 		
 		for(StructSection struct : unit.structures) {
-			ConcreteType concreteType = types.getConcreteType(struct);
+			if(!ConcreteTypesTable.hasNullInstance(struct.getPrototype()))
+				continue;
+			ConcreteType concreteType = types.getConcreteType(struct.getPrototype());
 			String nullLabel = registries.getStructNullRegistry(struct.getPrototype());
 			MemAddress nullAddress = new MemAddress(new LabelAddress(nullLabel));
 			instructions.comment("init " + struct.name + " null");

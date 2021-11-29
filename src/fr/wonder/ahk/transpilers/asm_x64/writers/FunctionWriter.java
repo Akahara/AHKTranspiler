@@ -21,6 +21,7 @@ import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.statements.WhileSt;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.transpilers.asm_x64.units.FunctionArgumentsLayout;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;

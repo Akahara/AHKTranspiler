@@ -51,6 +51,10 @@ class StructSectionParser extends AbstractParser {
 				implementedBlueprints = new BlueprintRef[0];
 			}
 			
+			if(p.position != declaration.length - 1) {
+				errors.add("Unexpected tokens:" + SourceReference.fromLine(declaration, p.position, declaration.length-2).getErr());
+			}
+			
 			structure = new StructSection(
 					unit,
 					SourceReference.fromLine(declaration),

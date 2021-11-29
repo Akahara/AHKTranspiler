@@ -330,7 +330,7 @@ public class AbstractParser {
 				continue;
 			}
 			
-			Assertions.assertTrue(tk.text.length() == 1, "A generic has a non 1-length name");
+			Assertions.assertTrue(tk.text.length() == 1, "A generic has a non 1-length name" + tk.getErr());
 			char name = tk.text.charAt(0);
 			
 			BlueprintRef[] typeRestrictions;
@@ -368,7 +368,7 @@ public class AbstractParser {
 			restrictions.add(unit.usedBlueprintTypes.getType(blueprint));
 			assertHasNext(line, p, "Unfinished generic restriction", errors);
 			Token tk = line[p.position];
-			if(tk.base == TokenBase.OP_AND) {
+			if(tk.base == TokenBase.OP_AND || tk.base == TokenBase.OP_BITWISE_AND) {
 				p.position++;
 				continue;
 			} else {
