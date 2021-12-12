@@ -92,7 +92,7 @@ public class InstructionSet {
 	}
 	
 	public void skip() {
-		add(EmptyLine.INSTANCE);
+		add(EmptyLine.EMPTY_LINE);
 	}
 	
 	public void skip(int lineCount) {

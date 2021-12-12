@@ -27,6 +27,7 @@ public class AHKTranspiler {
 	 * TODO > lambdas
 	 * TODO > create a new x64 transpiler, based on an abstract intermediate language
 	 * TODO > rework project handles
+	 * TODO > merge similar string constants in the x64 transpiler
 	 * FIX > link lambdas outside of the expression linker
 	 */
 	

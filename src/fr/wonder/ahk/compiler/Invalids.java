@@ -109,7 +109,7 @@ public class Invalids {
 	public static final OverloadedOperator OVERLOADED_OPERATOR = new OverloadedOperator(STRUCTURE, SOURCE_REF, Operator.ADD, TYPE, TYPE, TYPE, STRING);
 	public static final OverloadedOperatorPrototype OVERLOADED_OPERATOR_PROTOTYPE = new OverloadedOperatorPrototype(Operator.ADD, TYPE, TYPE, TYPE, SIGNATURE);
 
-	public static final Blueprint BLUEPRINT = new Blueprint(UNIT, STRING, GENERIC_CONTEXT, MODIFIERS, SOURCE_REF);
+	public static final Blueprint BLUEPRINT = new Blueprint(UNIT, STRING, MODIFIERS, SOURCE_REF);
 	
 	static {
 		BLUEPRINT.variables = new VariableDeclaration[0];

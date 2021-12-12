@@ -1,10 +1,7 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
@@ -15,12 +12,9 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.Prototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
-import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
@@ -31,6 +25,7 @@ import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteType;
 import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteTypesTable;
 import fr.wonder.ahk.transpilers.asm_x64.units.NoneExp;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
+import fr.wonder.ahk.transpilers.asm_x64.writers.data.DataSectionWriter;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -39,18 +34,12 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
-import fr.wonder.ahk.transpilers.common_x64.declarations.EmptyLine;
 import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
-import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
-import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarReservation;
-import fr.wonder.ahk.transpilers.common_x64.declarations.Label;
 import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
-import fr.wonder.ahk.transpilers.common_x64.instructions.Instruction;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
-import fr.wonder.ahk.transpilers.common_x64.macros.StringDefinition;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitWriter {
@@ -71,11 +60,13 @@ public class UnitWriter {
 				initializableVariables.add(var);
 		}
 		
+		uw.collectDeclaredConstantsAndExternFields();
+		
 		uw.writeSpecialSegment(errors);
 		uw.writeDataSegment(initializedVariables, errors);
 		uw.writeBSSSegment(errors);
 		uw.writeTextSegment(initializableVariables, errors);
-		uw.insertExternDeclarations();
+		uw.finalizeSegments();
 		
 		return uw.instructions;
 	}
@@ -89,24 +80,24 @@ public class UnitWriter {
 	
 	public final ConcreteTypesTable types;
 	
-	/** populated by {@link #writeDataSegment(ErrorWrapper)} and used by {@link #getLabel(StrLiteral)} */
+	private final DataSectionWriter dataSectionWriter;
+	
+	/** populated by {@link #writeDataSegment(ErrorWrapper)} and used by {@link #getStringConstantLabel(StrLiteral)} */
 	private final List<StrLiteral> strConstants = new ArrayList<>();
 	
 	private int specialCallCount = 0;
-	
-	private final Set<String> requiredExternDeclarations = new HashSet<>();
-	private int externDeclarationsIndex;
 	
 	private UnitWriter(LinkedHandle handle, Unit unit, ConcreteTypesTable types) {
 		this.project = handle;
 		this.unit = unit;
 		this.registries = new RegistryManager(this);
 		this.types = types;
+		this.dataSectionWriter = new DataSectionWriter(this);
 	}
 	
 	// ------------------------ registries & labels ------------------------
 	
-	public String getLabel(StrLiteral lit) {
+	public String getStringConstantLabel(StrLiteral lit) {
 		// beware! strConstants.indexOf cannot be used because the #equals method of StrLiteral
 		// will return true if two literals hold equal strings.
 		for(int i = 0; i < strConstants.size(); i++) {
@@ -133,68 +124,54 @@ public class UnitWriter {
 		else if(exp instanceof BoolLiteral)
 			return ((BoolLiteral) exp).value ? "1" : "0";
 		else if(exp instanceof StrLiteral)
-			return getLabel((StrLiteral) exp);
+			return getStringConstantLabel((StrLiteral) exp);
 		else
 			throw new IllegalStateException("Unhandled literal type " + exp.getClass());
 	}
 	
 	public String requireExternLabel(String label) {
-		requiredExternDeclarations.add(label);
+		dataSectionWriter.addExternDeclaration(label);
 		return label;
 	}
 
 	public MemAddress requireExternLabel(MemAddress address) {
-		requiredExternDeclarations.add(((LabelAddress) address.base).label);
+		dataSectionWriter.addExternDeclaration(((LabelAddress) address.base).label);
 		return address;
 	}
 	
 	// ------------------------------ segments -----------------------------
 	
 	private void writeSpecialSegment(ErrorWrapper errors) {
-		instructions.add(new SpecialInstruction("%include\"intrinsic.asm\""));
-		instructions.skip(2);
+		instructions.add(new SpecialInstruction("%include \"intrinsic.asm\""));
+		instructions.skip(1);
 	}
 	
 	// *** Data segment ***
 	
-	private void writeDataSegment(List<VariableDeclaration> initializedVariables, ErrorWrapper errors) {
-		instructions.section(SectionDeclaration.DATA);
-		instructions.skip();
-		
-		instructions.add(new GlobalDeclaration(RegistryManager.getUnitInitFunctionRegistry(unit)));
-		for(VariableDeclaration v : unit.variables) {
-			if(v.modifiers.visibility == DeclarationVisibility.GLOBAL && !v.modifiers.hasModifier(Modifier.NATIVE))
-				instructions.add(new GlobalDeclaration(RegistryManager.getGlobalRegistry(v.getPrototype())));
-		}
-		if(unit.variables.length != 0)
-			instructions.skip();
-		for(FunctionSection f : unit.functions) {
-			if(f.modifiers.visibility == DeclarationVisibility.GLOBAL &&
-					!f.modifiers.hasModifier(Modifier.NATIVE)) {
-				
-				instructions.add(new GlobalDeclaration(RegistryManager.getGlobalRegistry(f.getPrototype())));
-				instructions.add(new GlobalDeclaration(RegistryManager.getClosureRegistry(f.getPrototype())));
-			}
-		}
-		if(unit.functions.length != 0)
-			instructions.skip();
-		for(StructSection s : unit.structures) {
-			if(s.modifiers.visibility != DeclarationVisibility.GLOBAL)
-				continue;
-			instructions.add(new GlobalDeclaration(registries.getStructNullRegistry(s.getPrototype())));
-		}
-		if(unit.structures.length != 0)
-			instructions.skip();
-		
-		externDeclarationsIndex = instructions.instructions.size();
-		
+	private void collectDeclaredConstantsAndExternFields() {
 		for(Prototype<?> i : unit.prototype.externalAccesses) {
 			// extern variable or function
 			if(i instanceof VarAccess)
 				requireExternLabel(RegistryManager.getGlobalRegistry((VarAccess) i));
 		}
-		if(unit.importations.length != 0)
-			instructions.skip();
+		
+		for(VariableDeclaration var : unit.variables)
+			collectStrConstants(var);
+		for(FunctionSection func : unit.functions) {
+			for(Statement st : func.body)
+				collectStrConstants(st);
+		}
+	}
+	
+	private void writeDataSegment(List<VariableDeclaration> initializedVariables, ErrorWrapper errors) {
+		instructions.section(SectionDeclaration.DATA);
+		instructions.skip();
+		
+		dataSectionWriter.writeGlobalDeclarations();
+		
+		// TODO change the way native functions are handled
+		// make the ahk function exist in assembly and simply
+		// call the native function from it
 		boolean hasNativeRefs = false;
 		for(FunctionSection f : unit.functions) {
 			if(f.modifiers.hasModifier(Modifier.NATIVE)) {
@@ -205,76 +182,11 @@ public class UnitWriter {
 		if(hasNativeRefs)
 			instructions.skip();
 		
-		for(VariableDeclaration var : unit.variables)
-			collectStrConstants(var);
-		for(FunctionSection func : unit.functions) {
-			for(Statement st : func.body)
-				collectStrConstants(st);
-		}
-		if(!strConstants.isEmpty())
-			instructions.comment("str constants");
-		for(StrLiteral cst : strConstants)
-			instructions.add(new StringDefinition(getLabel(cst), cst.value));
-		if(!strConstants.isEmpty())
-			instructions.skip();
-		
-		for(VariableDeclaration var : unit.variables) {
-			String value;
-			if(initializedVariables.contains(var))
-				value = getValueString((LiteralExp<?>) var.getDefaultValue());
-			else
-				value = "0";
-			String label = RegistryManager.getGlobalRegistry(var.getPrototype());
-			instructions.add(new GlobalVarDeclaration(label, MemSize.QWORD, value));
-		}
-		if(unit.variables.length != 0)
-			instructions.skip();
-
-		if(unit.functions.length != 0) {
-			instructions.comment("Functions closures");
-			for(FunctionSection func : unit.functions) {
-				String closure = RegistryManager.getClosureRegistry(func.getPrototype());
-				String address = RegistryManager.getGlobalRegistry(func.getPrototype());
-				instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, address));
-			}
-			instructions.skip();
-		}
-		// TODO add data section comments for lambdas...
-		for(SimpleLambda lambda : unit.lambdas) {
-			String closure = registries.getLambdaClosureRegistry(lambda);
-			String lambdaFunctionLabel = registries.getLambdaRegistry(lambda);
-			instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, lambdaFunctionLabel));
-			instructions.skip(); // ...and also correctly skip lines
-		}
-		
-		instructions.comment("Structures blueprints implementations"); // TODO check if comment is necessary
-		for(StructSection struct : unit.structures) {
-			for(BlueprintImplementation bp : struct.implementedBlueprints) {
-				String bpImplReg = RegistryManager.getStructBlueprintImplRegistry(bp);
-				instructions.add(new Label(bpImplReg));
-				// FIX add variables and functions in blueprint implementations
-				for(OverloadedOperatorPrototype oop : bp.operators) {
-					if(project.manifest.DEBUG_SYMBOLS)
-						instructions.comment(oop.getName(), 2);
-					instructions.add(new GlobalVarDeclaration(MemSize.POINTER, RegistryManager.getFunctionRegistry(oop.function)));
-				}
-			}
-		}
-		
-		instructions.skip(2);
-	}
-	
-	private void insertExternDeclarations() {
-		if(requiredExternDeclarations.isEmpty())
-			return;
-		
-		List<Instruction> externDeclarations =
-				requiredExternDeclarations.stream()
-				.sorted()
-				.map(ExternDeclaration::new)
-				.collect(Collectors.toList());
-		externDeclarations.add(new EmptyLine());
-		instructions.addAll(externDeclarationsIndex, externDeclarations);
+		dataSectionWriter.writeVariableDeclarations(initializedVariables);
+		dataSectionWriter.writeFunctionClosures();
+		dataSectionWriter.writeLambdas();
+		dataSectionWriter.writeBIPs();
+		dataSectionWriter.writeStrConstants(strConstants);
 	}
 	
 	private void collectStrConstants(ExpressionHolder holder) {
@@ -377,6 +289,10 @@ public class UnitWriter {
 		}
 		
 		instructions.skip(2);
+	}
+	
+	private void finalizeSegments() {
+		dataSectionWriter.insertExternDeclarations();
 	}
 	
 	// --------------------------- special calls ---------------------------

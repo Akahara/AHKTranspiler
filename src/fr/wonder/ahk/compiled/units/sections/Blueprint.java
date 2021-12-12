@@ -18,7 +18,6 @@ public class Blueprint implements SourceElement {
 	public final Unit unit;
 	public final String name;
 	public final DeclarationModifiers modifiers;
-	public final GenericContext genericContext;
 	
 	public VariableDeclaration[] variables;
 	public FunctionSection[] functions;
@@ -26,11 +25,9 @@ public class Blueprint implements SourceElement {
 	
 	private BlueprintPrototype prototype;
 	
-	public Blueprint(Unit unit, String name, GenericContext genericContext,
-			DeclarationModifiers modifiers, SourceReference sourceRef) {
+	public Blueprint(Unit unit, String name, DeclarationModifiers modifiers, SourceReference sourceRef) {
 		this.unit = unit;
 		this.name = name;
-		this.genericContext = genericContext;
 		this.modifiers = modifiers;
 		this.sourceRef = sourceRef;
 	}

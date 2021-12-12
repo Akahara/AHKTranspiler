@@ -51,7 +51,7 @@ class BlueprintParser extends AbstractParser {
 			} else if(Tokens.isVarType(line[0].base)) {
 				DeclarationModifiers mods = modifiers.getModifiers();
 				VariableDeclaration var = StatementParser.parseVariableDeclaration(
-						unit, line, blueprint.genericContext, mods, errors);
+						unit, line, GenericContext.NO_CONTEXT, mods, errors);
 				variables.add(var);
 				
 			} else if(line[0].base == TokenBase.KW_FUNC) {
@@ -60,7 +60,7 @@ class BlueprintParser extends AbstractParser {
 					errors.add("Blueprint functions cannot have a body:" + unit.source.getErr(line));
 				}
 				FunctionSection func = FunctionDeclarationParser.parseFunctionDeclaration(
-						unit, line, line.length, blueprint.genericContext, mods, errors);
+						unit, line, line.length, GenericContext.NO_CONTEXT, mods, errors);
 				functions.add(func);
 				
 			} else if(line[0].base == TokenBase.KW_OPERATOR) {
@@ -89,10 +89,8 @@ class BlueprintParser extends AbstractParser {
 		
 		Pointer p = new Pointer(1);
 		String name = assertToken(declaration, p, TokenBase.VAR_BLUEPRINT, "Expected blueprint name", errors).text;
-		GenericContext genericContext = readGenericArray(unit, declaration, null, p, errors);
 		assertToken(declaration, p, TokenBase.TK_BRACE_OPEN, "Expected '{' to begin blueprint", errors);
-		// FIX check if blueprints can have generic contexts
-		return new Blueprint(unit, name, genericContext, modifiers, SourceReference.fromLine(declaration));
+		return new Blueprint(unit, name, modifiers, SourceReference.fromLine(declaration));
 	}
 	
 	/** assumes that line[1].base is KW_OPERATOR */
@@ -100,7 +98,7 @@ class BlueprintParser extends AbstractParser {
 			DeclarationModifiers modifiers, ErrorWrapper errors) throws ParsingException {
 		
 		Pointer p = new Pointer(1);
-		VarType lo = parseType(blueprint.unit, line, blueprint.genericContext, p, ALLOW_SELF, errors);
+		VarType lo = parseType(blueprint.unit, line, GenericContext.NO_CONTEXT, p, ALLOW_SELF, errors);
 		assertHasNext(line, p, "Unfinished operator definition", errors);
 		Token operatorToken = line[p.position++];
 		Operator operator;
@@ -110,9 +108,9 @@ class BlueprintParser extends AbstractParser {
 		} else {
 			operator = Tokens.getOperator(operatorToken.base);
 		}
-		VarType ro = parseType(blueprint.unit, line, blueprint.genericContext, p, ALLOW_SELF, errors);
+		VarType ro = parseType(blueprint.unit, line, GenericContext.NO_CONTEXT, p, ALLOW_SELF, errors);
 		assertToken(line, p, TokenBase.KW_EQUAL, "Expected '=' in operator definition", errors);
-		VarType resultType = parseType(blueprint.unit, line, blueprint.genericContext, p, ALLOW_SELF, errors);
+		VarType resultType = parseType(blueprint.unit, line, GenericContext.NO_CONTEXT, p, ALLOW_SELF, errors);
 		return new BlueprintOperator(SourceReference.fromLine(line), lo, ro, operator, resultType);
 	}
 	

@@ -31,6 +31,7 @@ import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter
 import fr.wonder.ahk.compiler.types.CompositionOperation;
 import fr.wonder.ahk.compiler.types.FunctionOperation;
 import fr.wonder.ahk.compiler.types.Operation;
+import fr.wonder.ahk.transpilers.asm_x64.units.BlueprintLayout;
 import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteType;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -144,7 +145,7 @@ public class ExpressionWriter {
 		if(op instanceof BoundOverloadedOperatorPrototype) {
 			BoundOverloadedOperatorPrototype bop = (BoundOverloadedOperatorPrototype) op;
 			writer.mem.moveData(Register.RAX, writer.sectionArguments.getGIPLocation(bop.genericType, bop.usedBlueprint));
-			int offsetInGIP = bop.usedBlueprint.getUniqueIdOfPrototype(bop.originalOperator);
+			int offsetInGIP = BlueprintLayout.getOperatorOffset(bop.usedBlueprint, bop.originalOperator);
 			writer.instructions.call(new MemAddress(Register.RAX, offsetInGIP*MemSize.POINTER_SIZE));
 		} else {
 			writer.instructions.call(RegistryManager.getFunctionRegistry(op.function));
