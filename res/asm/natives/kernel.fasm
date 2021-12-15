@@ -13,6 +13,7 @@ global ahk_Kernel_print_strlen
 global ahk_Kernel_print_bool
 global ahk_Kernel_print_ln
 global ahk_Kernel_sleep
+global ahk_Kernel_nanosleep
 global global_floatst
 
 
@@ -28,6 +29,9 @@ true_chars db 'true',0xa
 false_chars db 'false',0xa
 def_string float_dot_char,'.'
 float_precision dq __float64__(1e9)
+sleep_timespec:
+  timespec_sec dq 0
+  timespec_usec dq 0
 
 section .bss
 
@@ -328,5 +332,36 @@ dbg_print_fpu_status:
   ret
   
   
+; sleeps for the given amount of time (in seconds)
 ahk_Kernel_sleep:
-  ret
+  push rbp
+  mov rbp,rsp
+  mov rax,SYSCALL_NANOSLEEP
+  mov rdi,sleep_timespec
+  mov rbx,[rbp+16]
+  mov [timespec_sec],rbx
+  mov qword [timespec_usec],0
+  xor rsi,rsi
+  syscall
+  mov rsp,rbp
+  pop rbp
+  ret 8
+  
+  
+; sleeps for the given amount of time (in nanoseconds)
+ahk_Kernel_nanosleep:
+  push rbp
+  mov rbp,rsp
+  mov rax,[rbp+16]
+  xor rdx,rdx
+  mov rbx,1000000000
+  idiv rbx
+  mov [timespec_sec],rax
+  mov [timespec_usec],rdx
+  mov rax,SYSCALL_NANOSLEEP
+  mov rdi,sleep_timespec
+  xor rsi,rsi
+  syscall
+  mov rsp,rbp
+  pop rbp
+  ret 8

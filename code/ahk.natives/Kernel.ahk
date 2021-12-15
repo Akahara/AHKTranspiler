@@ -56,3 +56,6 @@ global func void exit(int exitCode) {}
 
 @native("ahk_Kernel_sleep");
 global func void sleep(int seconds) {}
+
+@native("ahk_Kernel_nanosleep");
+global func void nanosleep(int nanos) {}
