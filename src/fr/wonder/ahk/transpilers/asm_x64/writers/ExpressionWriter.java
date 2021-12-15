@@ -266,7 +266,7 @@ public class ExpressionWriter {
 			writer.instructions.mov(Register.RBX, new MemAddress(Register.RAX, -8));
 			writer.instructions.test(Register.RBX);
 			writer.instructions.add(OpCode.JNZ, errLabel);
-			writer.instructions.mov(Register.RAX, -6); // TODO add specific error code
+			writer.instructions.mov(Register.RAX, -6); // TODO on OOB, return null (or 0...)
 			writer.instructions.call(writer.unitWriter.requireExternLabel(GlobalLabels.SPECIAL_THROW));
 			writer.instructions.label(errLabel);
 			return new MemAddress(Register.RAX, Register.RBX, 1, -8);
@@ -296,7 +296,7 @@ public class ExpressionWriter {
 		writer.instructions.cmp(Register.RBX, new MemAddress(Register.RAX, -8));
 		writer.instructions.add(OpCode.JL, successLabel);
 		writer.instructions.label(errLabel);
-		writer.instructions.mov(Register.RAX, -5); // TODO add specific error code (oob)
+		writer.instructions.mov(Register.RAX, -5); // TODO on OOB, return null (or 0...)
 		writer.instructions.call(writer.unitWriter.requireExternLabel(GlobalLabels.SPECIAL_THROW));
 		writer.instructions.label(successLabel);
 	}
@@ -352,8 +352,6 @@ public class ExpressionWriter {
 
 	private void writeParameterizedExp(ParameterizedExp exp, ErrorWrapper errors) {
 		throw new UnimplementedException("Parametrized expressions"); // FIX implement asm parameterized expressions
-		// FIX fix typo: change 'parametrized' to parameterized everywhere
-		// (fixed only here)
 	}
 	
 	private void writeSimpleLambdaExp(SimpleLambdaExp exp, ErrorWrapper errors) {

@@ -74,6 +74,5 @@ global func int main() {
 	Gen<[Struct]> g3 = Gen<[Struct]>(Struct(5));
 	Gen<[Struct]> res = addGens<[Struct]>(g1, g2, g3); // 3 + 4 - 5
 	Kernel.out << res.x.a << "\n";
-	
 	return 5;
 }

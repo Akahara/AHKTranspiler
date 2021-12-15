@@ -53,3 +53,6 @@ global func void printlnb(bool b) {
 
 @native("ker_exit");
 global func void exit(int exitCode) {}
+
+@native("ahk_Kernel_sleep");
+global func void sleep(int seconds) {}

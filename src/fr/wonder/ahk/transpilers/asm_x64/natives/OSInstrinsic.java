@@ -2,10 +2,11 @@ package fr.wonder.ahk.transpilers.asm_x64.natives;
 
 public enum OSInstrinsic {
 	
+	/** Syscalls numbers can be found at /usr/include/asm/unistd_64.h on a linux distro */
 	UNIX(
-			1,	// exit
-			4,	// write
-			45
+			60,	// exit
+			1,	// write
+			12  // brk (ram usage extension)
 	),
 	
 	MAC(

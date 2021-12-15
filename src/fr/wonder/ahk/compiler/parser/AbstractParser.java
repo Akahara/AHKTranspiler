@@ -165,9 +165,9 @@ public class AbstractParser {
 					errors.add("Expected ',' in type parameters:" + nextTk.getErr());
 			}
 			if(typeParameters.isEmpty())
-				errors.add("Cannot make an empty parametrized type:" + unit.source.getErr(line, pointer.position-2, pointer.position));
+				errors.add("Cannot make an empty parameterized type:" + unit.source.getErr(line, pointer.position-2, pointer.position));
 			else if(!(baseType instanceof VarStructType))
-				errors.add("Type " + baseType + " cannot be parametrized:" + line[pointer.position-1].getErr());
+				errors.add("Type " + baseType + " cannot be parameterized:" + line[pointer.position-1].getErr());
 			else {
 				VarBoundStructType bound = new VarBoundStructType(baseType.getName(), typeParameters.toArray(VarType[]::new));
 				unit.usedStructTypes.addParametrizedInstance(bound, genc, token);

@@ -284,8 +284,8 @@ class ExpressionLinker {
 		} else if(fexp.getFunction() instanceof ParameterizedExp && ((ParameterizedExp) fexp.getFunction()).getTarget() instanceof VarExp &&
 				((VarExp) ((ParameterizedExp) fexp.getFunction()).getTarget()).declaration instanceof FunctionPrototype) {
 			ParameterizedExp pexp = (ParameterizedExp) fexp.getFunction();
-			VarExp parametrized = (VarExp) pexp.getTarget();
-			FunctionPrototype parametrizedFunc = (FunctionPrototype) parametrized.declaration;
+			VarExp parameterized = (VarExp) pexp.getTarget();
+			FunctionPrototype parametrizedFunc = (FunctionPrototype) parameterized.declaration;
 			
 			VarFunctionType boundType = (VarFunctionType) linker.typesTable.genericBindings.bindType(
 					parametrizedFunc.genericContext,
@@ -349,7 +349,7 @@ class ExpressionLinker {
 		VarType targetType = exp.getTarget().getType();
 		exp.type = Invalids.TYPE;
 		if(!(targetType instanceof VarFunctionType)) {
-			errors.add("Type " + targetType + " cannot be parametrized:" + exp.getErr());
+			errors.add("Type " + targetType + " cannot be parameterized:" + exp.getErr());
 			return;
 		}
 		VarFunctionType fType = (VarFunctionType) targetType;

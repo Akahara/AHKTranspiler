@@ -172,7 +172,7 @@ public class Linker {
 			return;
 		
 //		if(validType instanceof VarStructType && ((VarStructType) validType).structure.hasGenericBindings()) {
-//			errors.add("Type " + validType + " must be parametrized before affectation:" + valueHolder.getErr());
+//			errors.add("Type " + validType + " must be parameterized before affectation:" + valueHolder.getErr());
 //			return;
 //		}
 		

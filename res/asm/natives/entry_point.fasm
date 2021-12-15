@@ -34,6 +34,7 @@ global _main
 extern &entry_point
 extern global_floatst
 extern ker_init
+extern ker_exit
 extern mem_init
 extern ahk_Kernel_print_hex
 
@@ -71,9 +72,8 @@ _main:
   call &entry_point
   
   ; exit with the return value of &entry_point
-  mov rbx,rax
-  mov rax,SYSCALL_EXIT
-  int 0x80
+  push rax
+  call ker_exit
   
   ; mov rsp,rbp
   ; pop rbp

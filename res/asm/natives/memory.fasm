@@ -81,8 +81,10 @@ mem_init:
   
   ; get the current break
   mov rax,SYSCALL_BRK
-  xor rbx,rbx
-  int 0x80
+  ;xor rbx,rbx
+  ;int 0x80
+  xor rdi,rdi
+  syscall
   mov [current_break],rax
   mov [table_start],rax
   add rax,8*(TABLE_SIZE+1)
@@ -118,8 +120,8 @@ mem_dispose:
   push rbp
   mov rbp, rsp
   mov rax,SYSCALL_BRK
-  mov rbx,[table_start]
-  int 0x80
+  mov rdi,[table_start]
+  syscall
   mov rsp,rbp
   pop rbp
   ret
@@ -132,11 +134,11 @@ mem_dispose:
 grow_heap:
   push rbp
   mov rbp,rsp
-  mov rbx,[current_break]
-  add rbx,ALLOC_SIZE
+  mov rdi,[current_break]
+  add rdi,ALLOC_SIZE
   mov rax,SYSCALL_BRK
-  int 0x80
-  cmp rax,rbx
+  syscall
+  cmp rax,rdi
   je .success
   mov rax,E_BRK_ERROR
   call error_throw

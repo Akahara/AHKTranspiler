@@ -1,4 +1,4 @@
-%include"intrinsic.asm"
+%include "intrinsic.asm"
 
 global ker_init
 global ker_exit
@@ -12,6 +12,7 @@ global ahk_Kernel_print_float
 global ahk_Kernel_print_strlen
 global ahk_Kernel_print_bool
 global ahk_Kernel_print_ln
+global ahk_Kernel_sleep
 global global_floatst
 
 
@@ -49,9 +50,9 @@ ker_exit:
   push rbp
   mov rbp,rsp
   
-  mov rbx,[rbp+16]
+  mov rdi,[rbp+16]
   mov rax,SYSCALL_EXIT
-  int 0x80
+  syscall
   
 
 ker_init:
@@ -130,10 +131,10 @@ ahk_Kernel_print_hex:
   loop .loop
   
   mov rax,SYSCALL_WRITE
-  mov rbx,STD_OUT
-  mov rcx,hex_chars
+  mov rdi,STD_OUT
+  mov rsi,hex_chars
   mov rdx,18 ; 18 chars to be printed
-  int 0x80 ; actual system call
+  syscall ; actual system call
   
   mov rsp,rbp
   pop rbp
@@ -144,17 +145,17 @@ ahk_Kernel_print_bool:
   push rbp
   mov rbp,rsp
   mov rdx,[rbp+16]
-  mov rcx,true_chars
+  mov rsi,true_chars
   test rdx,rdx
   ; cmov rcx,false_chars  ; TODO find out why this doesn't work (invalid combination of opcode and operands)
   jnz .true_str
-  mov rcx,false_chars
+  mov rsi,false_chars
 .true_str:
   mov rax,SYSCALL_WRITE
-  mov rbx,STD_OUT
+  mov rdi,STD_OUT
   neg rdx
   add rdx,5
-  int 0x80
+  syscall
   mov rsp,rbp
   pop rbp
   ret 8
@@ -162,16 +163,16 @@ ahk_Kernel_print_bool:
   
 ; used to print a string which length is stored as a qword before
 ; the string characters. see the intrinsic.fasm#def_string macro
-; if the string does not use this convention this function will print
-; an undetermined number of characters!
+; if the string does not use this convention this function will
+; have undefined behavior
 ahk_Kernel_print_str:
   push rbp
   mov rbp,rsp
   mov rax,SYSCALL_WRITE
-  mov rbx,STD_OUT
-  mov rcx,[rsp+16]
-  mov rdx,[rcx-8] ; n chars to be printed
-  int 0x80
+  mov rdi,STD_OUT
+  mov rsi,[rbp+16]
+  mov rdx,[rsi-8] ; n chars to be printed
+  syscall
   mov rsp,rbp
   pop rbp
   ret 8
@@ -184,10 +185,10 @@ ahk_Kernel_print_strlen:
   push rbp
   mov rbp,rsp
   mov rax,SYSCALL_WRITE
-  mov rbx,STD_OUT
-  mov rcx,[rsp+16]
+  mov rdi,STD_OUT
+  mov rsi,[rsp+16]
   mov rdx,[rsp+24] ; n chars to be printed
-  int 0x80
+  syscall
   mov rsp,rbp
   pop rbp
   ret 8
@@ -198,10 +199,10 @@ ahk_Kernel_print_ln:
   mov rbp,rsp
   
   mov rax,SYSCALL_WRITE
-  mov rbx,STD_OUT
-  mov rcx,ln_chars
+  mov rdi,STD_OUT
+  mov rsi,ln_chars
   mov rdx,1 ; 1 char to be printed
-  int 0x80 ; actual system call
+  syscall ; actual system call
   
   mov rsp,rbp
   pop rbp
@@ -214,15 +215,14 @@ ahk_Kernel_print_dec:
   
   push qword [rbp+16]
   call ker_fill_dec_chars
-  ; print text
-  mov rcx,rax
   
+  mov rsi,rax
   mov rax,SYSCALL_WRITE
-  mov rbx,STD_OUT
+  mov rdi,STD_OUT
   mov rdx,20
-  sub rdx,rcx
-  lea rcx,[rcx+dec_chars+1]
-  int 0x80
+  sub rdx,rsi
+  lea rsi,[rsi+dec_chars+1]
+  syscall
   
   mov rsp,rbp
   pop rbp
@@ -251,14 +251,14 @@ ahk_Kernel_print_float:
   push rax
   call ker_fill_dec_chars
   
-  mov rcx,rax
+  mov rsi,rax
   mov rdx,21 ; 21, not 20 since the 'skip zerop'
              ; loop will run at least once, decrementing rdx
-  sub rdx,rcx
-  lea rcx,[rcx+dec_chars+1]
+  sub rdx,rsi
+  lea rsi,[rsi+dec_chars+1]
 .skip_zero:
   dec rdx
-  mov al,[rcx+rdx-1]
+  mov al,[rsi+rdx-1]
   cmp al,'0'
   je .skip_zero
   cmp rdx,0
@@ -267,8 +267,8 @@ ahk_Kernel_print_float:
 .has_decimals:
   
   mov rax,SYSCALL_WRITE
-  mov rbx,STD_OUT
-  int 0x80
+  mov rdi,STD_OUT
+  syscall
   
   mov rsp,rbp
   pop rbp
@@ -325,4 +325,8 @@ dbg_print_fpu_status:
   call ahk_Kernel_print_ln
   mov rsp,rbp
   pop rbp
+  ret
+  
+  
+ahk_Kernel_sleep:
   ret
