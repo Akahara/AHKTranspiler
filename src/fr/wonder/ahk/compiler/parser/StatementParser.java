@@ -11,6 +11,7 @@ import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
@@ -161,9 +162,7 @@ public class StatementParser extends AbstractParser {
 			return new NullExp(sourceRef);
 		else if(type == Invalids.TYPE)
 			return Invalids.EXPRESSION;
-		else if(type instanceof VarArrayType)
-			return new NullExp(sourceRef);
-		else if(type instanceof VarGenericType)
+		else if(type instanceof VarArrayType || type instanceof VarGenericType || type instanceof VarFunctionType)
 			return new NullExp(sourceRef);
 		else
 			throw new UnreachableException("Unimplemented type default value for " + type);

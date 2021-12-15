@@ -143,7 +143,7 @@ public class NativeOperation extends Operation {
 				X,I,X,
 				X,X,X
 			},
-			{ // || &&
+			{ // || && // TODO fix boolean operators (int||bool should result in boolcast||bool->bool)
 				B,I,X,
 				I,B,X,
 				X,X,X,

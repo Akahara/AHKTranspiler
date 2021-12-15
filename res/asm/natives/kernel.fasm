@@ -17,7 +17,6 @@ global ahk_Kernel_nanosleep
 global global_floatst
 
 
-
 section .data
 
 extern mem_alloc_block

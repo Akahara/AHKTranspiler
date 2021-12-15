@@ -1,0 +1,11 @@
+%include "intrinsic.asm"
+
+section .text
+
+stream_open_file:
+  push rbp
+  mov rbp,rsp
+  
+  mov rsp,rbp
+  pop rbp
+  ret 8

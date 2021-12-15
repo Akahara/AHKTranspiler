@@ -103,10 +103,10 @@ public class ExpressionWriter {
 			arguments = fexp.getArguments();
 			fexpFunctionPrototype = fexp.function;
 			typesParameters = fexp.typesParameters;
-			argsSpace = computeFunctionCallStackSpace(typesParameters, arguments, false);
+			argsSpace = computeFunctionCallStackSpace(typesParameters, arguments);
 		} else if(functionExpression instanceof FunctionCallExp) {
 			arguments = ((FunctionCallExp) functionExpression).getArguments();
-			argsSpace = computeFunctionCallStackSpace(null, arguments, true);
+			argsSpace = computeFunctionCallStackSpace(null, arguments);
 			fcexpClosurePointer = new MemAddress(Register.RSP, argsSpace-MemSize.POINTER_SIZE);
 		} else {
 			throw new IllegalArgumentException("Expression is not callable: " + functionExpression.getClass());
@@ -137,7 +137,7 @@ public class ExpressionWriter {
 	}
 	
 	private void writeOperatorFunction(OperationExp exp, ErrorWrapper errors) {
-		int argsSpace = computeFunctionCallStackSpace(null, exp.getExpressions(), false);
+		int argsSpace = computeFunctionCallStackSpace(null, exp.getExpressions());
 		writer.mem.addStackOffset(argsSpace);
 		writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
 		writeFunctionArguments(null, exp.getOperands(), errors);
@@ -153,14 +153,10 @@ public class ExpressionWriter {
 		writer.mem.addStackOffset(-argsSpace);
 	}
 	
-	private int computeFunctionCallStackSpace(
-			BlueprintTypeParameter[] typesParameters,
-			Expression[] args,
-			boolean reserveClosureSpace) {
-		int argsSpace = 0;
-		if(reserveClosureSpace)     argsSpace += MemSize.POINTER_SIZE;
-		if(typesParameters != null) argsSpace += typesParameters.length * MemSize.POINTER_SIZE;
-		argsSpace += args.length * MemSize.POINTER_SIZE;
+	private int computeFunctionCallStackSpace(BlueprintTypeParameter[] typesParameters, Expression[] args) {
+		int argsSpace = args.length * MemSize.POINTER_SIZE;
+		if(typesParameters != null)
+			argsSpace += typesParameters.length * MemSize.POINTER_SIZE;
 		return argsSpace;
 	}
 	

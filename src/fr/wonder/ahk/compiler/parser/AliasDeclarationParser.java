@@ -258,7 +258,14 @@ public class AliasDeclarationParser extends AbstractParser {
 		assertHasNext(alias.line, pointer, "Incomplete function type", alias.errors, 3);
 		
 		pointer.position++; // skip the 'func' keyword
-		VarType returnType = parseType(alias, pointer);
+		
+		VarType returnType;
+		if(alias.line[pointer.position].base == TokenBase.TYPE_VOID) {
+			returnType = VarType.VOID;
+			pointer.position++;
+		} else {
+			returnType = parseType(alias, pointer);
+		}
 		
 		ArgumentList arguments = readArguments(() -> parseType(alias, pointer), alias.unit.unit.source, alias.line, pointer, false, null);
 		if(arguments.size() > VarFunctionType.MAX_LAMBDA_ARGUMENT_COUNT) {
