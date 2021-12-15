@@ -26,17 +26,17 @@ import ahk.Kernel;
 unit Main;
 
 global func int main() {
-	fizzBuzz();
+  fizzBuzz();
 }
 
 func void fizzBuzz() {
-	for(int i = 1..1000) {
+  for(int i = 1..1000) {
     Kernel.out << "\n" << i << " ";
-		if(i%3 == 0)
-	    Kernel.out << "Fizz";
+    if(i%3 == 0)
+      Kernel.out << "Fizz";
     if(i%5 == 0)
       Kernel.out << "Buzz";
-	}
+  }
   Kernel.out << "\n";
 }
 ```
@@ -91,7 +91,7 @@ Currently implicit conversions of return types do not work, you cannot add a fun
 
 To install simply clone or download the project, all dependencies are home-made, available libraries: [wonder.commons](https://github.com/Akahara/fr.wonder.commons) and [wonder.commons.systems](https://github.com/Akahara/fr.wonder.commons.systems). Add both dependencies to the module path and build with Java (JRE version 15 works, lower may not).\
 \
-To run simply execute the generated jar, command line arguments are not available yet so the only files that will be compiled must be in the `code` folder and generated binaries will be in the generated `exported` folder. To change these directories or choose a different compiler modify the `fr.wonder.ahk.AHKTranspiler` `main` method.
+To run simply execute the generated jar, command line arguments are not available yet so the only files that will be compiled must be in the `code` folder and generated binaries will be in the generated `exported` folder. To change these directories or choose a different compiler modify the `fr.wonder.ahk.AHKTranspiler#main` method.
 
 ### Available compilers
 
