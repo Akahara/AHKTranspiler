@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.handles.LinkedHandle;
@@ -15,7 +16,6 @@ import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.AsmOperationWriter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.files.FilesUtils;
-import fr.wonder.commons.systems.reflection.ReflectUtils;
 import fr.wonder.commons.types.Tuple;
 
 public class ProcessFiles {
@@ -35,16 +35,20 @@ public class ProcessFiles {
 	public static String[] writeFiles(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		List<String> files = new ArrayList<>();
 		
-		files.add(writeIntrinsic(handle, dir, errors));
+		files.add(copyNative(dir, "asm/natives/intrinsic.fasm", "intrinsic.asm"));
+		files.add(writeOSIntrinsic(handle, dir, errors));
 		files.add(writeEntryPoint(handle, dir, errors));
 		files.add(writeClosures(dir));
 		files.add(copyNative(dir, "asm/natives/memory.fasm", "natives/memory.asm"));
 		files.add(copyNative(dir, "asm/natives/errors.fasm", "natives/errors.asm"));
 		files.add(copyNative(dir, "asm/natives/values.fasm", "natives/values.asm"));
+		files.add(copyNative(dir, "asm/natives/lib/streams.fasm", "natives/lib/streams.asm"));
 		
 		for(Entry<String, FileWriter> unit : AHK_LIB.entrySet()) {
 			files.add(unit.getValue().writeFile(handle, dir, errors));
 		}
+		
+		files.removeIf(Objects::isNull);
 		
 		return files.toArray(String[]::new);
 	}
@@ -79,18 +83,13 @@ public class ProcessFiles {
 		return writeFile(dir, readNative(path), name);
 	}
 	
-	private static String writeIntrinsic(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
+	private static String writeOSIntrinsic(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		OSInstrinsic osInstrinsic = OSInstrinsic.getOS(handle.manifest.BUILD_TARGET);
-		String syscalls = ReflectUtils.accumulateOnClassFields(OSInstrinsic.class, (f, directives) -> {
-			try {
-				if(f.getType() == int.class)
-					return directives + "%define " + f.getName() + " 0x" + Integer.toHexString(f.getInt(osInstrinsic)) + "\n  ";
-				return directives;
-			} catch (IllegalAccessException e) { throw new Error(e); }
-		}, "");
-		String source = formatNative("asm/natives/intrinsic.fasm", 
-				"&SYSCALLS", syscalls);
-		return writeFile(dir, source, "intrinsic.asm");
+		if(osInstrinsic == null) {
+			errors.add("Unknown target operating system: " + handle.manifest.BUILD_TARGET);
+			return null;
+		}
+		return copyNative(dir, "asm/natives/osintrinsic/" + osInstrinsic.toString().toLowerCase() + ".fasm", "osintrinsic.asm");
 	}
 	
 	private static String writeEntryPoint(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {

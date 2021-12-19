@@ -1,0 +1,31 @@
+; -------------------------------------------------- ;
+; osintrinsic/linux.fasm
+; 
+; This file contains all the necessary constants to
+; interact with the operating system on most linux
+; machines.
+; 
+; Syscalls numbers can be found on a linux distro in
+; /usr/include/asm/unistd_64.h
+; -------------------------------------------------- ;
+
+%ifndef OSINTRINSIC
+  %define OSINTRINSIC
+  
+  %define STD_IN 0
+  %define STD_OUT 1
+  %define STD_ERR 2
+  
+  %define SYSCALL_READ 0
+  %define SYSCALL_WRITE 1
+  %define SYSCALL_OPEN 2
+  %define SYSCALL_CLOSE 3
+  %define SYSCALL_BRK 12
+  %define SYSCALL_NANOSLEEP 35
+  %define SYSCALL_EXIT 60
+  
+  %define STREAMS_O_RDONLY 0
+  %define STREAMS_O_WRONLY 1
+  %define STREAMS_O_RDWR 2
+  %define STREAMS_O_CREAT 0o0100
+%endif

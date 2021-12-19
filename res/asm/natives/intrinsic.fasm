@@ -11,16 +11,7 @@
 ; 
 ; -------------------------------------------------- ;
 
-%ifndef NATIVE_CONSTANTS
-  %define NATIVE_CONSTANTS
-  
-  ; define system calls
-  ; replaced at compile time depending on the target os
-  &SYSCALLS
-  
-  %define STD_OUT 1
-  
-%endif
+%include "osintrinsic.asm"
 
 
 %ifndef FASM_MACRO

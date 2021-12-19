@@ -11,13 +11,11 @@ global func int main() {
 	
 	Stream stream = Streams.openFile("main.ahk");
 	
-	int i;
-	bool f = true;
-	while(f || (i != 0 && i != Streams.eof)) {
-		i = stream.in();
-		Kernel.out << i << "\n";
-		f = false;
-	}
+	Kernel.out << Streams.read(stream) << "\n";
+	Kernel.sleep(10);
+	Streams.close(stream);
+	Kernel.out << "closed\n";
+	Kernel.sleep(5);
 	
 	return 5;
 }

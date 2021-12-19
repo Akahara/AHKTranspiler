@@ -1,0 +1,62 @@
+%include "intrinsic.asm"
+
+global ahk_Streams_openfile
+global ahk_Streams_read
+global ahk_Streams_close
+
+section .data
+
+file db '../inputtest.asm',0
+
+section .bss
+
+input_buffer resb 1
+
+section .text
+
+ahk_Streams_openfile:
+  push rbp
+  mov rbp,rsp
+
+  mov rax,SYSCALL_OPEN
+  mov rdi,file
+  mov rsi,STREAMS_O_RDONLY|STREAMS_O_CREAT
+  ; xor rdx,rdx
+  mov rdx,0o644
+  syscall
+
+  mov rsp,rbp
+  pop rbp
+  ret 8
+
+
+ahk_Streams_read:
+  push rbp
+  mov rbp,rsp
+  
+  mov rax,SYSCALL_READ
+  mov rdi,[rbp+16]
+  mov rsi,input_buffer
+  mov rdx,1
+  syscall
+  
+  xor rax,rax
+  mov al,[input_buffer]
+  
+  mov rsp,rbp
+  pop rbp
+  ret 8
+  
+  
+ahk_Streams_close:
+  push rbp
+  mov rbp,rsp
+  
+  mov rax,SYSCALL_CLOSE
+  mov rdi,[rbp+16]
+  syscall
+  
+  mov rsp,rbp
+  pop rbp
+  ret 8
+

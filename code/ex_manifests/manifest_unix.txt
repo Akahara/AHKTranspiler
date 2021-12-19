@@ -2,7 +2,7 @@
 entry-point=fr.wonder.main.Unit
 # build for linux
 build-architecture=elf64
-build-target=unix
+build-target=linux
 # add debugging symbols
 debug-symbols=true
 # linker options

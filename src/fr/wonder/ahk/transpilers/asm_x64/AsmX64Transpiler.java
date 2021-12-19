@@ -29,6 +29,8 @@ public class AsmX64Transpiler implements Transpiler {
 	
 	// FIX fix the kernel print_dec assembly, the '-' sign does not appear
 	
+	private static final String ASM_PATH = "asm/", OBJ_PATH = "obj/";
+	
 	@Override
 	public String getName() {
 		return "AHK_Default//Assembly_x64";
@@ -38,6 +40,8 @@ public class AsmX64Transpiler implements Transpiler {
 	public ExecutableHandle exportProject(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException, WrappedException {
 		validateProject(handle, errors);
 		errors.assertNoErrors();
+		
+		File asmDir = new File(dir, ASM_PATH);
 		
 		if(handle.manifest.callingConvention != CallingConvention.__stdcall) {
 			throw new UnimplementedException("Unimplemented calling convention " +
@@ -50,15 +54,15 @@ public class AsmX64Transpiler implements Transpiler {
 		
 		for(int i = 0; i < handle.units.length; i++) {
 			Unit unit = handle.units[i];
-			files[i] = writeUnit(handle, unit, types, dir, errors);
+			files[i] = writeUnit(handle, unit, types, asmDir, errors);
 		}
 		
 		errors.assertNoErrors();
 		
-		String[] processFiles = ProcessFiles.writeFiles(handle, dir, errors);
-		files = ArrayOperator.add(files, processFiles);
-		
+		String[] processFiles = ProcessFiles.writeFiles(handle, asmDir, errors);
 		errors.assertNoErrors();
+		
+		files = ArrayOperator.add(files, processFiles);
 		
 		runExternalCompiler(handle, dir, files, errors);
 		
@@ -111,17 +115,16 @@ public class AsmX64Transpiler implements Transpiler {
 		if(files.length == 0)
 			return;
 		
-		new File(dir, "obj_files").mkdirs();
+		new File(dir, OBJ_PATH).mkdirs();
 		
-		String nasm = handle.manifest.NASM_PATH + " -f " + handle.manifest.BUILD_ARCHITECTURE + " ";
+		String nasm = handle.manifest.NASM_PATH + " -f " + handle.manifest.BUILD_ARCHITECTURE + " -i " + ASM_PATH + " ";
 		if(handle.manifest.DEBUG_SYMBOLS) nasm += "-g -F dwarf ";
-		String asme = " -o obj_files/";
 		
 		boolean compiled = true;
 		
 		for(String f : files) {
-			new File(dir, "obj_files/"+f).getParentFile().mkdirs();
-			compiled &= runCommand(nasm + f + asme + f + ".o", dir) == 0;
+			new File(dir, OBJ_PATH + f).getParentFile().mkdirs();
+			compiled &= runCommand(nasm + ASM_PATH + f + " -o " + OBJ_PATH + f + ".o", dir) == 0;
 		}
 		
 		if(!compiled) {
@@ -133,7 +136,7 @@ public class AsmX64Transpiler implements Transpiler {
 		if(!handle.manifest.LINKER_OPTIONS.isBlank())
 			ld += handle.manifest.LINKER_OPTIONS + " ";
 		for(String f : files)
-			ld += "obj_files/" + f + ".o ";
+			ld += OBJ_PATH + f + ".o ";
 		if(runCommand(ld, dir) != 0)
 			errors.add("Unable to link all source files");
 		

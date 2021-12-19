@@ -42,7 +42,8 @@ class UnitScope implements Scope {
 					return new Tuple<>(proto, varName);
 			}
 			// will occur if this unit scope is generated with missing unit prototypes
-			// (like missing native units for example)
+			// TODO do not try to read variables in structs:
+			// "Stream.read" will cause an error (expected "Streams.read")
 			throw new IllegalStateException("Unknown unit " + unitName);
 		} else {
 			return new Tuple<>(this.unit, name);
