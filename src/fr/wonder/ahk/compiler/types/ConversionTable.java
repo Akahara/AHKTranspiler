@@ -23,11 +23,10 @@ public class ConversionTable {
 	static {
 		addImplicitConversion(INT,   FLOAT);
 		addImplicitConversion(BOOL,  INT);
+		addImplicitConversion(INT, BOOL);
+		addImplicitConversion(FLOAT, BOOL);
 		
 		addExplicitConversion(FLOAT, INT);
-		addExplicitConversion(FLOAT, BOOL);
-		addExplicitConversion(BOOL,  FLOAT);
-		addExplicitConversion(BOOL,  INT);
 	}
 	
 	private static void addImplicitConversion(VarType from, VarType to) {

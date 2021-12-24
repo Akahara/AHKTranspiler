@@ -1,7 +1,10 @@
 package fr.wonder.ahk.compiler.types;
 
-import static fr.wonder.ahk.compiled.expressions.Operator.*;
+import static fr.wonder.ahk.compiled.expressions.Operator.ADD;
+import static fr.wonder.ahk.compiled.expressions.Operator.AND;
 import static fr.wonder.ahk.compiled.expressions.Operator.NOT;
+import static fr.wonder.ahk.compiled.expressions.Operator.OR;
+import static fr.wonder.ahk.compiled.expressions.Operator.SUBSTRACT;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
@@ -11,7 +14,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
+import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.types.Triplet;
 import fr.wonder.commons.utils.ArrayOperator;
@@ -92,6 +97,8 @@ public class NativeOperation extends Operation {
 
 	/** Used to minimize the number */
 	private static final VarType[] nativeOrder = { BOOL, INT, FLOAT };
+	/** List of operators that can be used exclusively with booleans */
+	private static final Operator[] BOOLEAN_OPERATORS = { AND, OR };
 	
 	private static final int getOrder(VarType t) {
 		return ArrayOperator.indexOf(nativeOrder, t);
@@ -126,26 +133,26 @@ public class NativeOperation extends Operation {
 			{ // + - *
 				O,O,O,
 				O,I,O,
-				O,O,F
+				O,O,F,
 			},
 			{ // == != < > <= >= ===
 				B,O,O,
 				O,B,O,
-				O,O,B
+				O,O,B,
 			},
 			{ // / % ^
 				X,X,X,
 				X,I,O,
-				X,O,F
+				X,O,F,
 			},
 			{ // << >>
 				X,X,X,
 				X,I,X,
-				X,X,X
+				X,X,X,
 			},
-			{ // || && // TODO fix boolean operators (int||bool should result in boolcast||bool->bool)
-				B,I,X,
-				I,B,X,
+			{ // & |
+				B,O,X,
+				O,I,X,
 				X,X,X,
 			}
 	};
@@ -154,10 +161,12 @@ public class NativeOperation extends Operation {
 	private static final Map<Triplet<Integer, Integer, Operator>, NativeOperation> castedOperations = new HashMap<>();
 	
 	/** May return null */
-	public static NativeOperation getOperation(VarType l, VarType r, Operator o, boolean allowCast) {
+	public static NativeOperation getOperation(VarNativeType l, VarNativeType r, Operator o, boolean allowCast) {
 		// "special" operators
 		if(l == STR && r == STR && o == ADD)
 			return STR_ADD_STR;
+		if(l == STR)
+			return null; // TODO add str+native operations
 		if(o == Operator.NOT) {
 			if(l != null)
 				throw new IllegalArgumentException("The negation operation takes one argument only");
@@ -178,7 +187,14 @@ public class NativeOperation extends Operation {
 		int rorder = getOrder(r);
 		
 		if(lorder == -1 || rorder == -1)
-			return null;
+			throw new UnreachableException("Invalid native type: " + l + " or " + r);
+		
+		if(Utils.arrayContains(BOOLEAN_OPERATORS, o)) {
+			var key = new Triplet<>(B, B, o);
+			// all native types are either boolean or can be implicitly casted to booleans
+			// so their is no need to check for types here.
+			return strictOperations.computeIfAbsent(key, (_key) -> new NativeOperation(BOOL, BOOL, o, BOOL));
+		}
 		
 		var key = new Triplet<>(lorder, rorder, o);
 		
@@ -243,13 +259,15 @@ public class NativeOperation extends Operation {
 		case SHL:
 		case SHR:
 			return 3;
+		case BITWISE_AND:
+		case BITWISE_OR:
+			return 4;
 		case OR:
 		case AND:
-			return 4;
 		case NOT:
-			throw new UnreachableException("The not operator was not taken care of");
+			throw new UnreachableException("Operator " + o + " was not taken care of");
 		}
-		throw new UnreachableException(o.toString());
+		throw new UnreachableException();
 	}
 	
 }

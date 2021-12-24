@@ -96,7 +96,6 @@ public enum TokenBase {
 	OP_SHR(">>"),
 	OP_SHL("<<"),
 	
-	// FIX implement logical and bitwise operators & and |
 	OP_BITWISE_AND("&"),
 	OP_BITWISE_OR("|"),
 	OP_AND("&&"),

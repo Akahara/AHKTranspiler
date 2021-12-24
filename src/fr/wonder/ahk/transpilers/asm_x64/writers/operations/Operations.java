@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.Operator;
-import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
@@ -43,7 +43,7 @@ class Operations {
 	static final Map<NativeOperation, OperationWriter> nativeOperations = new HashMap<>();
 	static final Map<NativeOperation, NativeFunctionWriter> nativeFunctions = new HashMap<>();
 	
-	private static void putOperation(VarType l, VarType r, Operator o, OperationWriter opWriter, NativeFunctionWriter funcWriter) {
+	private static void putOperation(VarNativeType l, VarNativeType r, Operator o, OperationWriter opWriter, NativeFunctionWriter funcWriter) {
 		NativeOperation op = NativeOperation.getOperation(l, r, o, false);
 		if(op == null)
 			throw new IllegalStateException("An unimplemented native operation was given an asm implementation");
@@ -85,6 +85,11 @@ class Operations {
 		putOperation(INT, INT, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
 		putOperation(BOOL, BOOL, AND, Operations::op_boolANDbool, Operations::fc_boolANDbool);
 		putOperation(INT, INT, AND, Operations::op_boolANDbool, Operations::fc_boolANDbool);
+
+		putOperation(BOOL, BOOL, BITWISE_OR, Operations::op_intBITORint, Operations::fc_intBITORint);
+		putOperation(BOOL, BOOL, BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
+		putOperation(INT, INT, BITWISE_OR, Operations::op_intBITORint, Operations::fc_intBITORint);
+		putOperation(INT, INT, BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
 	}
 
 	/** the address of the first operand for operations closures */
@@ -417,5 +422,27 @@ class Operations {
 		is.add(OpCode.AND, Register.RAX, fcOp2);
 		is.ret(16);
 	}
-
+	
+	static void op_intBITORint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+		asmWriter.writer.instructions.add(OpCode.OR, Register.RAX, Register.RBX);
+	}
+	
+	static void fc_intBITORint(InstructionSet is) {
+		is.mov(Register.RAX, fcOp1);
+		is.add(OpCode.OR, Register.RAX, fcOp2);
+		is.ret(16);
+	}
+	
+	static void op_intBITANDint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+		asmWriter.writer.instructions.add(OpCode.AND, Register.RAX, Register.RBX);
+	}
+	
+	static void fc_intBITANDint(InstructionSet is) {
+		is.mov(Register.RAX, fcOp1);
+		is.add(OpCode.AND, Register.RAX, fcOp2);
+		is.ret(16);
+	}
+	
 }

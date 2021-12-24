@@ -8,6 +8,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
+import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiler.linker.ExpressionHolder;
 import fr.wonder.ahk.compiler.types.NativeOperation;
@@ -51,13 +52,18 @@ public class ExpressionOptimizer {
 	
 	private static LiteralExp<?> optimizeOperationExp(OperationExp exp, ErrorWrapper errors) {
 		Object l = exp.getLeftOperand() == null ? null :((LiteralExp<?>) exp.getLeftOperand()).value;
+		VarType lt = exp.getLOType();
 		Object r = ((LiteralExp<?>) exp.getRightOperand()).value;
+		VarType rt = exp.getROType();
 		Operator o = exp.operator;
 		
-		NativeOperation op = NativeOperation.getOperation(exp.getLOType(), exp.getROType(), o, true);
+		if(!(rt instanceof VarNativeType) || (lt != null && !(lt instanceof VarNativeType)))
+			return null;
+		
+		NativeOperation op = NativeOperation.getOperation((VarNativeType) lt, (VarNativeType) rt, o, true);
 		if(op == null) return null;
 		
-		// take care of non-native types (only string actually)
+		// take care of special types (only string actually)
 		if(op == NativeOperation.STR_ADD_STR)
 			return new StrLiteral(exp.sourceRef, l.toString() + r.toString());
 		

@@ -65,6 +65,8 @@ public enum OpCode {
 	SETE,
 	/** set-byte-if-not-equal */
 	SETNE,
+	/** set-byte-if-not-zero */
+	SETNZ,
 	
 	/** clear direction flag */
 	CLD,

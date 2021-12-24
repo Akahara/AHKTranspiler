@@ -2,10 +2,12 @@ package fr.wonder.ahk.compiled.expressions;
 
 public enum Operator {
 
+	BITWISE_OR	(-40, false),
+	BITWISE_AND	(-40, false),
+	
 	OR			(-30, false),
 	AND			(-30, false),
 	
-	/** Strict egality check '===' */
 	STRICTEQUALS(-20, false),
 	
 	EQUALS		(-20, false),

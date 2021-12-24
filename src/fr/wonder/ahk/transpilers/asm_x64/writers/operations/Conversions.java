@@ -25,5 +25,11 @@ class Conversions {
 		asmWriter.writer.instructions.addCasted(OpCode.FISTP, MemSize.QWORD, floatst);
 		asmWriter.writer.instructions.mov(Register.RAX, floatst);
 	}
+	
+	static void conv_intTObool(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		asmWriter.writer.instructions.test(Register.RAX);
+		asmWriter.writer.instructions.mov(Register.RAX, 0);
+		asmWriter.writer.instructions.add(OpCode.SETNZ, Register.AL);
+	}
 
 }

@@ -161,5 +161,7 @@ public class Tokens {
 			operatorsMap.put(OP_POWER,	Operator.POWER);
 			operatorsMap.put(OP_AND,	Operator.AND);
 			operatorsMap.put(OP_OR,		Operator.OR);
+			operatorsMap.put(OP_BITWISE_AND, Operator.BITWISE_AND);
+			operatorsMap.put(OP_BITWISE_OR, Operator.BITWISE_OR);
 	}
 }

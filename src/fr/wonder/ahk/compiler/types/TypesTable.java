@@ -64,7 +64,7 @@ public class TypesTable {
 		
 		// if both operands are primitives, only search through native operations
 		if((query.lo instanceof VarNativeType || query.lo == null) && query.ro instanceof VarNativeType) {
-			Operation op = NativeOperation.getOperation(query.lo, query.ro, query.operator, true);
+			Operation op = NativeOperation.getOperation((VarNativeType) query.lo, (VarNativeType) query.ro, query.operator, true);
 			if(op == null)
 				errors.add("Unimplemented native operation " + query.fullErr());
 			return op;
