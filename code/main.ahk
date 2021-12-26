@@ -7,12 +7,9 @@ import ahk.Streams;
 unit Main;
 
 global func int main() {
-	if(0 | 1)
-		Kernel.out << "true\n";
-	else
-		Kernel.out << "false\n";
+	float i = 3. % 1.4;
 	
-	Kernel.out << (3 | 4);
+	Kernel.out << i << "\n";
 	
 	return 5;
 }

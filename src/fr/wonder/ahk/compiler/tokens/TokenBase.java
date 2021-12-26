@@ -28,6 +28,7 @@ public enum TokenBase {
 	KW_FOR("for"),
 	KW_FOREACH("foreach"),
 	KW_WHILE("while"),
+	KW_DOWHILE("dowhile"),
 	KW_FUNC("func"),
 	KW_STRUCT("struct"),
 	KW_CONSTRUCTOR("constructor"),

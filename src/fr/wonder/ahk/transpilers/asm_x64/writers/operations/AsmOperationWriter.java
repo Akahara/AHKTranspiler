@@ -1,7 +1,9 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 
 import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,12 +20,9 @@ import fr.wonder.ahk.transpilers.asm_x64.writers.AbstractWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.NativeFunctionWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.OperationWriter;
-import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
-import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
-import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -37,6 +36,7 @@ public class AsmOperationWriter {
 	
 	private static interface JumpWriter {
 		
+		/** Writes the opcodes necessary to jump to the given label if the condition is <b>not</b> met */
 		void write(OperationExp condition, String label, AsmOperationWriter asmWriter, ErrorWrapper errors);
 		
 	}
@@ -137,28 +137,16 @@ public class AsmOperationWriter {
 		writer.instructions.pop(Register.RAX);
 	}
 	
-	void simpleFPUOperation(Expression e1, Expression e2, boolean commutativeOperation, OpCode opCode, ErrorWrapper errors) {
-		OperationParameter ro = prepareRAXRBX(e1, e2, commutativeOperation, errors);
-		MemAddress floatst = writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
-		writer.instructions.mov(floatst, Register.RAX);
-		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
-		writer.mem.moveData(floatst, ro);
-		writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
-		writer.instructions.add(opCode);
-		writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
-		writer.instructions.mov(Register.RAX, floatst);
-	}
-	
 	/* =============================================== Jumps ============================================== */
 	
 	/**
-	 * writes the 2/3 letters jump instruction (ie: jmp/je/jge...),
-	 * returns true if the condition has a specific jump instruction, false otherwise
-	 * @param label the label to jump to if the condition is <b>NOT</b> met<br>
-	 *     e.g the label of the section end for an if-then statement for example
+	 * writes the 2/3 letters jump instruction (ie: jmp/je/jge...)
+	 * 
+	 * @param jumpIfMet if true, the jump will be done iff the condition is met,
+	 * 			otherwise the condition is inverted first.
 	 */
-	public void writeJump(Expression condition, String label, ErrorWrapper errors) {
-		if(condition instanceof OperationExp) {
+	public void writeJump(Expression condition, String label, boolean jumpIfMet, ErrorWrapper errors) {
+		if(condition instanceof OperationExp && !jumpIfMet) {
 			OperationExp oc = (OperationExp) condition;
 			JumpWriter jump = conditionalJumps.get(oc.getOperation());
 			if(jump != null) {
@@ -168,7 +156,7 @@ public class AsmOperationWriter {
 		}
 		writer.expWriter.writeExpression(condition, errors);
 		writer.instructions.test(Register.RAX);
-		writer.instructions.add(OpCode.JZ, label);
+		writer.instructions.add(jumpIfMet ? OpCode.JNZ : OpCode.JZ, label);
 	}
 	
 	/* ============================================ Conversions =========================================== */

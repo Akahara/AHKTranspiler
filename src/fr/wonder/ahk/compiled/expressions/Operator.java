@@ -1,9 +1,6 @@
 package fr.wonder.ahk.compiled.expressions;
 
 public enum Operator {
-
-	BITWISE_OR	(-40, false),
-	BITWISE_AND	(-40, false),
 	
 	OR			(-30, false),
 	AND			(-30, false),
@@ -28,6 +25,9 @@ public enum Operator {
 	MULTIPLY	(20, false),
 	DIVIDE		(20, false),
 	MOD			(30, false),
+
+	BITWISE_OR	(40, false),
+	BITWISE_AND	(40, false),
 	
 	;
 	
@@ -37,6 +37,17 @@ public enum Operator {
 	private Operator(int priority, boolean doesSingleOperand) {
 		this.priority = priority;
 		this.doesSingleOperand = doesSingleOperand;
+	}
+	
+	public static Operator getLogicalOposite(Operator o) {
+		switch(o) {
+		case EQUALS:  return NEQUALS;
+		case GREATER: return LEQUALS;
+		case GEQUALS: return LOWER;
+		case LOWER:   return GEQUALS;
+		case LEQUALS: return GREATER;
+		default: return null;
+		}
 	}
 	
 }

@@ -5,8 +5,11 @@ import fr.wonder.ahk.compiled.units.SourceReference;
 
 public class WhileSt extends LabeledStatement {
 
-	public WhileSt(SourceReference sourceRef, Expression condition, boolean singleLine) {
+	public final boolean isDoWhile;
+	
+	public WhileSt(SourceReference sourceRef, Expression condition, boolean singleLine, boolean isDoWhile) {
 		super(sourceRef, singleLine, condition);
+		this.isDoWhile = isDoWhile;
 	}
 	
 	public Expression getCondition() {

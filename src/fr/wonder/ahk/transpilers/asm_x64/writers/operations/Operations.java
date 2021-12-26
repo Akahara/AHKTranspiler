@@ -19,6 +19,7 @@ import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
+import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
@@ -39,6 +40,10 @@ class Operations {
 		void write(InstructionSet instructions);
 		
 	}
+	
+	private static final int F_COMMUTATIVE = 1 << 0;
+	private static final int F_SWAP_ARGS = 1 << 1;
+	private static final int F_POPAFTER = 1 << 2;
 	
 	static final Map<NativeOperation, OperationWriter> nativeOperations = new HashMap<>();
 	static final Map<NativeOperation, NativeFunctionWriter> nativeFunctions = new HashMap<>();
@@ -62,13 +67,17 @@ class Operations {
 		putOperation(INT, INT, SHR, Operations::op_intSHRint, null);
 		putOperation(INT, INT, SHL, Operations::op_intSHLint, null);
 		putOperation(INT, INT, POWER, Operations::op_intPOWERint, Operations::fc_intPOWERint);
+		putOperation(INT, INT, LOWER, opSimpleCmpOperation(OpCode.SETL), fcSimpleCmpOperation(OpCode.SETL));
+		putOperation(INT, INT, LEQUALS, opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETLE));
+		putOperation(INT, INT, GREATER, opSimpleCmpOperation(OpCode.SETG), fcSimpleCmpOperation(OpCode.SETG));
+		putOperation(INT, INT, GEQUALS, opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETGE));
 		
-		putOperation(FLOAT, FLOAT, ADD, Operations::op_floatADDfloat, Operations::fc_floatADDfloat);
-		putOperation(FLOAT, FLOAT, SUBSTRACT, Operations::op_floatSUBfloat, Operations::fc_floatSUBfloat);
 		putOperation(null, FLOAT, SUBSTRACT, Operations::op_nullSUBfloat, Operations::fc_nullSUBfloat);
-		putOperation(FLOAT, FLOAT, MULTIPLY, Operations::op_floatMULfloat, Operations::fc_floatMULfloat);
-		putOperation(FLOAT, FLOAT, DIVIDE, Operations::op_floatDIVfloat, Operations::fc_floatDIVfloat);
-		putOperation(FLOAT, FLOAT, MOD, Operations::op_floatMODfloat, Operations::fc_floatMODfloat);
+		putOperation(FLOAT, FLOAT, ADD, opSimpleFPUOperation(OpCode.FADDP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FADDP, 0));
+		putOperation(FLOAT, FLOAT, MULTIPLY, opSimpleFPUOperation(OpCode.FMULP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FMULP, 0));
+		putOperation(FLOAT, FLOAT, SUBSTRACT, opSimpleFPUOperation(OpCode.FSUBP, 0), fcSimpleFPUOperation(OpCode.FSUBP, 0));
+		putOperation(FLOAT, FLOAT, DIVIDE, opSimpleFPUOperation(OpCode.FDIVP, 0), fcSimpleFPUOperation(OpCode.FDIVP, 0));
+		putOperation(FLOAT, FLOAT, MOD, opSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER), fcSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER));
 		putOperation(FLOAT, FLOAT, POWER, Operations::op_floatPOWERfloat, Operations::fc_floatPOWERfloat);
 		
 		putOperation(BOOL, BOOL, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
@@ -99,13 +108,65 @@ class Operations {
 	/** the address of the operand for single operand operations */
 	private static final MemAddress fcSOp = new MemAddress(Register.RSP, 8);
 	
-	static void fcSimpleFPUOperation(InstructionSet is, OpCode op) {
-		is.addCasted(OpCode.FLD, MemSize.QWORD, fcOp1);
-		is.addCasted(OpCode.FLD, MemSize.QWORD, fcOp2);
-		is.add(op);
-		is.addCasted(OpCode.FSTP, MemSize.QWORD, fcOp1);
-		is.mov(Register.RAX, fcOp1);
-		is.ret(16);
+	static NativeFunctionWriter fcSimpleFPUOperation(OpCode opCode, int opFPUflags) {
+		return is -> {
+			Address op1 = fcOp1, op2 = fcOp2;
+			
+			if((opFPUflags & F_SWAP_ARGS) != 0) {
+				Address op = op1;
+				op1 = op2;
+				op2 = op;
+			}
+			
+			is.addCasted(OpCode.FLD, MemSize.QWORD, op1);
+			is.addCasted(OpCode.FLD, MemSize.QWORD, op2);
+			is.add(opCode);
+			is.addCasted(OpCode.FSTP, MemSize.QWORD, fcOp1);
+			is.mov(Register.RAX, fcOp1);
+			if((opFPUflags & F_POPAFTER) != 0)
+				is.add(OpCode.FSTP);
+			is.ret(16);
+		};
+	}
+	
+	static OperationWriter opSimpleFPUOperation(OpCode opCode, int opFPUflags) {
+		return (e1, e2, asmWriter, errors) -> {
+			if((opFPUflags & F_SWAP_ARGS) != 0) {
+				Expression e = e1;
+				e1 = e2;
+				e2 = e;
+			}
+			OperationParameter ro = asmWriter.prepareRAXRBX(e1, e2, (opFPUflags & F_COMMUTATIVE) != 0, errors);
+			MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+			asmWriter.writer.instructions.mov(floatst, Register.RAX);
+			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+			asmWriter.writer.mem.moveData(floatst, ro);
+			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+			asmWriter.writer.instructions.add(opCode);
+			asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
+			asmWriter.writer.instructions.mov(Register.RAX, floatst);
+			if((opFPUflags & F_POPAFTER) != 0)
+				asmWriter.writer.instructions.add(OpCode.FSTP);
+		};
+	}
+	
+	static OperationWriter opSimpleCmpOperation(OpCode set) {
+		return (leftOperand, rightOperand, asmWriter, errors) -> {
+			asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+			asmWriter.writer.instructions.cmp(Register.RAX, Register.RBX);
+			asmWriter.writer.instructions.mov(Register.RAX, 0);
+			asmWriter.writer.instructions.add(OpCode.SETL, Register.AL);
+		};
+	}
+	
+	static NativeFunctionWriter fcSimpleCmpOperation(OpCode set) {
+		return is -> {
+			is.clearRegister(Register.RAX);
+			is.mov(Register.RBX, fcOp1);
+			is.cmp(Register.RBX, fcOp2);
+			is.add(set, Register.AL);
+			is.ret(16);
+		};
 	}
 	
 	/**
@@ -236,22 +297,6 @@ class Operations {
 		is.ret(16);
 	}
 
-	static void op_floatADDfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.simpleFPUOperation(leftOperand, rightOperand, true, OpCode.FADDP, errors);
-	}
-	
-	static void fc_floatADDfloat(InstructionSet is) {
-		fcSimpleFPUOperation(is, OpCode.FADDP);
-	}
-
-	static void op_floatSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.simpleFPUOperation(leftOperand, rightOperand, false, OpCode.FSUBP, errors);
-	}
-	
-	static void fc_floatSUBfloat(InstructionSet is) {
-		fcSimpleFPUOperation(is, OpCode.FSUBP);
-	}
-
 	static void op_nullSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
 		asmWriter.writer.mem.writeTo(Register.RAX, rightOperand, errors);
 		asmWriter.writer.instructions.add(OpCode.XOR, Register.RAX, asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FSIGNBIT));
@@ -261,31 +306,6 @@ class Operations {
 		is.mov(Register.RAX, fcSOp);
 		is.add(OpCode.XOR, Register.RAX, GlobalLabels.ADDRESS_FSIGNBIT);
 		is.ret(8);
-	}
-
-	static void op_floatMULfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.simpleFPUOperation(leftOperand, rightOperand, true, OpCode.FMULP, errors);
-	}
-	
-	static void fc_floatMULfloat(InstructionSet is) {
-		fcSimpleFPUOperation(is, OpCode.FMULP);
-	}
-
-	static void op_floatDIVfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.simpleFPUOperation(leftOperand, rightOperand, false, OpCode.FDIVP, errors);
-	}
-	
-	static void fc_floatDIVfloat(InstructionSet is) {
-		fcSimpleFPUOperation(is, OpCode.FDIVP);
-	}
-
-	static void op_floatMODfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		asmWriter.simpleFPUOperation(rightOperand, leftOperand, false, OpCode.FPREM, errors);
-		asmWriter.writer.instructions.add(OpCode.FSTP);
-	}
-	
-	static void fc_floatMODfloat(InstructionSet is) {
-		fcSimpleFPUOperation(is, OpCode.FPREM);
 	}
 
 	static void op_nullNOTbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {

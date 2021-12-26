@@ -64,7 +64,8 @@ public class StatementParser extends AbstractParser {
 		case KW_ELSE:
 			return parseElseStatement();
 		case KW_WHILE:
-			return parseWhileStatement();
+		case KW_DOWHILE:
+			return parseWhileStatement(firstToken == TokenBase.KW_DOWHILE);
 		case KW_FOR:
 			return parseForStatement();
 		case KW_FOREACH:
@@ -188,15 +189,15 @@ public class StatementParser extends AbstractParser {
 		return new ElseSt(SourceReference.fromLine(line), singleLine);
 	}
 	
-	/** Assumes that the first token is KW_WHILE */
-	private Statement parseWhileStatement() {
+	/** Assumes that the first token is KW_WHILE or KW_DOWHILE */
+	private Statement parseWhileStatement(boolean isDoWhile) {
 		try {
 			assertHasNext(line, new Pointer(), "Incomplete while statement", errors, 3);
 			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
 			assertParentheses(line, 1, conditionEnd, errors);
 			Expression condition = ExpressionParser.parseExpression(unit, line, genc, 2, conditionEnd, errors);
-			return new WhileSt(SourceReference.fromLine(line), condition, singleLine);
+			return new WhileSt(SourceReference.fromLine(line), condition, singleLine, isDoWhile);
 		} catch (ParsingException e) {
 			return Invalids.STATEMENT;
 		}
@@ -421,6 +422,9 @@ public class StatementParser extends AbstractParser {
 	}
 	
 	private boolean canBeExpressionStatement() {
+		if(line[line.length-1].base == TokenBase.TK_BRACE_OPEN)
+			return false;
+		
 		Section sec = ExpressionParser.getVisibleSection(line, 0, line.length);
 		// line may be an overloaded operator function call
 		if(!sec.operators.isEmpty())

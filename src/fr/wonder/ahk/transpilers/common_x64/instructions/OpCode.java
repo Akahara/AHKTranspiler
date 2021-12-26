@@ -61,12 +61,8 @@ public enum OpCode {
 	/** FPU: stores the remainder of st(0)/st(1) in st(0) */
 	FPREM,
 	
-	/** set-byte-if-equal */
-	SETE,
-	/** set-byte-if-not-equal */
-	SETNE,
-	/** set-byte-if-not-zero */
-	SETNZ,
+	/* set-byte-if-<condition> */
+	SETE, SETNE, SETNZ, SETL, SETLE, SETG, SETGE,
 	
 	/** clear direction flag */
 	CLD,

@@ -70,6 +70,7 @@ public class ExpressionOptimizer {
 		Number ln = l instanceof Boolean ? ((Boolean)l ? 1 : 0) : (Number) l;
 		Number rn = r instanceof Boolean ? ((Boolean)r ? 1 : 0) : (Number) r;
 		boolean isFloatPrecision = op.loType == VarType.FLOAT;
+		boolean isIntPrecision = op.loType == VarType.INT;
 		
 		// take care of single operand operations
 		if(op == NativeOperation.NOT_BOOL)
@@ -116,6 +117,12 @@ public class ExpressionOptimizer {
 				isFloatPrecision ? ln.doubleValue() == rn.doubleValue() : ln.longValue() == rn.longValue());
 		case AND: return new BoolLiteral(exp.sourceRef, ln.longValue() != 0 && rn.longValue() != 0);
 		case OR: return new BoolLiteral(exp.sourceRef, ln.longValue() != 0 || rn.longValue() != 0);
+		case BITWISE_AND: return isIntPrecision ?
+				new IntLiteral(exp.sourceRef, ln.longValue() & rn.longValue()) :
+				new BoolLiteral(exp.sourceRef, (ln.longValue() & rn.longValue()) != 0);
+		case BITWISE_OR: return isIntPrecision ?
+				new IntLiteral(exp.sourceRef, ln.longValue() | rn.longValue()) :
+				new BoolLiteral(exp.sourceRef, (ln.longValue() | rn.longValue()) != 0);
 		case NOT:
 			throw new UnreachableException();
 		}

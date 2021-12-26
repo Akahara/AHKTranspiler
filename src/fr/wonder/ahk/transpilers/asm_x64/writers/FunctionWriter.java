@@ -178,12 +178,17 @@ public class FunctionWriter extends AbstractWriter {
 	}
 	
 	private void writeSectionEndStatement(SectionEndSt st, ErrorWrapper errors) {
-		if(st.closedStatement instanceof ForSt || st.closedStatement instanceof RangedForSt)
+		if(st.closedStatement instanceof ForSt || st.closedStatement instanceof RangedForSt) {
 			instructions.jmp(getLabel(st.closedStatement));
-		else if(st.closedStatement instanceof IfSt && ((IfSt)st.closedStatement).elseStatement != null)
+		} else if(st.closedStatement instanceof IfSt && ((IfSt)st.closedStatement).elseStatement != null) {
 			instructions.jmp(getLabel(((IfSt)st.closedStatement).elseStatement.sectionEnd));
-		else if(st.closedStatement instanceof WhileSt)
-			instructions.jmp(getLabel(st.closedStatement));
+		} else if(st.closedStatement instanceof WhileSt) {
+			WhileSt w = (WhileSt) st.closedStatement;
+			if(w.isDoWhile)
+				opWriter.writeJump(w.getCondition(), getLabel(w), true, errors);
+			else
+				instructions.jmp(getLabel(w));
+		}
 		instructions.label(getLabel(st));
 	}
 	
@@ -192,7 +197,7 @@ public class FunctionWriter extends AbstractWriter {
 	}
 	
 	private void writeIfStatement(IfSt st, ErrorWrapper errors) {
-		opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
+		opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), false, errors);
 	}
 	
 	private void writeElseStatement(ElseSt st, ErrorWrapper errors) {
@@ -201,7 +206,8 @@ public class FunctionWriter extends AbstractWriter {
 	
 	private void writeWhileStatement(WhileSt st, ErrorWrapper errors) {
 		instructions.label(getLabel(st));
-		opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
+		if(!st.isDoWhile)
+			opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), false, errors);
 	}
 	
 	private void writeForStatement(ForSt st, ErrorWrapper errors) {
@@ -247,7 +253,7 @@ public class FunctionWriter extends AbstractWriter {
 		if(st.getCondition() instanceof BoolLiteral && ((BoolLiteral) st.getCondition()).value) {
 			instructions.jmp(label);
 		} else {
-			opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), errors);
+			opWriter.writeJump(st.getCondition(), getLabel(st.sectionEnd), false, errors);
 		}
 	}
 	

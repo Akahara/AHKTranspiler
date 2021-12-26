@@ -34,6 +34,7 @@ public class Tokens {
 			KW_WHILE, KW_FUNC, KW_STRUCT, KW_CONSTRUCTOR,
 			KW_RETURN, KW_SIZEOF, KW_ALIAS, KW_GLOBAL,
 			KW_LOCAL, KW_OPERATOR, KW_BLUEPRINT, KW_SELF,
+			KW_DOWHILE,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,			// types
 			TYPE_BOOL,
 			VAR_GENERIC, VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,	// variable elements (MUST be read last by the tokenizer)
@@ -43,7 +44,7 @@ public class Tokens {
 	public static final TokenBase[] SPLITS = {
 			TK_LINE_BREAK,
 			TK_BRACE_OPEN,
-			TK_BRACE_CLOSE
+			TK_BRACE_CLOSE,
 	};
 	
 	/** Keywords that can be used with/without a parenthesis header and have a body of a single line or multiple enclosed with braces */
@@ -52,7 +53,8 @@ public class Tokens {
 			KW_ELSE,
 			KW_FOR,
 			KW_FOREACH,
-			KW_WHILE
+			KW_WHILE,
+			KW_DOWHILE,
 	};
 
 	public static boolean isLiteral(TokenBase base) {
