@@ -140,7 +140,7 @@ public class Linker {
 	void linkLambda(Unit unit, Scope currentScope, SimpleLambda lambda, ErrorWrapper errors) {
 		Scope lambdaScope = currentScope.getUnitScope().innerScope();
 		for(FunctionArgument arg : lambda.args)
-			lambdaScope.registerVariable(arg);
+			lambdaScope.registerVariable(arg, arg, errors);
 		expressions.linkExpressions(unit, lambdaScope, lambda, GenericContext.NO_CONTEXT, errors);
 	}
 
@@ -203,7 +203,7 @@ public class Linker {
 	
 	/**
 	 * Has the same function as {@link #checkAffectationType(ExpressionHolder, int, VarType, ErrorWrapper)}
-	 * but works with types without expressions. This is required 
+	 * but works with types without expressions. This is required to validate {@code null} uses
 	 */
 	private boolean tryCheckSetableAffectationType(VarType provided, VarType required, SourceElement queryElement, ErrorWrapper errors) {
 		if(provided.equals(required))

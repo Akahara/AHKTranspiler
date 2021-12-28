@@ -113,11 +113,8 @@ class ExpressionLinker {
 
 	private void linkVariableExpression(Unit unit, Scope scope, VarExp exp, ErrorWrapper errors) {
 		// search for the variable/function declaration
-		VarAccess var = scope.getVariable(exp.variable);
-		if(var == null) {
-			errors.add("Usage of undeclared variable " + exp.variable + exp.getErr());
-			var = Invalids.VARIABLE_PROTO;
-		} else if(!var.getSignature().declaringUnit.equals(unit.fullBase) && var.getSignature().declaringUnit != VarAccess.INNER_UNIT) {
+		VarAccess var = scope.getVariable(exp.variable, exp, errors);
+		if(!var.getSignature().declaringUnit.equals(unit.fullBase) && var.getSignature().declaringUnit != VarAccess.INNER_UNIT) {
 			Prototype<?> proto = (Prototype<?>) var;
 			unit.prototype.externalAccesses.add(proto);
 		}

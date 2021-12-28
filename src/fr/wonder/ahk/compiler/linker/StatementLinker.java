@@ -20,7 +20,6 @@ import fr.wonder.ahk.compiled.statements.SectionEndSt;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiler.types.ConversionTable;
@@ -41,7 +40,7 @@ class StatementLinker {
 		LabeledStatement latestClosedStatement = null;
 		
 		for(FunctionArgument arg : func.arguments) {
-			scope.registerVariable(arg);
+			scope.registerVariable(arg, arg, errors);
 		}
 		
 		for(Statement st : func.body) {
@@ -90,14 +89,8 @@ class StatementLinker {
 	}
 
 	private void declareVariable(VariableDeclaration decl, Scope scope, ErrorWrapper errors) {
-		VarAccess declaration = scope.getVariable(decl.name);
 		decl.setSignature(Signatures.scopedVariableSignature(decl.name));
-		
-		if(declaration != null) {
-			errors.add("Redeclaration of existing variable " + decl.name + ":" + decl.getErr());
-		} else {
-			scope.registerVariable(decl.getPrototype());
-		}
+		scope.registerVariable(decl.getPrototype(), decl, errors);
 	}
 
 	private void linkStatement(Unit lunit, FunctionSection func, Statement st, ErrorWrapper errors) {
