@@ -3,6 +3,7 @@
 global mem_init
 global mem_alloc_block
 extern error_throw
+extern global_empty_mem_block
 
 section .data
 
@@ -97,6 +98,7 @@ mem_init:
   mov rcx,8*(TABLE_SIZE+1)
   mov rdi,[table_start]
   xor rax,rax
+  cld
   rep stosq
   
   ; allocate the first true memory block
@@ -176,7 +178,15 @@ mem_alloc_block:
   push rbp
   mov rbp,rsp
   
-  push qword[rsp+16] ; push S
+  mov rax,[rsp+16]
+  test rax,rax
+  jnz .non_empty_block
+  mov rax,global_empty_mem_block
+  jmp .ret
+  
+.non_empty_block:
+  
+  push rax ; push S
   call get_empty_block
   ; rax = A an empty block address
   ; rbx = B an empty table entry address
@@ -203,11 +213,13 @@ mem_alloc_block:
   ; fill the table with 0s
   mov rcx,TABLE_SIZE+1
   xor rax,rax
+  cld
   rep stosq
   
   pop rax
   
 .tables_not_full:
+.ret:
   mov rsp,rbp
   pop rbp
   ret 8

@@ -21,8 +21,10 @@ import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
+import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.prototypes.BoundOverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
@@ -229,80 +231,52 @@ public class ExpressionWriter {
 		writer.instructions.push(Register.RAX);
 		writer.instructions.add(OpCode.SHL, Register.RAX, 3); // multiply by 8 (element count to byte count)
 		writer.unitWriter.callAlloc(Register.RAX);
+		writer.instructions.mov(Register.RDX, Register.RAX);
+		writer.instructions.mov(Register.RDI, Register.RAX);
 		writer.instructions.pop(Register.RCX);
-		writer.instructions.pop(Register.RBX);
-		String specialLabel = writer.unitWriter.getSpecialLabel();
-		writer.instructions.label(specialLabel);
-		MemAddress elementAddress = new MemAddress(Register.RAX, Register.RCX, MemSize.POINTER_SIZE, -MemSize.POINTER_SIZE);
-		writer.instructions.mov(elementAddress, Register.RBX);
-		writer.instructions.add(OpCode.LOOP, specialLabel);
+		writer.instructions.pop(Register.RAX);
+		writer.instructions.add(OpCode.CLD);
+		writer.instructions.repeat(OpCode.STOSQ);
+		writer.instructions.mov(Register.RAX, Register.RDX);
 	}
 	
 	private void writeIndexingExp(IndexingExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getArray(), errors);
+		VarType componentType = exp.getArray().getType();
 		for(Expression index : exp.getIndices()) {
-			MemAddress indexed = writeArrayIndex(index, errors);
-			writer.instructions.mov(Register.RAX, indexed);
+			componentType = ((VarArrayType) componentType).componentType;
+			String oobLabel = writer.unitWriter.getSpecialLabel();
+			String endLabel = writer.unitWriter.getSpecialLabel();
+			if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
+				writer.instructions.mov(Register.RBX, new MemAddress(Register.RAX, -8));
+				writer.instructions.test(Register.RBX);
+				writer.instructions.add(OpCode.JZ, oobLabel);
+				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, Register.RBX, 1, -8));
+			} else {
+				writer.instructions.push(Register.RAX);
+				writer.mem.addStackOffset(MemSize.POINTER_SIZE);
+				writer.mem.writeTo(Register.RBX, index, errors);
+				writer.instructions.pop(Register.RAX);
+				writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
+				writer.instructions.add(OpCode.SHL, Register.RBX, 3); // scale the index (multiply by 8)
+				writer.instructions.test(Register.RBX);
+				writer.instructions.add(OpCode.JS, oobLabel);
+				writer.instructions.cmp(Register.RBX, new MemAddress(Register.RAX, -8));
+				writer.instructions.add(OpCode.JGE, oobLabel);
+				writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, Register.RBX, 1));
+			}
+			writer.instructions.jmp(endLabel);
+			writer.instructions.label(oobLabel);
+			writeDefaultValue(componentType, index, errors); // on oob, write a default value instead of throwing an error
+			writer.instructions.label(endLabel);
 		}
 	}
 	
-	/**
-	 * Writes the index of an indexing expression, check for out of bounds errors
-	 * and returns the address of the value at array[index], which can be written to
-	 * or read from.
-	 * 
-	 * <p>
-	 * For this to work the array must be stored in rax, otherwise if index is '-1'
-	 * (as in {@code array[-1]} to get the last element of <i>array</i>) the
-	 * behavior of this method becomes undefined.
-	 */
-	public MemAddress writeArrayIndex(Expression index, ErrorWrapper errors) {
-		if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
-			String errLabel = writer.unitWriter.getSpecialLabel();
-			writer.instructions.mov(Register.RBX, new MemAddress(Register.RAX, -8));
-			writer.instructions.test(Register.RBX);
-			writer.instructions.add(OpCode.JNZ, errLabel);
-			writer.instructions.mov(Register.RAX, -6); // TODO on OOB, return null (or 0...)
-			writer.instructions.call(writer.unitWriter.requireExternLabel(GlobalLabels.SPECIAL_THROW));
-			writer.instructions.label(errLabel);
-			return new MemAddress(Register.RAX, Register.RBX, 1, -8);
-		} else {
-			writer.instructions.push(Register.RAX);
-			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
-			writer.mem.writeTo(Register.RBX, index, errors);
-			writer.instructions.pop(Register.RAX);
-			writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
-			writer.instructions.add(OpCode.SHL, Register.RBX, 3); // scale the index (multiply by 8)
-			checkOOB();
-			return new MemAddress(Register.RAX, Register.RBX, 1);
-		}
-	}
-	
-	/**
-	 * Checks for index out of bounds errors.
-	 * 
-	 * <p>When called, rax must be the array pointer and rbx the <b>scaled</b> index
-	 * (multiplied by 8).
-	 */
-	public void checkOOB() {
-		String errLabel = writer.unitWriter.getSpecialLabel();
-		String successLabel = writer.unitWriter.getSpecialLabel();
-		writer.instructions.test(Register.RBX);
-		writer.instructions.add(OpCode.JS, errLabel);
-		writer.instructions.cmp(Register.RBX, new MemAddress(Register.RAX, -8));
-		writer.instructions.add(OpCode.JL, successLabel);
-		writer.instructions.label(errLabel);
-		writer.instructions.mov(Register.RAX, -5); // TODO on OOB, return null (or 0...)
-		writer.instructions.call(writer.unitWriter.requireExternLabel(GlobalLabels.SPECIAL_THROW));
-		writer.instructions.label(successLabel);
-	}
-
 	private void writeSizeofExp(SizeofExp exp, ErrorWrapper errors) {
 		VarType type = exp.getExpression().getType();
 		if(type instanceof VarArrayType) {
 			writer.mem.writeTo(Register.RBX, exp.getExpression(), errors);
-			writer.instructions.clearRegister(Register.RAX); // clear the 32 higher bits
-			writer.instructions.mov(Register.RAX, new MemAddress(Register.RBX, -8)); // mov rax,[rbx-8]
+			writer.instructions.mov(Register.RAX, new MemAddress(Register.RBX, -8));
 			writer.instructions.add(OpCode.SHR, Register.RAX, 3); // shift right by 3 is equivalent to divide by 8 (the pointer size)
 		} else {
 			errors.add("Sizeof used on non-array type" + exp.getErr());
@@ -327,9 +301,7 @@ public class ExpressionWriter {
 		writer.instructions.pop(Register.RAX);
 	}
 	
-	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
-		VarType type = exp.getType().getActualType();
-		
+	private void writeDefaultValue(VarType type, SourceElement sourceElement, ErrorWrapper errors) {
 		if(type instanceof VarStructType) {
 			String nullLabel = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) type).structure);
 			writer.instructions.mov(Register.RAX, nullLabel);
@@ -339,11 +311,19 @@ public class ExpressionWriter {
 			VarFunctionType funcType = (VarFunctionType) type;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
 		} else if(type instanceof VarGenericType) {
-			throw new UnimplementedException("Generic type null instance" + exp.getErr());
-			
+			throw new UnimplementedException("Generic type null instance" + sourceElement.getErr());
+		} else if(type == VarType.STR) {
+			writer.instructions.mov(Register.RAX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
+		} else if(type instanceof VarNativeType) {
+			writer.instructions.clearRegister(Register.RAX);
 		} else {
 			throw new UnreachableException("Unimplemented null: " + type);
 		}
+	}
+	
+	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
+		VarType type = exp.getType().getActualType();
+		writeDefaultValue(type, exp, errors);
 	}
 
 	private void writeParameterizedExp(ParameterizedExp exp, ErrorWrapper errors) {

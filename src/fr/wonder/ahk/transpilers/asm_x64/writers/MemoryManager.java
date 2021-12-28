@@ -4,6 +4,7 @@ import fr.wonder.ahk.compiled.expressions.DirectAccessExp;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
@@ -11,6 +12,7 @@ import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteType;
 import fr.wonder.ahk.transpilers.asm_x64.units.DummyVariableDeclaration;
 import fr.wonder.ahk.transpilers.asm_x64.units.FunctionArgumentsLayout;
 import fr.wonder.ahk.transpilers.asm_x64.units.NoneExp;
+import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
@@ -86,8 +88,8 @@ public class MemoryManager {
 		return loc;
 	}
 	
-	public void declareDummyStackVariable(String name) {
-		currentScope.declareVariable(new DummyVariableDeclaration(name));
+	public void declareDummyStackVariable(String debugName) {
+		currentScope.declareVariable(new DummyVariableDeclaration(debugName));
 	}
 	
 	public Address getVarAddress(VarAccess declaration) {
@@ -132,7 +134,7 @@ public class MemoryManager {
 			
 		} else if(variable instanceof IndexingExp) {
 			IndexingExp exp = (IndexingExp) variable;
-			writeTo(Register.RCX, value, errors);  // value
+			writeTo(Register.RCX, value, errors);
 			writer.instructions.push(Register.RCX);
 			addStackOffset(8);
 			Expression[] indices = exp.getIndices();
@@ -142,10 +144,8 @@ public class MemoryManager {
 			} else {
 				writeTo(Register.RAX, exp.getArray(), errors);
 			}
-			MemAddress indexed = writer.expWriter.writeArrayIndex(indices[indices.length-1], errors);
-			writer.instructions.pop(Register.RCX); // value
+			writeArrayAffectation(indices[indices.length-1], errors);
 			addStackOffset(-8);
-			writer.instructions.mov(indexed, Register.RCX);
 			
 		} else if(variable instanceof DirectAccessExp) {
 			DirectAccessExp exp = (DirectAccessExp) variable;
@@ -162,6 +162,31 @@ public class MemoryManager {
 		} else {
 			throw new UnreachableException("Cannot affect a value to type " + variable.getType().getName());
 		}
+	}
+	
+	private void writeArrayAffectation(Expression index, ErrorWrapper errors) {
+		String oobLabel = writer.unitWriter.getSpecialLabel();
+		if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
+			writer.instructions.mov(Register.RBX, new MemAddress(Register.RAX, -8));
+			writer.instructions.pop(Register.RCX);
+			writer.instructions.test(Register.RBX);
+			writer.instructions.add(OpCode.JZ, oobLabel);
+			writer.instructions.mov(new MemAddress(Register.RAX, Register.RBX, 1, -8), Register.RCX);
+		} else {
+			writer.instructions.push(Register.RAX);
+			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
+			writer.mem.writeTo(Register.RBX, index, errors);
+			writer.instructions.pop(Register.RAX);
+			writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
+			writer.instructions.add(OpCode.SHL, Register.RBX, 3);
+			writer.instructions.test(Register.RBX);
+			writer.instructions.pop(Register.RCX);
+			writer.instructions.add(OpCode.JS, oobLabel);
+			writer.instructions.cmp(Register.RBX, new MemAddress(Register.RAX, -8));
+			writer.instructions.add(OpCode.JGE, oobLabel);
+			writer.instructions.mov(new MemAddress(Register.RAX, Register.RBX, 1), Register.RCX);
+		}
+		writer.instructions.label(oobLabel);
 	}
 	
 	public void writeMultipleAffectationTo(Expression[] variables, Expression[] values, ErrorWrapper errors) {
@@ -189,9 +214,31 @@ public class MemoryManager {
 				} else {
 					writeTo(Register.RAX, exp.getArray(), errors);
 				}
-				MemAddress indexed = writer.expWriter.writeArrayIndex(indices[indices.length-1], errors);
-				writer.instructions.lea(Register.RAX, indexed);
-				moveData(varAdd, Register.RAX);
+				Expression index = indices[indices.length-1];
+				String oobLabel = writer.unitWriter.getSpecialLabel();
+				writer.instructions.comment("writing " + exp);
+				if(index instanceof IntLiteral && ((IntLiteral) index).value == -1) {
+					writer.instructions.mov(Register.RBX, new MemAddress(Register.RAX, -8));
+					writer.instructions.mov(Register.RDX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_VOID));
+					writer.instructions.test(Register.RBX);
+					writer.instructions.add(OpCode.JZ, oobLabel);
+					writer.instructions.lea(Register.RDX, new MemAddress(Register.RAX, Register.RBX, 1, -8));
+				} else {
+					writer.instructions.push(Register.RAX);
+					writer.mem.addStackOffset(MemSize.POINTER_SIZE);
+					writer.mem.writeTo(Register.RBX, index, errors);
+					writer.instructions.pop(Register.RAX);
+					writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
+					writer.instructions.add(OpCode.SHL, Register.RBX, 3);
+					writer.instructions.mov(Register.RDX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_VOID));
+					writer.instructions.test(Register.RBX);
+					writer.instructions.add(OpCode.JS, oobLabel);
+					writer.instructions.cmp(Register.RBX, new MemAddress(Register.RAX, -8));
+					writer.instructions.add(OpCode.JGE, oobLabel);
+					writer.instructions.lea(Register.RDX, new MemAddress(Register.RAX, Register.RBX, 1));
+				}
+				writer.instructions.label(oobLabel);
+				moveData(varAdd, Register.RDX);
 				variableAccesses[i] = new MemAddress(varAdd);
 				
 			} else if(variable instanceof DirectAccessExp) {

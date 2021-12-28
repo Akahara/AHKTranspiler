@@ -79,10 +79,9 @@ public class StatementParser extends AbstractParser {
 		case TYPE_INT:
 		case TYPE_STR:
 		case VAR_UNIT: // (Structure token)
-			// TODO fix statement parsing order
-			// something like this will bug because it is considered as a declaration
-			// int:(3) >> Kernel.out;
-			return parseVariableDeclaration(0, line.length, DeclarationModifiers.NONE, errors);
+			// avoid 'int:(3.) >> Kernel.out' from being treated as an int declaration
+			if(line.length > 1 && line[1].base != TokenBase.TK_COMMA)
+				return parseVariableDeclaration(0, line.length, DeclarationModifiers.NONE, errors);
 		default:
 			break;
 		}
@@ -386,24 +385,11 @@ public class StatementParser extends AbstractParser {
 	
 	/** Assumes that {@code opPos != -1} and {@link #isMultipleAffectationStatement(Token[], int)} returned true */
 	private MultipleAffectationSt parseMultipleAffectationStatement(int opPos) {
-
-		String[] variables = new String[(opPos+1)/2];
-		
-		for(int i = 0; i < opPos; i++) {
-			if(i % 2 == 0) {
-				if(line[i].base != TokenBase.VAR_VARIABLE)
-					errors.add("Expected variable name" + line[i].getErr());
-				else
-					variables[i/2] = line[i].text;
-			} else if(line[i].base != TokenBase.TK_COMMA) {
-				errors.add("Expected ','" + line[i].getErr());
-			}
-		}
-		if(opPos % 2 != 1)
-			errors.add("Unfinished multiple affectation statement" + line[opPos-1].getErr());
 		if(line[opPos].base != TokenBase.KW_EQUAL)
 			errors.add("Multiple affectations only support the '=' operator" + line[opPos].getErr());
 		
+		Expression[] variables = ExpressionParser.parseArgumentList(unit, line, genc, 0, opPos,
+				errors.subErrors("Cannot parse affectation variables"));
 		Expression[] values = ExpressionParser.parseArgumentList(unit, line, genc, opPos+1, line.length,
 				errors.subErrors("Cannot parse affectation values"));
 		

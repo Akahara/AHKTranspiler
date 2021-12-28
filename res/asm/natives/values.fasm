@@ -1,9 +1,28 @@
 global global_empty_mem_block
 global global_fsignbit
+global global_void
 
 section .data
 
+; mask that can be used to invert the sign of a float without using the FPU
+; it is also too large for imm32 (immediate 32 bits) operand so it is stored
+; in memory instead, to be used as an mem64 operand
 global_fsignbit dq 0x8000000000000000
-dq 0
-global_empty_mem_block:
 
+; the empty memory block, used for empty arrays and such when calling mem_alloc_block
+; 0 is written /before/ the label because of how memory blocks are stored and
+; a byte is written after to make sure nasm will not set the label address
+; somewhere else
+dq 0
+global_empty_mem_block db -1
+
+
+section .bss
+
+; a writable qword, should never be read from. this is basically /dev/null
+; it is used for multiple affectation statements with arrays when an oob
+; occurs: "exp1,array[sizeof(array)] = exp2,exp3". Here exp1 and array are
+; computed first, then sizeof(array) is computed and would make an oob so
+; the affectation address is changed to global_void so that exp3 can still
+; be computed and written without causing a segfault.
+global_void resq 1

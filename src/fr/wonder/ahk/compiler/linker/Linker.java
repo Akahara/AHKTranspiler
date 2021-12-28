@@ -178,7 +178,7 @@ public class Linker {
 		
 		if(value.type == VarArrayType.EMPTY_ARRAY) {
 			if(!(value instanceof UninitializedArrayExp)) {
-				errors.add("Invalid expression holding empty array type");
+				throw new IllegalStateException("Invalid expression holding empty array type " + value.getClass());
 			} else if(validType instanceof VarArrayType) {
 				value.type = validType; // update array type safely
 				VarType componentType = ((VarArrayType) validType).componentType;

@@ -18,6 +18,8 @@ public class GlobalLabels {
 	public static final MemAddress ADDRESS_FSIGNBIT = new MemAddress(new LabelAddress("global_fsignbit"));
 	/** The empty memory block, used for null/empty array instances */
 	public static final String GLOBAL_EMPTY_MEM_BLOCK = "global_empty_mem_block";
+	/** A writable but not readable qword, exists to write data to nowhere */
+	public static final String GLOBAL_VOID = "global_void";
 	
 	/** The special alloc method label */
 	public static final String SPECIAL_ALLOC = "mem_alloc_block";

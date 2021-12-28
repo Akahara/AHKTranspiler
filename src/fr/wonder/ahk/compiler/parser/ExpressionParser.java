@@ -339,7 +339,7 @@ public class ExpressionParser extends AbstractParser {
 		}
 	}
 	
-	private Expression[] parseArgumentList(Section section) {
+	private Expression[] parseArgumentList(Section section) { // TODO check for ',,' during list parsing
 		List<Expression> arguments = new ArrayList<>();
 		if(section.stop-section.start != 0) {
 			int last = section.start;
