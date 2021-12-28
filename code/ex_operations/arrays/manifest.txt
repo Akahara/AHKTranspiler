@@ -1,0 +1,10 @@
+# specify the program entry point, using the #main function
+entry-point=fr.wonder.main.Main
+build-architecture=elf64
+build-target=linux
+# add debugging symbols
+debug-symbols=true
+# disable literal optimization
+literal-optimization=false
+# linker options
+linker-options=-e _main

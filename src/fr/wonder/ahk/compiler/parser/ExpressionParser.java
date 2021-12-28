@@ -339,17 +339,23 @@ public class ExpressionParser extends AbstractParser {
 		}
 	}
 	
-	private Expression[] parseArgumentList(Section section) { // TODO check for ',,' during list parsing
+	private Expression[] parseArgumentList(Section section) {
 		List<Expression> arguments = new ArrayList<>();
 		if(section.stop-section.start != 0) {
 			int last = section.start;
 			for(Pointer p = new Pointer(section.start); p.position < section.stop; section.advancePointer(p)) {
 				if(line[p.position].base == TokenBase.TK_COMMA) {
-					arguments.add(parseExpression(section.getSubSection(last, p.position)));
+					if(last == p.position)
+						errors.add("Unexpected ',' in argument list" + line[p.position].getErr());
+					else
+						arguments.add(parseExpression(section.getSubSection(last, p.position)));
 					last = p.position+1;
 				}
 			}
-			arguments.add(parseExpression(section.getSubSection(last, section.stop)));
+			if(last == section.stop)
+				errors.add("Missing tailing expression in argument list" + line[last-1].getErr());
+			else
+				arguments.add(parseExpression(section.getSubSection(last, section.stop)));
 		}
 		return arguments.toArray(Expression[]::new);
 	}

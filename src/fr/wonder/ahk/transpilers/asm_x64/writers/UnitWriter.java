@@ -168,20 +168,6 @@ public class UnitWriter {
 		instructions.skip();
 		
 		dataSectionWriter.writeGlobalDeclarations();
-		
-		// TODO change the way native functions are handled
-		// make the ahk function exist in assembly and simply
-		// call the native function from it
-		boolean hasNativeRefs = false;
-		for(FunctionSection f : unit.functions) {
-			if(f.modifiers.hasModifier(Modifier.NATIVE)) {
-				instructions.add(new ExternDeclaration(f.modifiers.getModifier(NativeModifier.class).nativeRef));
-				hasNativeRefs = true;
-			}
-		}
-		if(hasNativeRefs)
-			instructions.skip();
-		
 		dataSectionWriter.writeVariableDeclarations(initializedVariables);
 		dataSectionWriter.writeFunctionClosures();
 		dataSectionWriter.writeLambdas();
@@ -262,17 +248,20 @@ public class UnitWriter {
 		instructions.skip();
 		
 		for(FunctionSection func : unit.functions) {
-			if(func.modifiers.hasModifier(Modifier.NATIVE))
-				continue;
-			
 			if(project.manifest.DEBUG_SYMBOLS) {
 				instructions.comment("-".repeat(60));
 				instructions.comment(func.toString());
 				instructions.comment("-".repeat(60));
 			}
 			instructions.label(RegistryManager.getGlobalRegistry(func.getPrototype()));
-			FunctionWriter writer = new FunctionWriter(this, func);
-			writer.writeFunction(errors);
+
+			if(func.modifiers.hasModifier(Modifier.NATIVE)) {
+				instructions.jmp(func.modifiers.getModifier(NativeModifier.class).nativeRef);
+			} else {
+				FunctionWriter writer = new FunctionWriter(this, func);
+				writer.writeFunction(errors);
+			}
+			
 			instructions.skip();
 		}
 		

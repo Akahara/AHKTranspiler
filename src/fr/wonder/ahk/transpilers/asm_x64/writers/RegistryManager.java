@@ -6,10 +6,8 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
-import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.types.NativeOperation;
-import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 
 public class RegistryManager {
 	
@@ -45,9 +43,6 @@ public class RegistryManager {
 	}
 	
 	public static String getGlobalRegistry(VarAccess var) {
-		if(var instanceof FunctionPrototype && ((FunctionPrototype) var).getModifiers().hasModifier(Modifier.NATIVE))
-			return ((FunctionPrototype) var).getModifiers().getModifier(NativeModifier.class).nativeRef;
-		
 		String unitRegistry = getUnitRegistry(var.getSignature().declaringUnit);
 		String localRegistry;
 		

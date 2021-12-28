@@ -18,6 +18,7 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
+import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
@@ -66,11 +67,15 @@ public class DataSectionWriter {
 		
 		hasGlobal = false;
 		for(FunctionSection f : unit.functions) {
-			if(f.modifiers.visibility != DeclarationVisibility.GLOBAL || f.modifiers.hasModifier(Modifier.NATIVE))
-				continue;
-			instructions.add(new GlobalDeclaration(RegistryManager.getGlobalRegistry(f.getPrototype())));
-			instructions.add(new GlobalDeclaration(RegistryManager.getClosureRegistry(f.getPrototype())));
-			hasGlobal = true;
+			if(f.modifiers.visibility == DeclarationVisibility.GLOBAL) {
+				instructions.add(new GlobalDeclaration(RegistryManager.getGlobalRegistry(f.getPrototype())));
+				instructions.add(new GlobalDeclaration(RegistryManager.getClosureRegistry(f.getPrototype())));
+				hasGlobal = true;
+			}
+			if(f.modifiers.hasModifier(Modifier.NATIVE)) {
+				instructions.add(new ExternDeclaration(f.modifiers.getModifier(NativeModifier.class).nativeRef));
+				hasGlobal = true;
+			}
 		}
 		if(hasGlobal)
 			instructions.skip();
