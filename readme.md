@@ -14,7 +14,7 @@ The AHK language is heavily inspired by Java and C++, it is:
 - Turing complete
 - statically typed
 - statically linked
-- garbage collected *(will be)*
+- garbage collected
 
 In AHK you write code in *Units*, units get tokenized and parsed individually but linked alltogether. A Unit can contain global variables, functions, structures, aliases and blueprints. Syntax is very similar to Java, here is a simple example program:
 
@@ -103,7 +103,7 @@ Currently the default compiler is the AHK to x64 assembly one, it compiles fine 
 > Obviously AHK is not complete yet, I'm working on it in my free time and progress is slow and steady.
 
 Current goals I'd like to implement:
-- [ ] a garbage collector, currently instances can be created but they are not freed
+- [x] a garbage collector, currently instances can be created but they are not freed
 - [ ] lambdas
 - [ ] enums
 - [ ] file IO

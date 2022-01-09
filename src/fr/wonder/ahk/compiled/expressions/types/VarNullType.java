@@ -49,7 +49,8 @@ public class VarNullType extends VarType {
 		return type instanceof VarStructType ||
 				type instanceof VarArrayType ||
 				type instanceof VarFunctionType ||
-				type instanceof VarGenericType;
+				type instanceof VarGenericType ||
+				type == VarType.STR;
 	}
 	
 	

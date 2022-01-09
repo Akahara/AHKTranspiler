@@ -5,10 +5,20 @@ import ahk.Kernel;
 
 unit Main;
 
-struct Struct {}
+struct Struct {
+	str s;
+	constructor(str s);
+}
 
 global func int main() {
-	int i = 3;
-	int i = 2;
+	alloc1();
+	Struct s3 = Struct("s3");
+	Kernel.runGarbageCollector();
+	Struct s4 = Struct("s4");
 	return 5;
+}
+
+func void alloc1() {
+	Struct s1 = Struct("s1");
+	Struct s2 = Struct("s2");
 }

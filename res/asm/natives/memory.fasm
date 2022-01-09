@@ -2,13 +2,19 @@
 
 global mem_init
 global mem_alloc_block
+global mem_run_gc
 extern error_throw
 extern global_empty_mem_block
+
+; non garbage-collectable values that are not stored on the stack:
+extern ahk_Kernel_argv
 
 section .data
 
 TABLE_SIZE equ 32    ; number of entry per table
 ALLOC_SIZE equ 16384 ; number of bytes allocated every time
+MAX_BLOCK_SIZE equ 0x00ffffffffffffff ; maximum number of bytes per memory block
+GC_REACHABILITY_BIT equ 0x80
 
 E_BRK_ERROR equ -1      ; error code, used when the system call to brk
                         ; do not succeed
@@ -19,14 +25,17 @@ E_ALLOC_OVERFLOW equ -2 ; error code, used when a call to #mem_alloc_block
 current_break dq 0
 table_start dq 0
 mem_start dq 0
+stack_start dq 0
 
 section .text
 
 ; ==============================================================
 ; 
+; Memory Block:
+; ------------
 ; A data block of size n is stored in the heap as
 ; a memory block of size n+8, with the value n being
-; stored in the first 8 bytes. A pointer to the data
+; stored in the first 8 bytes*. A pointer to the data
 ; points to the first byte of data, so [ptr-8] can be
 ; used at any time to retrieve the data size. This value
 ; must NEVER be modified by other than a mem_ function.
@@ -38,7 +47,17 @@ section .text
 ; ------\==============/\==========/------
 ;         ^ptr            ^ptr           
 ;
-;
+; *The first qword (8 bytes) of a data block is made of the size
+; of the block (in bytes) in the first 7 bytes and a control 
+; block of 1 byte that contains data that can be set by memory
+; factories such as the garbage collector. This byte must remain
+; 0-ed at all times unless the allocation tables are used by
+; such factories, this allows the size of a block to be readable
+; as a qword without having to zero the trailing byte.
+; 
+; 
+; Allocation Table:
+; ----------------
 ; An allocation table is stored as a memory block (see
 ; the description of memory blocks) of size 8+ 32*8+8.
 ; the first 8 bytes are the address of the next allocation
@@ -60,7 +79,42 @@ section .text
 ;          ^ptr
 ; T is the next allocation table address
 ; E_n is the n-th entry address
-;
+; 
+; 
+; Garbage Collector (gc):
+; ----------------------
+; The GC goes through all allocation tables and looks for 
+; (un)used memory blocks, once it went through all used memory
+; blocks it removes all others, making new space in the heap and
+; allocation tables.
+; 
+; The GC will never collect allocation tables even though they
+; are in the heap. 
+; It won't  collect accessible memory blocks, here "accessible"
+; means "that have its address contained by an already accessible
+; block", blocks directly referenced from the stack are considered
+; accessible, as are some special values not stored there like
+; the argv array.
+; 
+; To work the gc will set the reachability bit of all memory
+; blocks to 1 using mem_prepare_gc, then it will recursively 
+; collect used blocks starting from the heap and from special
+; values.
+; To do that the gc will go through all the stack and search for
+; values that could be in the heap (between mem_start and
+; current_break) and it will simply consider that they are 
+; addresses of memory blocks. This is somewhat very unsafe but
+; the chance of a random value being in that range is way too
+; small to worry, this also keeps the gc very simple.
+; When a memory block is found its reachability bit is set back
+; to 0 if it wasn't already, otherwise if it has a size divisible
+; by 8 (meaning it might be a collection of qwords) it will get
+; searched through for pointers to other memory blocks.
+; 
+; Once all accessible blocks have been found all allocation
+; tables are covered and entries still having their reachability
+; bit set are removed and their respective memory is filled back
+; with 0xcc.
 ; ==============================================================
 
 
@@ -74,16 +128,17 @@ section .text
 ; so its size is not stored before it.
 ; If one of the two allocation fails E_BRK_ERROR is returned
 ; and the program should stop execution.
+;   parameters: none
 ;   return value: 0 for success, E_BRK_ERROR otherwise
 ; ==============================================================
 mem_init:
   push rbp
   mov rbp,rsp
   
+  mov [stack_start],rsp
+  
   ; get the current break
   mov rax,SYSCALL_BRK
-  ;xor rbx,rbx
-  ;int 0x80
   xor rdi,rdi
   syscall
   mov [current_break],rax
@@ -95,7 +150,7 @@ mem_init:
   call grow_heap
   
   ; fill the alloc table with 0s
-  mov rcx,8*(TABLE_SIZE+1)
+  mov rcx,TABLE_SIZE+1
   mov rdi,[table_start]
   xor rax,rax
   cld
@@ -116,6 +171,7 @@ mem_init:
 ; to call alloc after this method was called
 ; Also not necessary, the program memory space is deallocated
 ; by the kernel when the process exit
+;   parameters: none
 ;   return value: none (/ the default break)
 ; ==============================================================
 mem_dispose:
@@ -132,6 +188,8 @@ mem_dispose:
   
 ; ==============================================================
 ; grows the heap by ALLOC_SIZE bytes with a call to brk
+;   parameters: none
+;   return value: none
 ; ==============================================================
 grow_heap:
   push rbp
@@ -197,8 +255,8 @@ mem_alloc_block:
   mov [rbx],rax
   
   mov rdx,rcx
-  add rdx,8
-  cmp rbx,rdx ; check if the entry is the last of the table (located at T+8)
+  add rdx,16
+  cmp rbx,rdx ; check if the entry is the second last of the table (located at T+16)
   jne .tables_not_full
   cmp qword[rcx],0 ; check if the table has a next one
   jnz .tables_not_full
@@ -207,9 +265,10 @@ mem_alloc_block:
   ; allocate new allocation table
   push qword TABLE_SIZE*8+8
   call get_empty_block
-  mov dword[rax-8],TABLE_SIZE*8+8
+  mov qword[rax-8],TABLE_SIZE*8+8
   mov [rcx],rax
-  mov rdi,rcx
+  mov [rcx+8],rax
+  mov rdi,rax
   ; fill the table with 0s
   mov rcx,TABLE_SIZE+1
   xor rax,rax
@@ -225,13 +284,14 @@ mem_alloc_block:
   ret 8
   
   
-  
 ; ==============================================================
 ; Searches in the heap for a non-allocated memory block with
 ; the given size.
+;   parameters:
+;     u8 size - the size (in bytes) of the empty block to find
 ;   return values:
-;        rax - the address of the allocated block. <!> May be out
-;              of the current heap space <!>.
+;        rax - the address of the allocated block. <!>May be out
+;              of the current heap space<!>.
 ;        rbx - the address of an empty allocation table entry
 ;        rcx - the address of the allocation table of $rbx
 ; ==============================================================
@@ -240,8 +300,9 @@ get_empty_block:
   mov rbp,rsp
   
   mov rsi,[rbp+16]
-  cmp rsi,0xffff
-  jle .alloc
+  mov rax,MAX_BLOCK_SIZE
+  cmp rsi,rax
+  jbe .alloc
   mov rax,E_ALLOC_OVERFLOW ; too large size
   call error_throw
 .alloc:
@@ -306,4 +367,201 @@ get_empty_block:
   mov rsp,rbp
   pop rbp
   ret 8
+  
+  
+; ==============================================================
+; Runs the garbage collector (gc).
+; 
+; The GC goes through all allocation tables and looks for 
+; (un)used memory blocks, once it went through all used memory
+; blocks it removes all others, making new space in the heap and
+; allocation tables.
+; 
+; The GC will never collect allocation tables even though they
+; are in the heap. 
+; It won't  collect accessible memory blocks, here "accessible"
+; means "that have its address contained by an already accessible
+; block", blocks directly referenced from the stack are considered
+; accessible, as are some special values not stored there like
+; the argv array.
+; 
+;   parameters: none
+;   return value: none
+; ==============================================================
+mem_run_gc:
+  push rbp
+  mov rbp,rsp
+  
+  call mem_prepare_gc
+  call mem_collect_gc
+  
+  ; prevent collection of non-stack saved values
+  push qword [ahk_Kernel_argv]
+  call gc_register_use
+  
+  call mem_clean_gc
+  
+  mov rsp,rbp
+  pop rbp
+  ret
+  
+  
+; ==============================================================
+; Prepares the gc collection by setting the reachability bit of
+; all memory blocks. Blocks found are recursively collected, see
+; the gc description.
+; 
+;   parameters: none
+;   return value: none
+; ==============================================================
+mem_prepare_gc:
+  push rbp
+  mov rbp,rsp
+  
+  ; prepare the accessibility bit of every memory block
+  mov rax,[table_start]
+.prepare_table:
+  mov rcx,TABLE_SIZE-1
+.prepare_entry:
+  mov rbx,[rax+8*rcx+8]
+  test rbx,rbx
+  jz .not_allocated
+  or [rbx-8+7],byte GC_REACHABILITY_BIT
+.not_allocated:
+  loop .prepare_entry
+  mov rax,[rax]
+  test rax,rax
+  jnz .prepare_table
+  
+  mov rsp,rbp
+  pop rbp
+  ret
+  
+
+; ==============================================================
+; Searches through the stack for pointers to memory blocks and
+; passes them to gc_register_use.
+; 
+;   parameters: none
+;   return value: none
+; ==============================================================
+mem_collect_gc:
+  push rbp
+  mov rbp,rsp
+  
+  mov rax,rsp
+.collect_in_stack:
+  cmp rax,[stack_start]
+  jg .collect_end
+  push rax ; store to retrieve later
+  push qword [rax] ; push for the function to consume
+  call gc_register_use
+  pop rax ; retrieve
+  add rax,8
+  jmp .collect_in_stack
+.collect_end:
+  
+  mov rsp,rbp
+  pop rbp
+  ret
+  
+
+; ==============================================================
+; Registers the use of a memory block, recursivelly doing so if
+; the given value happens to point to a memory block.
+; The reachability bit of a registered (collected) block is set
+; back to 0, if it was not already it is searched through for
+; other pointers to other blocks, recursively.
+;
+;   parameters:
+;     void* value - a qword that might be a pointer, if its value
+;                   is not in the heap range (mem_start..current_break)
+;                   it is imediately discarded
+;   return value: none
+; ==============================================================
+gc_register_use:
+  push rbp
+  mov rbp,rsp
+  
+  mov rax,[rbp+16]
+  cmp rax,[mem_start]
+  jl .not_in_heap
+  cmp rax,[current_break]
+  jg .not_in_heap
+  
+  and [rax-8+7],byte ~GC_REACHABILITY_BIT
+  mov rbx,[rax-8]
+  test rbx,7 ; test if the memory block size is divisible by 8
+  jnz .not_qwords_memblock
+  lea rbx,[rax+rbx-8]
+  
+.collect_members:
+  cmp rbx,rax
+  jl .finished_collecting
+  push rbx
+  push rax
+  push qword[rbx]
+  call gc_register_use
+  pop rax
+  pop rbx
+  sub rbx,8
+  jmp .collect_members
+  
+.finished_collecting:
+.not_qwords_memblock:
+.not_in_heap:
+  mov rsp,rbp
+  pop rbp
+  ret 8
+  
+  
+; ==============================================================
+; Removes all allocation tables entries that have not been
+; collected by gc_register_use.
+;
+; After the call to mem_prepare_gc and gc_register_use the
+; allocation table entries that still have their reachability
+; bit set are not accessible by any means and can safely be
+; removed from the heap. They are removed from their allocation
+; table and their associated memory is wipped to 0xcc.
+; 
+;   parameters: none
+;   return value: none
+; ==============================================================
+mem_clean_gc:
+  push rbp
+  mov rbp,rsp
+  
+  mov rax,[table_start]
+.clean_table:
+  mov rcx,TABLE_SIZE
+.clean_entry:
+  mov rdx,[rax+8*rcx]
+  test rdx,rdx
+  jz .not_cleanable
+  test byte[rdx-8+7],GC_REACHABILITY_BIT
+  jz .not_cleanable
+  mov rdi,[rax+8*rcx]     ; prepare cleaning
+  push rcx
+  push rax
+  mov qword [rax+8*rcx],0 ; remove entry from the alloc table
+  and byte [rdi-8+7],~GC_REACHABILITY_BIT
+  mov rcx,[rdi-8]
+  add rcx,8
+  sub rdi,8
+  mov al,0xcc
+  cld
+  rep stosb
+  pop rax
+  pop rcx
+.not_cleanable:
+  loop .clean_entry
+  mov rax,[rax]
+  test rax,rax
+  jnz .clean_table
+  
+  mov rsp,rbp
+  pop rbp
+  ret
+  
   

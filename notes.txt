@@ -1,5 +1,3 @@
--  There is currently no garbage collector
-
 -  The || (or) and && (and) operators, when used whith non-functions types, 
 will only compute one operand if possible: when ORing two things, if the
 first one is False there is no need to compute the second one. On the

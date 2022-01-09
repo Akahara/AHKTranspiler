@@ -59,3 +59,6 @@ global func void sleep(int seconds) {}
 
 @native("ahk_Kernel_nanosleep");
 global func void nanosleep(int nanos) {}
+
+@native("mem_run_gc");
+global func void runGarbageCollector() {}
