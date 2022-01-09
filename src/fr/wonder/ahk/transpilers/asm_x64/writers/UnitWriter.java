@@ -34,7 +34,6 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
-import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarReservation;
 import fr.wonder.ahk.transpilers.common_x64.declarations.SectionDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;

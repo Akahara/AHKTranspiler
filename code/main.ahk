@@ -1,4 +1,3 @@
-
 base fr.wonder.main;
 
 import ahk.Kernel;
@@ -11,14 +10,14 @@ struct Struct {
 }
 
 global func int main() {
-	alloc1();
-	Struct s3 = Struct("s3");
-	Kernel.runGarbageCollector();
-	Struct s4 = Struct("s4");
-	return 5;
-}
-
-func void alloc1() {
-	Struct s1 = Struct("s1");
-	Struct s2 = Struct("s2");
+	Kernel.out << 5 << "\n";
+	Kernel.out << -5 << "\n";
+	Kernel.out << 7 << "\n";
+	Kernel.out << -3.7 << "\n";
+	Kernel.out << -3.123456789123456789123456789 << "\n";
+	Kernel.out << 5.2 << "\n";
+	Kernel.out << int:(-3.6) << "\n";
+	Kernel.out << int:(-3.2) << "\n";
+	Kernel.out << int:(3.6) << "\n";
+	Kernel.out << int:(3.2) << "\n";
 }

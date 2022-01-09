@@ -27,8 +27,6 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class AsmX64Transpiler implements Transpiler {
 	
-	// FIX fix the kernel print_dec assembly, the '-' sign does not appear
-	
 	private static final String ASM_PATH = "asm/", OBJ_PATH = "obj/";
 	
 	@Override

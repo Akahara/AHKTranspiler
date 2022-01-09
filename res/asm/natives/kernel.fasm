@@ -27,7 +27,7 @@ dec_chars db '-....................',0xa  ; decimal characters, a 64 bits intege
 true_chars db 'true',0xa
 false_chars db 'false',0xa
 def_string float_dot_char,'.'
-float_precision dq __float64__(1e9)
+float_precision dq __float64__(1e8)
 sleep_timespec:
   timespec_sec dq 0
   timespec_usec dq 0
@@ -248,6 +248,7 @@ ahk_Kernel_print_float:
   call ahk_Kernel_print_str
   fild qword [global_floatst]
   fsub
+  fabs
   fmul qword [float_precision]
   fistp qword [global_floatst]
   mov rax,[global_floatst]
@@ -255,7 +256,7 @@ ahk_Kernel_print_float:
   call ker_fill_dec_chars
   
   mov rsi,rax
-  mov rdx,21 ; 21, not 20 since the 'skip zerop'
+  mov rdx,21 ; 21, not 20 since the 'skip zero'
              ; loop will run at least once, decrementing rdx
   sub rdx,rsi
   lea rsi,[rsi+dec_chars+1]
@@ -305,7 +306,7 @@ ker_fill_dec_chars:
   jnz .loop
   
   ; add sign
-  mov rax,[rsp+8]
+  mov rax,[rbp+16]
   test rax,rax
   jns .positive
   mov [dec_chars+rcx],byte '-'

@@ -45,13 +45,13 @@ _main:
   mov rbp,rsp
   
   ; initialize the floating point unit (FPU)
-  ; set rounding control to round down with 0x400
+  ; set rounding control to truncate (round toward 0) with 0xC00
   ; see http://www.nacad.ufrj.br/online/intel/Documentation/en_US/compiler_f/main_for/fpops/fortran/fpops_contw_f.htm
   ; for the floating point control word
   finit
   fnstcw [global_floatst]
   mov ax,[global_floatst]
-  or ax,0x400
+  or ax,0xC00
   mov [global_floatst],ax
   fldcw [global_floatst]
   
