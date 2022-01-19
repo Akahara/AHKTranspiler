@@ -40,6 +40,7 @@ public class ProcessFiles {
 		files.add(writeEntryPoint(handle, dir, errors));
 		files.add(writeClosures(dir));
 		files.add(copyNative(dir, "asm/natives/memory.fasm", "natives/memory.asm"));
+		files.add(copyNative(dir, "asm/natives/strings.fasm", "natives/strings.asm"));
 		files.add(copyNative(dir, "asm/natives/errors.fasm", "natives/errors.asm"));
 		files.add(copyNative(dir, "asm/natives/values.fasm", "natives/values.asm"));
 		files.add(copyNative(dir, "asm/natives/lib/streams.fasm", "natives/lib/streams.asm"));

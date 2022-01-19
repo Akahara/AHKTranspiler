@@ -5,29 +5,13 @@ global ker_exit
 global ahk_Kernel_argv
 global ahk_Kernel_argc_get
 global ahk_Kernel_argc_count
-global ahk_Kernel_print_hex
-global ahk_Kernel_print_dec
-global ahk_Kernel_print_str
-global ahk_Kernel_print_float
-global ahk_Kernel_print_strlen
-global ahk_Kernel_print_bool
-global ahk_Kernel_print_ln
 global ahk_Kernel_sleep
 global ahk_Kernel_nanosleep
-global global_floatst
-
 
 section .data
 
-extern mem_alloc_block
+extern mem_alloc_blockf
 
-ln_chars db `\n`,0xa
-hex_chars db '0x................',0xa     ; hexadecimal characters
-dec_chars db '-....................',0xa  ; decimal characters, a 64 bits integer will always fit in 20 digites and the - sign
-true_chars db 'true',0xa
-false_chars db 'false',0xa
-def_string float_dot_char,'.'
-float_precision dq __float64__(1e8)
 sleep_timespec:
   timespec_sec dq 0
   timespec_usec dq 0
@@ -37,11 +21,6 @@ section .bss
 ; argv, the address pointing to the array of process argument
 ; strings
 ahk_Kernel_argv resq 1
-
-; global_floatst, the designated memory location for transfers
-; to and from the fpu stack (st(0) to st(7))
-global_floatst resq 1
-
 
 
 section .text
@@ -67,7 +46,7 @@ ker_init:
   mov rax,[rbp+24] ; argc
   imul rax,8
   push rax
-  call mem_alloc_block
+  call mem_alloc_blockf
   mov [ahk_Kernel_argv],rax
   mov [rsp],rax ; ptr
   
@@ -92,7 +71,7 @@ ker_init:
   push rax ; store temporarily
   push rbx ; store temporarily
   push rax ; pass the size of the string to alloc()
-  call mem_alloc_block
+  call mem_alloc_blockf
   
   pop rsi ; begining of the string
   pop rcx ; length of the string
@@ -114,221 +93,15 @@ ker_init:
   ret
   
   
-ahk_Kernel_print_hex:
-  push rbp
-  mov rbp,rsp
-  
-  mov rax,[rsp+16] ; get the value to be printed
-  
-  mov rcx,16
-.loop:
-  mov rbx,rax
-  and rbx,0xf
-  cmp rbx,10
-  jl .ignore
-  add rbx,39 ; handle alphanumerical digits
-.ignore:
-  add rbx,48
-  mov [hex_chars+rcx+1],bl
-  shr rax,4
-  loop .loop
-  
-  mov rax,SYSCALL_WRITE
-  mov rdi,STD_OUT
-  mov rsi,hex_chars
-  mov rdx,18 ; 18 chars to be printed
-  syscall ; actual system call
-  
-  mov rsp,rbp
-  pop rbp
-  ret 8 ; __stdcall convention
-  
-  
-ahk_Kernel_print_bool:
-  push rbp
-  mov rbp,rsp
-  mov rdx,[rbp+16]
-  mov rsi,true_chars
-  test rdx,rdx
-  ; cmov rcx,false_chars  ; TODO find out why this doesn't work (invalid combination of opcode and operands)
-  jnz .true_str
-  mov rsi,false_chars
-.true_str:
-  mov rax,SYSCALL_WRITE
-  mov rdi,STD_OUT
-  neg rdx
-  add rdx,5
-  syscall
-  mov rsp,rbp
-  pop rbp
-  ret 8
-  
-  
-; used to print a string which length is stored as a qword before
-; the string characters. see the intrinsic.fasm#def_string macro
-; if the string does not use this convention this function will
-; have undefined behavior
-ahk_Kernel_print_str:
-  push rbp
-  mov rbp,rsp
-  mov rax,SYSCALL_WRITE
-  mov rdi,STD_OUT
-  mov rsi,[rbp+16]
-  mov rdx,[rsi-8] ; n chars to be printed
-  syscall
-  mov rsp,rbp
-  pop rbp
-  ret 8
-  
-  
-; used to print a string which length is not necessarily stored
-; before its characters (mainly for compatibility with other languages)
-; can be used to print an array of characters
-ahk_Kernel_print_strlen:
-  push rbp
-  mov rbp,rsp
-  mov rax,SYSCALL_WRITE
-  mov rdi,STD_OUT
-  mov rsi,[rsp+16]
-  mov rdx,[rsp+24] ; n chars to be printed
-  syscall
-  mov rsp,rbp
-  pop rbp
-  ret 8
-
-  
-ahk_Kernel_print_ln:
-  push rbp
-  mov rbp,rsp
-  
-  mov rax,SYSCALL_WRITE
-  mov rdi,STD_OUT
-  mov rsi,ln_chars
-  mov rdx,1 ; 1 char to be printed
-  syscall ; actual system call
-  
-  mov rsp,rbp
-  pop rbp
-  ret
-  
-  
-ahk_Kernel_print_dec:
-  push rbp
-  mov rbp,rsp
-  
-  push qword [rbp+16]
-  call ker_fill_dec_chars
-  
-  mov rsi,rax
-  mov rax,SYSCALL_WRITE
-  mov rdi,STD_OUT
-  mov rdx,20
-  sub rdx,rsi
-  lea rsi,[rsi+dec_chars+1]
-  syscall
-  
-  mov rsp,rbp
-  pop rbp
-  ret 8
-  
-
-ahk_Kernel_print_float:
-  push rbp
-  mov rbp,rsp
-  
-  mov rax,[rbp+16]
-  mov [global_floatst],rax
-  fld qword [global_floatst]
-  fld qword [global_floatst]
-  fistp qword [global_floatst]
-  mov rax,[global_floatst]
-  push rax
-  call ahk_Kernel_print_dec
-  push float_dot_char
-  call ahk_Kernel_print_str
-  fild qword [global_floatst]
-  fsub
-  fabs
-  fmul qword [float_precision]
-  fistp qword [global_floatst]
-  mov rax,[global_floatst]
-  push rax
-  call ker_fill_dec_chars
-  
-  mov rsi,rax
-  mov rdx,21 ; 21, not 20 since the 'skip zero'
-             ; loop will run at least once, decrementing rdx
-  sub rdx,rsi
-  lea rsi,[rsi+dec_chars+1]
-.skip_zero:
-  dec rdx
-  mov al,[rsi+rdx-1]
-  cmp al,'0'
-  je .skip_zero
-  cmp rdx,0
-  jge .has_decimals
-  mov rdx,0 ; don't print a negative amount of decimals
-.has_decimals:
-  
-  mov rax,SYSCALL_WRITE
-  mov rdi,STD_OUT
-  syscall
-  
-  mov rsp,rbp
-  pop rbp
-  ret 8
-  
-; -------
-; fills the #dec_chars array with the decimal representation
-; of the given integer, returns 20 (the size of #dec_chars)
-; minus the number of characters used.
-; -------
-ker_fill_dec_chars:
-  push rbp
-  mov rbp,rsp
-
-  mov rcx,20
-  mov rax,[rbp+16] ; rax holds the number
-  mov rbx,rax     ; get absolute
-  sar rbx,31
-  xor rax,rbx
-  sub rax,rbx     ;/get absolute
-  mov rbx,10      ; prepare for division
-
-  ; get indivudual characters
-.loop:
-  xor rdx,rdx     ; clear dividende for division
-  div rbx
-  add rdx,'0'
-  mov [dec_chars+rcx],dl
-  dec rcx
-  test rax,rax
-  jnz .loop
-  
-  ; add sign
-  mov rax,[rbp+16]
-  test rax,rax
-  jns .positive
-  mov [dec_chars+rcx],byte '-'
-  dec rcx
-.positive:
-  
-  mov rax,rcx
-  
-  mov rsp,rbp
-  pop rbp
-  ret 8
-  
-  
 dbg_print_fpu_status:
-  push rbp
-  mov rbp,rsp
-  sub rsp,8
-  fstsw [rsp]
-  call ahk_Kernel_print_hex
-  call ahk_Kernel_print_ln
-  mov rsp,rbp
-  pop rbp
+;  push rbp
+;  mov rbp,rsp
+;  sub rsp,8
+;  fstsw [rsp]
+;  call ahk_Kernel_print_hex
+;  call ahk_Kernel_print_ln
+;  mov rsp,rbp
+;  pop rbp
   ret
   
   

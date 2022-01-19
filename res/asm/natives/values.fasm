@@ -1,6 +1,7 @@
 global global_empty_mem_block
 global global_fsignbit
 global global_void
+global global_floatst
 
 section .data
 
@@ -26,3 +27,7 @@ section .bss
 ; the affectation address is changed to global_void so that exp3 can still
 ; be computed and written without causing a segfault.
 global_void resq 1
+
+; global_floatst, the designated memory location for transfers
+; to and from the fpu stack (st(0) to st(7))
+global_floatst resq 1

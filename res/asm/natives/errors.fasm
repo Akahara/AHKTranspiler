@@ -1,8 +1,10 @@
+%include "intrinsic.asm"
+
 section .data
 
 global error_throw
 
-extern ahk_Kernel_print_hex
+extern ahk_Strings_print_int2hexstr
 extern ker_exit
 
 section .text
@@ -14,8 +16,9 @@ error_throw:
   mov rbp,rsp
   
   push rax
+  push STD_OUT
   push rax
-  call ahk_Kernel_print_hex
+  call ahk_Strings_print_int2hexstr
   call ker_exit
   
   mov rsp,rbp

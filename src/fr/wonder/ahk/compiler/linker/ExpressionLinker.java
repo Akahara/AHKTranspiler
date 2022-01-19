@@ -114,6 +114,7 @@ class ExpressionLinker {
 	private void linkVariableExpression(Unit unit, Scope scope, VarExp exp, ErrorWrapper errors) {
 		// search for the variable/function declaration
 		VarAccess var = scope.getVariable(exp.variable, exp, errors);
+		// FIX catch nullpointerexception when a variable does not exist in scope
 		if(!var.getSignature().declaringUnit.equals(unit.fullBase) && var.getSignature().declaringUnit != VarAccess.INNER_UNIT) {
 			Prototype<?> proto = (Prototype<?>) var;
 			unit.prototype.externalAccesses.add(proto);

@@ -59,3 +59,12 @@
   
 %endif
 
+%ifndef ERROR_CODES
+  ; the brk system call failed
+  %define E_BRK_ERROR -1
+  ; mem_alloc_block was called with a size exceeding the 32 bits limit
+  %define E_ALLOC_OVERFLOW -2
+  ; mem_alloc_block failed 
+  %define E_ALLOC_FAILED -3
+%endif
+

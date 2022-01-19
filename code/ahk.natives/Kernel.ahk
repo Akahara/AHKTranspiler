@@ -2,6 +2,8 @@ base ahk;
 
 unit Kernel;
 
+int stdOut = 1;
+
 global struct KernelOut {
   operator kprinti : KernelOut << int = KernelOut;
   operator kprintf : KernelOut << float = KernelOut;
@@ -14,41 +16,45 @@ global KernelOut out;
 @native("ahk_Kernel_argv");
 global str[] argv;
 
-@native("ahk_Kernel_print_dec");
-global func void printi(int i) {}
-global func KernelOut kprinti(KernelOut o, int i) { printi(i); return o; }
-@native("ahk_Kernel_print_float");
-global func void printf(float f) {}
-global func KernelOut kprintf(KernelOut o, float f) { printf(f); return o; }
-@native("ahk_Kernel_print_str");
-global func void print(str s) {}
-global func KernelOut kprints(KernelOut o, str s) { print(s); return o; }
-@native("ahk_Kernel_print_strlen");
-global func void prints(str s, int len) {}
-@native("ahk_Kernel_print_bool");
-global func void printb(bool b) {}
-global func KernelOut kprintb(KernelOut o, bool b) { printb(b); return o; }
-@native("ahk_Kernel_print_ln");
-global func void printnl() {}
+@native("ahk_Strings_print_int2str");
+global func void printi(int fd, int i) {}
+global func KernelOut kprinti(KernelOut o, int i) { printi(stdOut, i); return o; }
+
+@native("ahk_Strings_print_float2str");
+global func void printf(int fd, float f) {}
+global func KernelOut kprintf(KernelOut o, float f) { printf(stdOut, f); return o; }
+
+@native("ahk_Strings_print_str");
+global func void print(int fd, str s) {}
+global func KernelOut kprints(KernelOut o, str s) { print(stdOut, s); return o; }
+
+@native("ahk_Strings_print_bool2str");
+global func void printb(int fd, bool b) {}
+global func KernelOut kprintb(KernelOut o, bool b) { printb(stdOut, b); return o; }
+
+@native("ahk_Strings_print_ln");
+global func void printnl(int fd) {}
+@native("ahk_Strings_print_unnormalizedstr");
+global func void prints(int fd, str s, int len) {}
 
 global func void printlni(int i) {
-	printi(i);
-	printnl();
+	printi(stdOut, i);
+	printnl(stdOut);
 }
 
 global func void printlnf(float f) {
-	printf(f);
-	printnl();
+	printf(stdOut, f);
+	printnl(stdOut);
 }
 
 global func void println(str s) {
-	print(s);
-	printnl();
+	print(stdOut, s);
+	printnl(stdOut);
 }
 
 global func void printlnb(bool b) {
-	printb(b);
-	printnl();
+	printb(stdOut, b);
+	printnl(stdOut);
 }
 
 @native("ker_exit");

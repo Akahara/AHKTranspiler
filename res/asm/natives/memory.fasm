@@ -2,6 +2,7 @@
 
 global mem_init
 global mem_alloc_block
+global mem_alloc_blockf
 global mem_run_gc
 extern error_throw
 extern global_empty_mem_block
@@ -15,12 +16,6 @@ TABLE_SIZE equ 32    ; number of entry per table
 ALLOC_SIZE equ 16384 ; number of bytes allocated every time
 MAX_BLOCK_SIZE equ 0x00ffffffffffffff ; maximum number of bytes per memory block
 GC_REACHABILITY_BIT equ 0x80
-
-E_BRK_ERROR equ -1      ; error code, used when the system call to brk
-                        ; do not succeed
-E_ALLOC_OVERFLOW equ -2 ; error code, used when a call to #mem_alloc_block
-                        ; is made with a size exceeding the 32 bits limit
-
 
 current_break dq 0
 table_start dq 0
@@ -215,6 +210,30 @@ grow_heap:
   pop rbp
   ret
   
+  
+  
+; ==============================================================
+; Tries to allocate a block of memory, on failure error_throw
+; is called and the process is imediately terminated.
+; See #mem_alloc_block for allocation documentation.
+;   parameters:
+;     u8 size - the size (in bytes) to allocate
+;   return value: The allocated block address
+; ==============================================================
+mem_alloc_blockf:
+  push rbp
+  mov rbp,rsp
+  
+  push qword [rbp+16]
+  call mem_alloc_block
+  test rax,rax
+  jnz .ret
+  mov rax,E_ALLOC_FAILED
+  call error_throw
+.ret:
+  mov rsp,rbp
+  pop rbp
+  ret 8
   
   
 ; ==============================================================
