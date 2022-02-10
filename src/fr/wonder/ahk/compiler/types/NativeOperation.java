@@ -163,10 +163,8 @@ public class NativeOperation extends Operation {
 	/** May return null */
 	public static NativeOperation getOperation(VarNativeType l, VarNativeType r, Operator o, boolean allowCast) {
 		// "special" operators
-		if(l == STR && r == STR && o == ADD)
+		if((l == STR || r == STR) && o == ADD)
 			return STR_ADD_STR;
-		if(l == STR)
-			return null; // TODO add str+native operations
 		if(o == Operator.NOT) {
 			if(l != null)
 				throw new IllegalArgumentException("The negation operation takes one argument only");

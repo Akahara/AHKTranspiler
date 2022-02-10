@@ -65,7 +65,7 @@ class UnitScope implements Scope {
 			return varProto;
 		// and no two functions can have the same name either
 		FunctionPrototype func = unit.getFunction(name);
-		if(func == null || func.signature.declaringUnit.equals(this.unit.fullBase) || func.modifiers.visibility == DeclarationVisibility.GLOBAL)
+		if(func != null && (func.signature.declaringUnit.equals(this.unit.fullBase) || func.modifiers.visibility == DeclarationVisibility.GLOBAL))
 			return func;
 		
 		errors.add("Usage of undeclared variable " + name + srcElem.getErr());

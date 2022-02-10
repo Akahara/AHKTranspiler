@@ -78,6 +78,7 @@ public class StatementParser extends AbstractParser {
 		case TYPE_FLOAT:
 		case TYPE_INT:
 		case TYPE_STR:
+		case VAR_GENERIC:
 		case VAR_UNIT: // (Structure token)
 			// avoid 'int:(3.) >> Kernel.out' from being treated as an int declaration
 			if(line.length > 1 && line[1].base != TokenBase.TK_COMMA)

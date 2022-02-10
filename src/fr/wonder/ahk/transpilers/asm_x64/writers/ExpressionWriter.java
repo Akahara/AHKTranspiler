@@ -311,7 +311,8 @@ public class ExpressionWriter {
 			VarFunctionType funcType = (VarFunctionType) type;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
 		} else if(type instanceof VarGenericType) {
-			throw new UnimplementedException("Generic type null instance" + sourceElement.getErr());
+			errors.add("Generic type null instance" + sourceElement.getErr());
+//			throw new UnimplementedException("Generic type null instance" + sourceElement.getErr());
 		} else if(type == VarType.STR) {
 			writer.instructions.mov(Register.RAX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(type instanceof VarNativeType) {

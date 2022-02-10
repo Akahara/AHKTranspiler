@@ -1,9 +1,7 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 
 import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,6 +61,10 @@ public class AsmOperationWriter {
 		conversions.put(new Tuple<>(FLOAT, INT), Conversions::conv_floatTOint);
 		conversions.put(new Tuple<>(BOOL, INT), (from, to, writer, errors) -> {}); // NOOP
 		conversions.put(new Tuple<>(INT, BOOL), Conversions::conv_intTObool);
+		
+		conversions.put(new Tuple<>(INT, STR), Conversions::conv_anyTOstr);
+		conversions.put(new Tuple<>(FLOAT, STR), Conversions::conv_anyTOstr);
+		conversions.put(new Tuple<>(BOOL, STR), Conversions::conv_anyTOstr);
 	}
 	
 	final AbstractWriter writer;
