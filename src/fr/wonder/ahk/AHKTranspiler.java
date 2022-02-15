@@ -22,18 +22,6 @@ import fr.wonder.commons.systems.process.ProcessUtils;
 
 public class AHKTranspiler {
 	
-	/*
-	 * TODO > x64 files
-	 * TODO > lambdas
-	 * TODO > create a new x64 transpiler, based on an abstract intermediate language
-	 * TODO > rework project handles
-	 * TODO > merge similar string constants in the x64 transpiler
-	 * FIX > link lambdas outside of the expression linker
-	 */
-	
-//	public static Logger logger = new SimpleLogger(null, Logger.LEVEL_DEBUG);
-	public static Logger logger = new AnsiLogger(null, Logger.LEVEL_DEBUG);
-	
 	public static ProjectHandle createProject(File dir, File manifestFile) throws IOException {
 		List<File> files = FilesUtils.listFiles(dir, f->f.isFile() && f.getName().endsWith(".ahk"));
 		files.removeIf(f -> f.getAbsolutePath().contains("ex_"));
@@ -50,12 +38,12 @@ public class AHKTranspiler {
 	}
 	
 	public static void main(String[] args) throws IOException {
+		Logger logger = new AnsiLogger(null, Logger.LEVEL_DEBUG);
 		File codeDir = new File("code");
 		ProjectHandle project = createProject(codeDir, new File(codeDir, "manifest.txt"));
 		Transpiler transpiler;
 		
-		transpiler = new AsmX64Transpiler();
-//		transpiler = new AHLTranspiler();
+		transpiler = new AsmX64Transpiler(new AnsiLogger("x64", Logger.LEVEL_DEBUG));
 		
 		File dir = new File("exported/exported_x64");
 		dir.mkdirs();
@@ -65,8 +53,6 @@ public class AHKTranspiler {
 			LinkedHandle handle = project
 				.compile(new ErrorWrapper("Unable to compile", true))
 				.link(new ErrorWrapper("Unable to link", true));
-//			InstancePrinter.dump(handle); // print data structure
-//			System.exit(0);
 			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export", true));
 			if(exec == null)
 				return;

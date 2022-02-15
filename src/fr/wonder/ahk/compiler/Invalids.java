@@ -6,6 +6,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
+import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
 import fr.wonder.ahk.compiled.statements.Statement;
@@ -34,6 +35,7 @@ import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiled.units.sections.OverloadedOperator;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
+import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 import fr.wonder.ahk.compiler.types.Operation;
 
 public class Invalids {
@@ -62,7 +64,7 @@ public class Invalids {
 		public VarType[] getSubTypes() { return new VarType[0]; }
 	};
 
-	public static final GenericContext GENERIC_CONTEXT = new GenericContext(null, new VarGenericType[0]);
+	public static final GenericContext GENERIC_CONTEXT = new GenericContext(new TypeParameter[0]);
 	
 	public static final Operation OPERATION = new Operation(TYPE, TYPE, Operator.ADD, TYPE) {};
 
@@ -93,6 +95,12 @@ public class Invalids {
 			new ConstructorPrototype[0], new OverloadedOperatorPrototype[0], GENERIC_CONTEXT, new BlueprintImplementation[0], MODIFIERS, SIGNATURE);
 	public static final BlueprintPrototype BLUEPRINT_PROTOTYPE = new BlueprintPrototype(new FunctionPrototype[0],
 			new VariablePrototype[0], new OverloadedOperatorPrototype[0], MODIFIERS, SIGNATURE);
+
+	public static final VarStructType STRUCT_TYPE = new VarStructType(STRING);
+	
+	static {
+		STRUCT_TYPE.structure = STRUCT_PROTOTYPE;
+	}
 	
 	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, SOURCE_REF, MODIFIERS, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], MODIFIERS, SIGNATURE);
@@ -117,6 +125,7 @@ public class Invalids {
 		BLUEPRINT.operators = new BlueprintOperator[0];
 	}
 
-	public static final VarGenericType GENERIC_TYPE = new VarGenericType('@', VarGenericType.NO_TYPE_RESTRICTION);
+	public static final TypeParameter TYPE_PARAMETER = new TypeParameter('@', new BlueprintRef[0]);
+	public static final VarGenericType GENERIC_TYPE = new VarGenericType(TYPE_PARAMETER);
 	
 }

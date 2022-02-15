@@ -2,7 +2,6 @@ package fr.wonder.ahk.transpilers.asm_x64.units;
 
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 
@@ -10,13 +9,11 @@ public class ConcreteType {
 	
 	/** The size in bytes of this type */
 	public final int size;
-	private final GenericImplementationParameter[] gips;
-	private final VariablePrototype[] members;
+	public final VariablePrototype[] members;
 
-	public ConcreteType(GenericImplementationParameter[] gips, VariablePrototype[] members) {
-		this.gips = gips;
+	public ConcreteType(VariablePrototype[] members) {
 		this.members = members;
-		this.size = (gips.length + members.length) * MemSize.POINTER_SIZE;
+		this.size = members.length * MemSize.POINTER_SIZE;
 	}
 	
 	public VarType getMemberType(String member) {

@@ -33,8 +33,7 @@ class FunctionDeclarationParser extends AbstractParser {
 	 *                          must be 1 less than the line length.
 	 */
 	static FunctionSection parseFunctionDeclaration(Unit unit, Token[] declaration,
-			int declarationLength, GenericContext parentGenericContext,
-			DeclarationModifiers modifiers, ErrorWrapper errors) {
+			int declarationLength, DeclarationModifiers modifiers, ErrorWrapper errors) {
 		
 		try {
 			SourceReference funcSourceRef = SourceReference.fromLine(declaration);
@@ -46,7 +45,7 @@ class FunctionDeclarationParser extends AbstractParser {
 			
 			Pointer pointer = new Pointer(1);
 			
-			GenericContext genericContext = readGenericArray(unit, declaration, parentGenericContext, pointer, errors);
+			GenericContext genericContext = readGenericArray(unit, declaration, pointer, errors);
 			VarType returnType;
 			String funcName;
 			FunctionArgument[] funcArgs;

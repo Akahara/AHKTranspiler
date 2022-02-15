@@ -27,7 +27,6 @@ public abstract class VarType {
 	
 	/**
 	 * Returns true if this type's hierarchy contains a generic type.
-	 * <p>Only {@link VarGenericType} overrides this method
 	 */
 	public boolean hasGenericTyping() {
 		for(VarType t : getSubTypes())

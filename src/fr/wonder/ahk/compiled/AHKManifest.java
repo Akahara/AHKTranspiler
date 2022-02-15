@@ -68,8 +68,6 @@ public class AHKManifest {
 	public Unit entryPointUnit;
 	public FunctionSection entryPointFunction;
 
-	/* -------------------------- Python section -------------------------- */
-
 	/* ------------------------- Assembly section ------------------------- */
 	public void validateAsm(ErrorWrapper errors) {
 		if (BUILD_ARCHITECTURE == null || BUILD_ARCHITECTURE.isBlank())

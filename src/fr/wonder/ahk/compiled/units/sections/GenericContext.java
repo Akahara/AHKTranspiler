@@ -1,10 +1,10 @@
 package fr.wonder.ahk.compiled.units.sections;
 
 import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
+import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.utils.ArrayOperator;
@@ -14,19 +14,17 @@ public class GenericContext {
 	
 	public static final GenericContext NO_CONTEXT = new NoContext();
 	
-	public final VarGenericType[] generics;
-	public final GenericContext parentContext;
+	public final TypeParameter[] typeParameters;
 	public final GenericImplementationParameter[] gips;
 	
-	public GenericContext(GenericContext parentContext, VarGenericType[] generics) {
-		this.parentContext = parentContext;
-		this.generics = generics;
-		int gipCount = ArrayOperator.accumulate(generics, (acc, g) -> acc + g.typeRestrictions.length, 0);
+	public GenericContext(TypeParameter[] typeParameters) {
+		this.typeParameters = typeParameters;
+		int gipCount = ArrayOperator.accumulate(typeParameters, (acc, g) -> acc + g.typeRestrictions.length, 0);
 		this.gips = new GenericImplementationParameter[gipCount];
 		gipCount = 0;
-		for(VarGenericType g : generics) {
-			for(BlueprintRef bpRef : g.typeRestrictions) {
-				this.gips[gipCount++] = new GenericImplementationParameter(g, bpRef);
+		for(TypeParameter tp : typeParameters) {
+			for(BlueprintRef bpRef : tp.typeRestrictions) {
+				this.gips[gipCount++] = new GenericImplementationParameter(tp, bpRef);
 			}
 		}
 	}
@@ -40,63 +38,41 @@ public class GenericContext {
 	 * if no generic exists with the target name.
 	 */
 	public VarGenericType getGenericType(Token tk, ErrorWrapper errors) {
+		Assertions.assertTrue(tk.base == TokenBase.VAR_GENERIC, "Not a generic token");
 		Assertions.assertTrue(tk.text.length() == 1, "A generic has a non 1-length name");
 		char genericName = tk.text.charAt(0);
-		for(VarGenericType gt : generics) {
-			if(gt.name == genericName)
-				return gt;
+		for(TypeParameter tp : typeParameters) {
+			if(tp.name == genericName)
+				return tp.typeInstance;
 		}
-		if(parentContext != null)
-			return parentContext.getGenericType(tk, errors);
 		errors.add("Unknown generic used '" + genericName + "':" + tk.getErr());
 		return Invalids.GENERIC_TYPE;
 	}
 	
-	/**
-	 * Retrieve a generic type known by this context.
-	 * 
-	 * <p>
-	 * Contrary to {@link #getGenericType(Token, ErrorWrapper)} this method can and
-	 * will return null if there is no generic with the target name
-	 */
-	public VarGenericType retrieveGenericType(char name) {
-		for(VarGenericType gt : generics) {
-			if(gt.name == name)
-				return gt;
-		}
-		if(parentContext != null)
-			return parentContext.retrieveGenericType(name);
-		return null;
-	}
-	
-	public int gipIndex(BlueprintPrototype bp) {
-		for(int i = 0; i < gips.length; i++)
-			if(gips[i].typeRequirement.blueprint.equals(bp))
-				return i;
-		throw new IllegalArgumentException("This context does not implement blueprint " + bp);
-	}
+//	public int gipIndex(BlueprintPrototype bp) {
+//		for(int i = 0; i < gips.length; i++)
+//			if(gips[i].typeRequirement.blueprint.equals(bp))
+//				return i;
+//		throw new IllegalArgumentException("This context does not implement blueprint " + bp);
+//	}
 	
 	public boolean hasGenericMembers() {
-		return generics.length != 0;
+		return typeParameters.length != 0;
 	}
 	
-	public int indexOf(VarGenericType type) {
-		for(int i = 0; i < generics.length; i++) {
-			if(type == generics[i])
-				return i;
-		}
-		return -1;
+	public int indexOf(TypeParameter type) {
+		return ArrayOperator.indexOf(typeParameters, type);
 	}
 	
 	@Override
 	public String toString() {
-		return " " + Utils.genericBindingsString(generics);
+		return " " + Utils.typeParametersString(typeParameters);
 	}
 	
 	private static class NoContext extends GenericContext {
 		
 		private NoContext() {
-			super(null, new VarGenericType[0]);
+			super(new TypeParameter[0]);
 		}
 		
 		public VarGenericType getGenericType(Token tk, ErrorWrapper errors) {
@@ -110,6 +86,5 @@ public class GenericContext {
 		}
 		
 	}
-
 	
 }

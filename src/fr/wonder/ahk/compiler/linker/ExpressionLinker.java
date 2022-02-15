@@ -174,7 +174,7 @@ class ExpressionLinker {
 
 	private void linkConstructorExpression(Unit unit, ConstructorExp exp, GenericContext genericContext, ErrorWrapper errors) {
 		exp.constructor = Invalids.CONSTRUCTOR_PROTOTYPE;
-		exp.type = Invalids.TYPE;
+		exp.type = Invalids.STRUCT_TYPE;
 		
 		VarType baseType = exp.constructorType;
 		if(!(baseType instanceof VarStructType)) {
@@ -199,7 +199,7 @@ class ExpressionLinker {
 		
 		if(matchingConstructor == null) {
 			exp.constructor = Invalids.CONSTRUCTOR_PROTOTYPE;
-			exp.type = Invalids.TYPE;
+			exp.type = Invalids.STRUCT_TYPE;
 		} else {
 			exp.constructor = matchingConstructor;
 			exp.type = baseType;
@@ -268,8 +268,7 @@ class ExpressionLinker {
 			throw null;
 	}
 
-	private Expression linkFunctionExpression(Unit unit,
-			FunctionCallExp fexp, GenericContext functionGenericContext, ErrorWrapper errors) {
+	private Expression linkFunctionExpression(Unit unit, FunctionCallExp fexp, GenericContext functionGenericContext, ErrorWrapper errors) {
 		
 		FunctionExpression finalFunction;
 		VarFunctionType functionType;
@@ -292,7 +291,6 @@ class ExpressionLinker {
 					null,
 					functionGenericContext);
 			FunctionExp functionExpression = new FunctionExp(fexp, parametrizedFunc, pexp.typesParameters);
-//					new BoundFunctionPrototype(parametrizedFunc, boundType, functionGenericContext, gips));
 			finalFunction = functionExpression;
 			functionType = boundType;
 		} else if(fexp.getFunction().getType() instanceof VarFunctionType) {
@@ -314,10 +312,10 @@ class ExpressionLinker {
 					+ " are given:" + finalFunction.getErr());
 		} else if(functionType.hasGenericTyping()) {
 			errors.add("Function type has unresolved generic types:" + finalFunction.getErr());
+			functionType.hasGenericTyping();
 		} else {
 			for(int j = 0; j < functionType.arguments.length; j++) {
-				linker.checkAffectationType(finalFunction,
-						j, functionType.arguments[j], errors);
+				linker.checkAffectationType(finalFunction, j, functionType.arguments[j], errors);
 			}
 		}
 		

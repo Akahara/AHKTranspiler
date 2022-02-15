@@ -29,7 +29,9 @@ import fr.wonder.ahk.compiled.units.prototypes.BoundOverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter;
+import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 import fr.wonder.ahk.compiler.types.CompositionOperation;
 import fr.wonder.ahk.compiler.types.FunctionOperation;
 import fr.wonder.ahk.compiler.types.Operation;
@@ -45,6 +47,7 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.exceptions.UnreachableException;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class ExpressionWriter {
 	
@@ -93,22 +96,30 @@ public class ExpressionWriter {
 	public void writeFunctionExp(FunctionExpression functionExpression, ErrorWrapper errors) {
 		
 		Expression[] arguments;
-		BlueprintTypeParameter[] typesParameters = null;
+		BlueprintTypeParameter[] bptps = null;
 		int argsSpace;
 		
 		FunctionPrototype fexpFunctionPrototype = null;	// only used by FunctionExp
 		MemAddress fcexpClosurePointer = null;			// only used by FunctionCallExp
+		
+		// FIX <<<< currently the type parameters are not kept in function calls
+		// todo: when a call to something like List.at<[int]>(list, 0) is made,
+		// store [int] in the function call expression even if there are no GIPs
+		// to bind. otherwise the null instance of X (in func <[X]> X at(List<[X]> list, int index) )
+		// cannot be written
 		
 		// prepare call
 		if(functionExpression instanceof FunctionExp) {
 			FunctionExp fexp = (FunctionExp) functionExpression;
 			arguments = fexp.getArguments();
 			fexpFunctionPrototype = fexp.function;
-			typesParameters = fexp.typesParameters;
-			argsSpace = computeFunctionCallStackSpace(typesParameters, arguments);
+			bptps = fexp.typesParameters;
+			argsSpace = computeFunctionCallStackSpace(fexp.function.genericContext.typeParameters, bptps, arguments);
 		} else if(functionExpression instanceof FunctionCallExp) {
-			arguments = ((FunctionCallExp) functionExpression).getArguments();
-			argsSpace = computeFunctionCallStackSpace(null, arguments);
+			FunctionCallExp fexp = (FunctionCallExp) functionExpression;
+			arguments = fexp.getArguments();
+			argsSpace = computeFunctionCallStackSpace(null, null, arguments);
+			argsSpace += MemSize.POINTER_SIZE; // add closure pointer space
 			fcexpClosurePointer = new MemAddress(Register.RSP, argsSpace-MemSize.POINTER_SIZE);
 		} else {
 			throw new IllegalArgumentException("Expression is not callable: " + functionExpression.getClass());
@@ -125,7 +136,7 @@ public class ExpressionWriter {
 			writer.instructions.mov(fcexpClosurePointer, Register.RAX);
 		}
 		
-		writeFunctionArguments(typesParameters, arguments, errors);
+		writeFunctionArguments(bptps, arguments, errors);
 			
 		if(functionExpression instanceof FunctionExp) {
 			writer.instructions.call(RegistryManager.getFunctionRegistry(fexpFunctionPrototype));
@@ -139,7 +150,7 @@ public class ExpressionWriter {
 	}
 	
 	private void writeOperatorFunction(OperationExp exp, ErrorWrapper errors) {
-		int argsSpace = computeFunctionCallStackSpace(null, exp.getExpressions());
+		int argsSpace = computeFunctionCallStackSpace(null, null, exp.getExpressions());
 		writer.mem.addStackOffset(argsSpace);
 		writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
 		writeFunctionArguments(null, exp.getOperands(), errors);
@@ -155,10 +166,12 @@ public class ExpressionWriter {
 		writer.mem.addStackOffset(-argsSpace);
 	}
 	
-	private int computeFunctionCallStackSpace(BlueprintTypeParameter[] typesParameters, Expression[] args) {
+	private int computeFunctionCallStackSpace(TypeParameter[] typeParameters, BlueprintTypeParameter[] bptps, Expression[] args) {
 		int argsSpace = args.length * MemSize.POINTER_SIZE;
-		if(typesParameters != null)
-			argsSpace += typesParameters.length * MemSize.POINTER_SIZE;
+		if(typeParameters != null)
+			argsSpace += typeParameters.length * MemSize.POINTER_SIZE;
+		if(bptps != null)
+			argsSpace += bptps.length * MemSize.POINTER_SIZE;
 		return argsSpace;
 	}
 	
@@ -284,16 +297,32 @@ public class ExpressionWriter {
 	}
 
 	private void writeConstructorExp(ConstructorExp exp, ErrorWrapper errors) {
-		ConcreteType type = writer.unitWriter.types.getConcreteType(exp.getType().structure);
+		StructPrototype structType = exp.getType().structure;
+		ConcreteType concreteType = writer.unitWriter.types.getConcreteType(structType);
 		ConstructorPrototype constructor = exp.constructor;
-		writer.unitWriter.callAlloc(type.size);
+		writer.unitWriter.callAlloc(concreteType.size);
+		
+		// copy non-constructor-parameter fields from null instance
+		String nullRegistry = writer.unitWriter.registries.getStructNullRegistry(structType);
+		for(int i = 0; i < concreteType.members.length; i++) {
+			String fieldName = concreteType.members[i].getName();
+			if(!ArrayOperator.contains(constructor.argNames, fieldName)) {
+				int fieldOffset = concreteType.getOffset(fieldName);
+				MemAddress fieldAddress = new MemAddress(Register.RAX, fieldOffset);
+				MemAddress nullInstanceFieldAddress = new MemAddress(new LabelAddress(nullRegistry), fieldOffset);
+				writer.instructions.mov(Register.RBX, nullInstanceFieldAddress);
+				writer.instructions.mov(fieldAddress, Register.RBX);
+			}
+		}
+		
+		// store constructor parameters into instance fields
 		if(constructor.argNames.length == 0)
 			return;
 		writer.mem.addStackOffset(MemSize.POINTER_SIZE);
 		writer.instructions.push(Register.RAX);
 		MemAddress instanceAddress = new MemAddress(Register.RSP);
 		for(int i = 0; i < constructor.argTypes.length; i++) {
-			int fieldOffset = type.getOffset(constructor.argNames[i]);
+			int fieldOffset = concreteType.getOffset(constructor.argNames[i]);
 			MemAddress fieldAddress = new MemAddress(instanceAddress, fieldOffset);
 			writer.mem.writeTo(fieldAddress, exp.expressions[i], errors);
 		}
@@ -311,8 +340,7 @@ public class ExpressionWriter {
 			VarFunctionType funcType = (VarFunctionType) type;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
 		} else if(type instanceof VarGenericType) {
-			errors.add("Generic type null instance" + sourceElement.getErr());
-//			throw new UnimplementedException("Generic type null instance" + sourceElement.getErr());
+			writer.instructions.mov(Register.RAX, writer.sectionArguments.getNullInstanceLocation((VarGenericType) type));
 		} else if(type == VarType.STR) {
 			writer.instructions.mov(Register.RAX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(type instanceof VarNativeType) {

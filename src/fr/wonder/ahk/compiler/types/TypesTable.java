@@ -217,7 +217,7 @@ public class TypesTable {
 	private Operation getOperationInGenerics(OperationQuery query, ErrorWrapper errors) {
 		
 		if(query.lo.equals(query.ro)) {
-			BlueprintRef[] typeRestrictions = ((VarGenericType) query.lo).typeRestrictions;
+			BlueprintRef[] typeRestrictions = ((VarGenericType) query.lo).typeParameter.typeRestrictions;
 			for(BlueprintRef r : typeRestrictions) {
 				for(OverloadedOperatorPrototype op : r.blueprint.operators) {
 					if(op.operator == query.operator && op.loType == VarSelfType.SELF && op.roType == VarSelfType.SELF)
@@ -231,7 +231,7 @@ public class TypesTable {
 		
 		VarGenericType genericType = (VarGenericType) (query.lo instanceof VarGenericType ? query.lo : query.ro);
 		
-		for(BlueprintRef r : genericType.typeRestrictions) {
+		for(BlueprintRef r : genericType.typeParameter.typeRestrictions) {
 			for(OverloadedOperatorPrototype op : r.blueprint.operators) {
 				if(op.operator == query.operator && 
 						isCompatibleGenericOperand(op.loType, query.lo) &&

@@ -2,9 +2,11 @@ base ahk;
 
 unit List;
 
-struct List<[X]> {
+global struct List<[X]> {
 	int size = 0;
 	X[] array = [:0];
+	
+	global constructor();
 }
 
 func <[X]> void ensureRemainingCapacity(List<[X]> list) {

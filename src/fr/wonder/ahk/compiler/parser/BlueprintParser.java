@@ -60,7 +60,7 @@ class BlueprintParser extends AbstractParser {
 					errors.add("Blueprint functions cannot have a body:" + unit.source.getErr(line));
 				}
 				FunctionSection func = FunctionDeclarationParser.parseFunctionDeclaration(
-						unit, line, line.length, GenericContext.NO_CONTEXT, mods, errors);
+						unit, line, line.length, mods, errors);
 				functions.add(func);
 				
 			} else if(line[0].base == TokenBase.KW_OPERATOR) {

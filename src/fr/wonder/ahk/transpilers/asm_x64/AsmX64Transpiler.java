@@ -3,7 +3,6 @@ package fr.wonder.ahk.transpilers.asm_x64;
 import java.io.File;
 import java.io.IOException;
 
-import fr.wonder.ahk.AHKTranspiler;
 import fr.wonder.ahk.compiled.AHKManifest;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
@@ -19,15 +18,23 @@ import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.UnitWriter;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
+import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.files.FilesUtils;
+import fr.wonder.commons.loggers.AnsiLogger;
+import fr.wonder.commons.loggers.Logger;
 import fr.wonder.commons.systems.process.ProcessUtils;
 import fr.wonder.commons.utils.ArrayOperator;
 
 public class AsmX64Transpiler implements Transpiler {
 	
 	private static final String ASM_PATH = "asm/", OBJ_PATH = "obj/";
+	
+	private final Logger logger;
+	
+	public AsmX64Transpiler(Logger logger) {
+		this.logger = logger;
+	}
 	
 	@Override
 	public String getName() {
@@ -109,7 +116,7 @@ public class AsmX64Transpiler implements Transpiler {
 		return file;
 	}
 	
-	private static void runExternalCompiler(LinkedHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException, WrappedException {
+	private void runExternalCompiler(LinkedHandle handle, File dir, String[] files, ErrorWrapper errors) throws IOException, WrappedException {
 		if(files.length == 0)
 			return;
 		
@@ -141,11 +148,11 @@ public class AsmX64Transpiler implements Transpiler {
 		errors.assertNoErrors();
 	}
 	
-	private static int runCommand(String cmd, File dir) throws IOException {
-		AHKTranspiler.logger.info("Running command || " + cmd);
+	private int runCommand(String cmd, File dir) throws IOException {
+		logger.info("Running command || " + cmd);
 		ProcessBuilder pb = new ProcessBuilder(cmd.split(" "));
 		Process p = pb.directory(dir).start();
-		Thread redirect = ProcessUtils.redirectOutput(p, AHKTranspiler.logger);
+		Thread redirect = ProcessUtils.redirectOutput(p, logger);
 		int split = cmd.indexOf(' ');
 		cmd = split == -1 ? cmd : cmd.substring(0, split);
 		cmd = cmd.startsWith("/") ? cmd.substring(cmd.lastIndexOf('/', split)+1) : cmd;
@@ -156,7 +163,7 @@ public class AsmX64Transpiler implements Transpiler {
 		String signal = ProcessUtils.getErrorSignal(ec);
 		if(signal == null) signal = "";
 		try { redirect.join(); } catch (InterruptedException e) { }
-		AHKTranspiler.logger.info(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec + " " + signal);
+		logger.info(" || exit code 0x" + Integer.toHexString(ec) + " = " + ec + " " + signal);
 		return ec;
 	}
 

@@ -1,7 +1,7 @@
 package fr.wonder.ahk.compiled.units.prototypes.blueprints;
 
-import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
+import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 
 /**
  * <b>GIP</b>
@@ -33,17 +33,17 @@ import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
  */
 public class GenericImplementationParameter {
 	
-	public final VarGenericType genericType;
+	public final TypeParameter typeParameter;
 	public final BlueprintRef typeRequirement;
 	
-	public GenericImplementationParameter(VarGenericType genericType, BlueprintRef typeRequirement) {
-		this.genericType = genericType;
+	public GenericImplementationParameter(TypeParameter typeParameter, BlueprintRef typeRequirement) {
+		this.typeParameter = typeParameter;
 		this.typeRequirement = typeRequirement;
 	}
 	
 	@Override
 	public String toString() {
-		return genericType.toString() + ":" + typeRequirement;
+		return typeParameter.toString() + ":" + typeRequirement;
 	}
 	
 }

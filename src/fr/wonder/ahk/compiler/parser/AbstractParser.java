@@ -9,7 +9,6 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarBoundStructType;
-import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarSelfType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
@@ -21,6 +20,7 @@ import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
+import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -304,8 +304,7 @@ public class AbstractParser {
 		return new Modifier(line[0].text.substring(1), arguments);
 	}
 	
-	public static GenericContext readGenericArray(Unit unit, Token[] line,
-			GenericContext parentContext, Pointer p, ErrorWrapper errors) throws ParsingException {
+	public static GenericContext readGenericArray(Unit unit, Token[] line, Pointer p, ErrorWrapper errors) throws ParsingException {
 		
 		if(p.position == line.length)
 			throw new IllegalArgumentException("No generic context");
@@ -313,7 +312,7 @@ public class AbstractParser {
 			return GenericContext.NO_CONTEXT;
 		p.position++;
 		
-		Map<Character, VarGenericType> generics = new LinkedHashMap<>();
+		Map<Character, TypeParameter> typeParameters = new LinkedHashMap<>();
 		
 		assertHasNext(line, p, "Expected generic array", errors);
 		if(line[p.position].base == TokenBase.TK_GENERIC_BINDING_END) {
@@ -333,28 +332,24 @@ public class AbstractParser {
 			Assertions.assertTrue(tk.text.length() == 1, "A generic has a non 1-length name" + tk.getErr());
 			char name = tk.text.charAt(0);
 			
-			BlueprintRef[] typeRestrictions;
-			
-			if((parentContext != null && parentContext.retrieveGenericType(name) != null) ||
-					generics.containsKey(name)) {
-				errors.add("Cannot use already bound generic '" + name + "':" + tk.getErr());
-			}
-			
 			assertHasNext(line, p, "Unfinished generic array", errors);
 			tk = line[p.position++];
+			
+			BlueprintRef[] typeRestrictions;
 			
 			if(tk.base == TokenBase.TK_COLUMN) {
 				typeRestrictions = readGenericRestriction(unit, line, p, errors);
 				assertHasNext(line, p, "Unfinished generic array", errors);
 				tk = line[p.position++];
 			} else {
-				typeRestrictions = VarGenericType.NO_TYPE_RESTRICTION;
+				typeRestrictions = TypeParameter.NO_TYPE_RESTRICTION;
 			}
 
-			generics.put(name, new VarGenericType(name, typeRestrictions));
+			typeParameters.put(name, new TypeParameter(name, typeRestrictions));
 			
 			if(tk.base == TokenBase.TK_GENERIC_BINDING_END) {
-				return new GenericContext(parentContext, generics.values().toArray(VarGenericType[]::new));
+				TypeParameter[] typeParametersArray = typeParameters.values().toArray(TypeParameter[]::new);
+				return new GenericContext(typeParametersArray);
 			} else if(tk.base != TokenBase.TK_COMMA) {
 				errors.add("Expected ',' in generic array:" + tk.getErr());
 			}

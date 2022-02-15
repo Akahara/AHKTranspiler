@@ -131,7 +131,7 @@ public class UnitParser extends AbstractParser {
 				}
 				int functionEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
 				FunctionSection func = FunctionDeclarationParser.parseFunctionDeclaration(
-						unit, line, line.length-1, null, mods, errors);
+						unit, line, line.length-1, mods, errors);
 				FunctionDeclarationParser.parseFunctionBody(func, lines, i+1, functionEnd, errors);
 				i = functionEnd;
 				functions.add(func);

@@ -45,7 +45,7 @@ public class FunctionWriter extends AbstractWriter {
 	}
 	
 	private FunctionWriter(UnitWriter unitWriter, FunctionSection func, int functionStackSpace) {
-		super(unitWriter, new FunctionArgumentsLayout(func.arguments, func.genericContext.gips), functionStackSpace);
+		super(unitWriter, new FunctionArgumentsLayout(func), functionStackSpace);
 		this.stackSpace = functionStackSpace;
 		this.func = func;
 		fillLabelsMap();

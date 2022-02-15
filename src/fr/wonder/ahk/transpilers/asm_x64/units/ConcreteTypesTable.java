@@ -8,7 +8,6 @@ import java.util.Map;
 import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 
 /** A single instance of this class is necessary */
 public class ConcreteTypesTable {
@@ -29,11 +28,7 @@ public class ConcreteTypesTable {
 	private static ConcreteType computeConcreteType(StructPrototype prototype) {
 		List<VariablePrototype> members = Arrays.asList(prototype.members);
 		members.sort((m1, m2) -> m1.getName().compareTo(m2.getName()));
-		List<GenericImplementationParameter> gips = Arrays.asList(prototype.genericContext.gips);
-		gips.sort((m1, m2) -> m1.typeRequirement.name.compareTo(m2.typeRequirement.name)); // TODO order gips correctly
-		return new ConcreteType(
-				gips.toArray(GenericImplementationParameter[]::new),
-				members.toArray(VariablePrototype[]::new));
+		return new ConcreteType(members.toArray(VariablePrototype[]::new));
 	}
 	
 }

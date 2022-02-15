@@ -1,10 +1,13 @@
 base fr.wonder.main;
 
 import ahk.Kernel;
-import ahk.Strings;
+import ahk.List;
 
 unit Main;
 
 global func int main() {
-	Kernel.out << 2.5 + "str" + true + 3;
+	List<[int]> list = List<[int]>();
+	int i = List.at<[int]>(list, 0);
+	Kernel.out << i << "\n";
+	return 5;
 }

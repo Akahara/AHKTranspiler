@@ -41,7 +41,7 @@ class StructSectionParser extends AbstractParser {
 			Pointer p = new Pointer(1);
 
 			String structName = assertToken(declaration, p, TokenBase.VAR_STRUCT, "Expected structure name", errors).text;
-			GenericContext genc = readGenericArray(unit, declaration, null, p, errors);
+			GenericContext genc = readGenericArray(unit, declaration, p, errors);
 			BlueprintRef[] implementedBlueprints;
 			
 			if(declaration[p.position].base == TokenBase.TK_COLUMN) {

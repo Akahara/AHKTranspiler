@@ -214,8 +214,8 @@ public class UnitWriter {
 		instructions.createStackFrame();
 		
 		for(StructSection struct : unit.structures) {
-			if(!ConcreteTypesTable.hasNullInstance(struct.getPrototype()))
-				continue;
+//			if(!ConcreteTypesTable.hasNullInstance(struct.getPrototype()))
+//				continue;
 			ConcreteType concreteType = types.getConcreteType(struct.getPrototype());
 			String nullLabel = registries.getStructNullRegistry(struct.getPrototype());
 			MemAddress nullAddress = new MemAddress(new LabelAddress(nullLabel));

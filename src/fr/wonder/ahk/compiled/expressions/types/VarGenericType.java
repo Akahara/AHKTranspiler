@@ -1,32 +1,23 @@
 package fr.wonder.ahk.compiled.expressions.types;
 
-import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
-import fr.wonder.ahk.utils.Utils;
+import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 
 public class VarGenericType extends VarType {
 	
-	public static final BlueprintRef[] NO_TYPE_RESTRICTION = new BlueprintRef[0];
+	public final TypeParameter typeParameter;
 	
-	public final char name;
-	public final BlueprintRef[] typeRestrictions;
-	
-	public VarGenericType(char name, BlueprintRef[] typeRestrictions) {
-		this.name = name;
-		this.typeRestrictions = typeRestrictions;
+	public VarGenericType(TypeParameter typeParameter) {
+		this.typeParameter = typeParameter;
 	}
 	
 	@Override
 	public String getName() {
-		return String.valueOf(name);
+		return String.valueOf(typeParameter.name);
 	}
 	
-	public String getExpandedName() {
-		return name + (typeRestrictions.length == 0 ? "" : ":" + Utils.toString(typeRestrictions));
-	}
-
 	@Override
 	public String getSignature() {
-		return "G" + name;
+		return "G" + typeParameter.name;
 	}
 
 	@Override
@@ -36,7 +27,7 @@ public class VarGenericType extends VarType {
 
 	@Override
 	public boolean equals(Object o) {
-		return o instanceof VarGenericType && ((VarGenericType) o).name == name;
+		return o instanceof VarGenericType && ((VarGenericType) o).typeParameter == typeParameter;
 	}
 	
 	@Override

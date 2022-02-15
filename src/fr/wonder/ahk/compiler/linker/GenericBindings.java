@@ -1,6 +1,7 @@
 package fr.wonder.ahk.compiler.linker;
 
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
+import fr.wonder.ahk.compiled.expressions.types.VarBoundGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarBoundStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarCompositeType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
@@ -21,6 +22,7 @@ import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter
 import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.GenericContext;
+import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.exceptions.UnreachableException;
@@ -51,31 +53,31 @@ public class GenericBindings {
 			return true;
 		}
 		
-		if(receiverContext.generics.length != bindings.length) {
-			errors.add("Invalid number of generics, type expected " + receiverContext.generics.length +
+		if(receiverContext.typeParameters.length != bindings.length) {
+			errors.add("Invalid number of generics, type expected " + receiverContext.typeParameters.length +
 					" but got " + bindings.length + queryElement.getErr());
 			return false;
 		}
 		
 		boolean validBinding = true;
 		for(int i = 0; i < bindings.length; i++) {
-			if(!isValidBinding(receiverContext.generics[i], bindings[i])) {
+			if(!isValidBinding(receiverContext.typeParameters[i], bindings[i])) {
 				validBinding = false;
 				errors.add("Invalid binding used: " + bindings[i] +
-						" is not acceptable for generic " + receiverContext.generics[i] +
-						" (requires " + StringUtils.join(",", receiverContext.generics[i].typeRestrictions, bpref->bpref.blueprint.getName()) +
+						" is not acceptable for generic " + receiverContext.typeParameters[i] +
+						" (requires " + StringUtils.join(",", receiverContext.typeParameters[i].typeRestrictions, bpref->bpref.blueprint.getName()) +
 						")"+ queryElement.getErr());
 			}
 		}
 		return validBinding;
 	}
 	
-	private static boolean isValidBinding(VarGenericType generic, VarType binding) {
-		if(generic.typeRestrictions.length == 0)
+	private static boolean isValidBinding(TypeParameter typeParameter, VarType binding) {
+		if(typeParameter.typeRestrictions.length == 0)
 			return true;
 		if(binding instanceof VarStructType) {
 			StructPrototype structure = ((VarStructType) binding).structure;
-			for(BlueprintRef requiredBlueprint : generic.typeRestrictions) {
+			for(BlueprintRef requiredBlueprint : typeParameter.typeRestrictions) {
 				boolean found = false;
 				for(BlueprintImplementation impl : structure.implementedBlueprints) {
 					if(impl.bpRef.equals(requiredBlueprint)) {
@@ -88,8 +90,8 @@ public class GenericBindings {
 			}
 			return true;
 		} else if(binding instanceof VarGenericType) {
-			BlueprintRef[] implementedBlueprints = ((VarGenericType) binding).typeRestrictions;
-			for(BlueprintRef requiredBlueprint : generic.typeRestrictions) {
+			BlueprintRef[] implementedBlueprints = ((VarGenericType) binding).typeParameter.typeRestrictions;
+			for(BlueprintRef requiredBlueprint : typeParameter.typeRestrictions) {
 				boolean found = false;
 				for(BlueprintRef impl : implementedBlueprints) {
 					if(impl.equals(requiredBlueprint)) {
@@ -184,11 +186,11 @@ public class GenericBindings {
 	
 	public VarType bindType(GenericContext context, VarType type, VarType[] bindings, VarType selfBinding, GenericContext bindingsContext) {
 		if(type instanceof VarGenericType) {
-			int index = context.indexOf((VarGenericType) type);
+			int index = context.indexOf(((VarGenericType) type).typeParameter);
 			if(index == -1)
 				return type; // this generic is declared in another context
 							 // ie. struct<X> that declare a generic function f<Y> that has nothing to do with X
-			return bindings[index];
+			return asBindingType(bindings[index]);
 			
 		} else if(type instanceof VarNativeType) {
 			return type;
@@ -207,7 +209,7 @@ public class GenericBindings {
 			
 		} else if(type instanceof VarBoundStructType) {
 			VarBoundStructType btype = (VarBoundStructType) type;
-			VarBoundStructType newType = new VarBoundStructType(btype.name, bindings);
+			VarBoundStructType newType = new VarBoundStructType(btype.name, asBindingTypes(bindings));
 			newType.structure = bindGenerics(btype.structure, bindings, bindingsContext);
 			return newType;
 			
@@ -246,7 +248,7 @@ public class GenericBindings {
 		BlueprintTypeParameter[] typesParameters = new BlueprintTypeParameter[genericContext.gips.length];
 		int gipIndex = 0;
 		for(int i = 0; i < genericContext.gips.length; i++) {
-			int bindingIndex = genericContext.indexOf(genericContext.gips[i].genericType);
+			int bindingIndex = genericContext.indexOf(genericContext.gips[i].typeParameter);
 			typesParameters[gipIndex++] = getBPTP(genericContext.gips[i], (VarStructType) genericBindings[bindingIndex]);
 		}
 		return typesParameters;
@@ -260,6 +262,23 @@ public class GenericBindings {
 		}
 		throw new UnreachableException("Invalid type binding, structure " +
 				binding + " does not implement " + gip.typeRequirement);
+	}
+	
+	private static VarType asBindingType(VarType bindingType) {
+		if(bindingType instanceof VarGenericType)
+			return new VarBoundGenericType((VarGenericType) bindingType);
+		return bindingType;
+	}
+	
+	private static VarType[] asBindingTypes(VarType[] bindingTypes) {
+		VarType[] bound = new VarType[bindingTypes.length];
+		boolean hadUnbound = false;
+		for(int i = 0; i < bindingTypes.length; i++) {
+			bound[i] = asBindingType(bindingTypes[i]);
+			if(bound[i] != bindingTypes[i])
+				hadUnbound = true;
+		}
+		return hadUnbound ? bound : bindingTypes;
 	}
 
 }
