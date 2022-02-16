@@ -9,8 +9,6 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
-import fr.wonder.ahk.compiled.units.sections.Blueprint;
-import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
@@ -30,7 +28,6 @@ public class Unit {
 	public VariableDeclaration[] variables;
 	public FunctionSection[] functions;
 	public StructSection[] structures;
-	public Blueprint[] blueprints;
 	public List<SimpleLambda> lambdas = new ArrayList<>();
 	
 	public Alias[] accessibleAliases;
@@ -44,7 +41,6 @@ public class Unit {
 	 * will be linked to its struct declaration by the linker.
 	 */
 	public final ExternalAccesses<VarStructType> usedStructTypes = new ExternalAccesses<>(VarStructType::new);
-	public final ExternalAccesses<BlueprintRef> usedBlueprintTypes = new ExternalAccesses<>(BlueprintRef::new);
 	
 	/** Set by {@link Prototypes#buildPrototype(Unit)} */
 	public UnitPrototype prototype;

@@ -6,8 +6,6 @@ import fr.wonder.ahk.compiled.units.prototypes.AliasPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
-import fr.wonder.ahk.compiled.units.sections.Blueprint;
-import fr.wonder.ahk.compiled.units.sections.BlueprintOperator;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
@@ -88,44 +86,4 @@ public class Signatures {
 				computedSignature);
 	}
 	
-	private static String bpSig(Blueprint bp) {
-		return bp.unit.fullBase + '@' + bp.name;
-	}
-	
-	public static Signature of(Blueprint bp) {
-		return new Signature(
-				bp.unit.fullBase,
-				bp.name,
-				bpSig(bp));
-	}
-
-	public static Signature of(VariableDeclaration var, Blueprint bp) {
-		return new Signature(
-				bpSig(bp),
-				var.name,
-				var.name);
-	}
-
-	public static Signature of(FunctionSection func, Blueprint bp) {
-		return new Signature(
-				bpSig(bp),
-				func.name,
-				func.name + "_" + func.getFunctionType().getSignature());
-	}
-	
-	public static Signature of(OverloadedOperatorPrototype operator, Blueprint bp) {
-		return new Signature(
-				bpSig(bp),
-				"operator_"+operator.operator.toString(),
-				"operator_"+operator.loType+"_"+operator.operator+"_"+
-						operator.roType+"_"+operator.resultType);
-	}
-
-	public static Signature of(BlueprintOperator op, Blueprint bp) {
-		return new Signature(
-				bpSig(bp),
-				"operator_"+op.operator.toString(),
-				"operator_"+op.leftOperand+"_"+op.operator+"_"+
-						op.rightOperand+"_"+op.resultType);
-	}
 }

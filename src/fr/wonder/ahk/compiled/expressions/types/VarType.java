@@ -24,16 +24,6 @@ public abstract class VarType {
 	public String toString() {
 		return getName();
 	}
-	
-	/**
-	 * Returns true if this type's hierarchy contains a generic type.
-	 */
-	public boolean hasGenericTyping() {
-		for(VarType t : getSubTypes())
-			if(t.hasGenericTyping())
-				return true;
-		return false;
-	}
 
 	/**
 	 * This method must be used rather than the '==' operator, multiple instances of the

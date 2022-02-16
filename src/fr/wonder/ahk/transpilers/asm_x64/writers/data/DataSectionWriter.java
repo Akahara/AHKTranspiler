@@ -9,10 +9,6 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
@@ -27,7 +23,6 @@ import fr.wonder.ahk.transpilers.common_x64.declarations.EmptyLine;
 import fr.wonder.ahk.transpilers.common_x64.declarations.ExternDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalDeclaration;
 import fr.wonder.ahk.transpilers.common_x64.declarations.GlobalVarDeclaration;
-import fr.wonder.ahk.transpilers.common_x64.declarations.Label;
 import fr.wonder.ahk.transpilers.common_x64.instructions.Instruction;
 import fr.wonder.ahk.transpilers.common_x64.macros.StringDefinition;
 
@@ -137,42 +132,6 @@ public class DataSectionWriter {
 		instructions.skip();
 	}
 	
-	public void writeBIPs() {
-		if(!unitHasBIPs())
-			return;
-		instructions.comment("BIPs");
-		for(StructSection struct : unit.structures) {
-			for(BlueprintImplementation bp : struct.implementedBlueprints) {
-				if(!isNonEmptyBIP(bp))
-					continue;
-				// the order in which values are declared depends on the blueprint layout
-				instructions.add(new Label(RegistryManager.getStructBlueprintImplRegistry(bp)));
-				for(FunctionPrototype fop : bp.functions)
-					instructions.add(new GlobalVarDeclaration(MemSize.POINTER, RegistryManager.getFunctionRegistry(fop)));
-				for(VariablePrototype vop : bp.variables)
-					instructions.add(new GlobalVarDeclaration(MemSize.POINTER, 
-							""+writer.types.getConcreteType(struct.getPrototype()).getOffset(vop.getName())));
-				for(OverloadedOperatorPrototype oop : bp.operators)
-					instructions.add(new GlobalVarDeclaration(MemSize.POINTER, RegistryManager.getFunctionRegistry(oop.function)));
-			}
-		}
-		instructions.skip();
-	}
-	
-	private boolean unitHasBIPs() {
-		for(StructSection struct : unit.structures) {
-			for(BlueprintImplementation bip : struct.implementedBlueprints) {
-				if(isNonEmptyBIP(bip))
-					return true;
-			}
-		}
-		return false;
-	}
-	
-	private static boolean isNonEmptyBIP(BlueprintImplementation bip) {
-		return bip.functions.length > 0 || bip.operators.length > 0 || bip.variables.length > 0;
-	}
-
 	public void writeStrConstants(List<StrLiteral> strConstants) {
 		if(strConstants.isEmpty())
 			return;

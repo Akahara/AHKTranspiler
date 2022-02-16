@@ -2,8 +2,6 @@ package fr.wonder.ahk.compiler.types;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
-import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.utils.Assertions;
 
 /**
@@ -41,12 +39,10 @@ public class CompositionOperation extends Operation {
 	}
 	
 	private static VarFunctionType getComposedType(VarFunctionType l, VarFunctionType r, Operator o) {
-		if(l.genericContext.hasGenericMembers() || r.genericContext.hasGenericMembers())
-			throw new UnimplementedException("Generic functions composition"); // TODO implement generic function composition
 		if(o == Operator.SHR) {
-			return new VarFunctionType(r.returnType, l.arguments, GenericContext.NO_CONTEXT);
+			return new VarFunctionType(r.returnType, l.arguments);
 		} else {
-			return new VarFunctionType(l.returnType, r.arguments, GenericContext.NO_CONTEXT);
+			return new VarFunctionType(l.returnType, r.arguments);
 		}
 	}
 	

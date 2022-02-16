@@ -14,11 +14,6 @@ public class ConcreteTypesTable {
 	
 	private final Map<String, ConcreteType> concreteTypes = new HashMap<>();
 	
-	public static boolean hasNullInstance(StructPrototype structure) {
-		// if a structure must be bound, it cannot have unbound null instances
-		return !structure.hasGenericBindings();
-	}
-	
 	public ConcreteType getConcreteType(StructPrototype structure) {
 		Signature structSignature = structure.getSignature();
 		String key = structSignature.declaringUnit + '@' + structSignature.name;

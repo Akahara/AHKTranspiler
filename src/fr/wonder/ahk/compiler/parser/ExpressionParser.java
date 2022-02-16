@@ -18,7 +18,6 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
-import fr.wonder.ahk.compiled.expressions.ParameterizedExp;
 import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
@@ -26,7 +25,6 @@ import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
@@ -147,26 +145,22 @@ public class ExpressionParser extends AbstractParser {
 		return current;
 	}
 	
-	public static Expression parseExpression(Unit unit, Token[] line, GenericContext genc,
-			int start, int stop, ErrorWrapper errors) {
-		return new ExpressionParser(unit, line, genc, errors).parseExpression(getVisibleSection(line, start, stop));
+	public static Expression parseExpression(Unit unit, Token[] line, int start, int stop, ErrorWrapper errors) {
+		return new ExpressionParser(unit, line, errors).parseExpression(getVisibleSection(line, start, stop));
 	}
 	
-	public static Expression[] parseArgumentList(Unit unit, Token[] line, GenericContext genc,
-			int start, int stop, ErrorWrapper errors) {
-		return new ExpressionParser(unit, line, genc, errors).parseArgumentList(getVisibleSection(line, start, stop));
+	public static Expression[] parseArgumentList(Unit unit, Token[] line, int start, int stop, ErrorWrapper errors) {
+		return new ExpressionParser(unit, line, errors).parseArgumentList(getVisibleSection(line, start, stop));
 	}
 	
 	
 	private final Unit unit;
 	private final Token[] line;
-	private final GenericContext genc;
 	private final ErrorWrapper errors;
 	
-	private ExpressionParser(Unit unit, Token[] line, GenericContext genc, ErrorWrapper errors) {
+	private ExpressionParser(Unit unit, Token[] line, ErrorWrapper errors) {
 		this.unit = unit;
 		this.line = line;
-		this.genc = genc;
 		this.errors = errors;
 	}
 	
@@ -231,7 +225,7 @@ public class ExpressionParser extends AbstractParser {
 				errors.add("Cannot cast to a struct type:" + typeToken.getErr());
 				type = Invalids.TYPE;
 			} else {
-				type = parseType(unit, line, genc, new Pointer(section.start), ALLOW_NONE, errors);
+				type = parseType(unit, line, new Pointer(section.start), errors);
 			}
 			if(type != null) {
 				Expression casted = parseExpression(lastSection);
@@ -263,8 +257,6 @@ public class ExpressionParser extends AbstractParser {
 					return parseArrayExpression(section);
 				else
 					return parseIndexingExpression(section);
-			} else if(lastSection.type == SectionToken.SEC_GENERIC_BINDING) {
-				return parseParametrizedExpression(section);
 			}
 			throw new UnreachableException("Invalid section type " + lastSection.type);
 		}
@@ -360,24 +352,6 @@ public class ExpressionParser extends AbstractParser {
 		return arguments.toArray(Expression[]::new);
 	}
 	
-	private VarType[] parseGenericBindings(Section section) {
-		if(section.type != SectionToken.SEC_GENERIC_BINDING)
-			throw new IllegalArgumentException("Not a generic binding");
-		Pointer p = new Pointer(section.start);
-		List<VarType> bindings = new ArrayList<>();
-		while(true) {
-			bindings.add(parseType(unit, line, genc, p, ALLOW_NONE, errors));
-			if(p.position == section.stop) {
-				break;
-			} else if(line[p.position].base != TokenBase.TK_COMMA) {
-				errors.add("Expected ',' in generic binding:" + line[p.position].getErr());
-				break;
-			}
-			p.position++;
-		}
-		return bindings.toArray(VarType[]::new);
-	}
-
 	/** Assumes that the section has its size >= 3 and that the second-to-last token is a dot */
 	private Expression parseDirectAccessExpression(Section section) {
 		Token memberToken = line[section.stop-1];
@@ -403,23 +377,9 @@ public class ExpressionParser extends AbstractParser {
 		Expression[] arguments = parseArgumentList(argsSection);
 		Pointer p = new Pointer(section.start);
 		VarType structType = unit.getStructOrAliasType(line[p.position++]);
-		VarType[] genericBindings = null;
-		if(section.subsections.size() != 1) {
-			Section genericsSection = section.subsections.get(section.subsections.size()-2);
-			genericBindings = parseGenericBindings(genericsSection);
-			p.position = genericsSection.stop+1;
-		}
 		if(p.position != argsSection.start-1)
 			return withError("Unexpected tokens:" + unit.source.getErr(line, p.position, argsSection.start-1));
-		return new ConstructorExp(sourceRefOfSection(section), structType, genericBindings, arguments);
-	}
-	
-	/** Assumes that the last subsection is a generic binding */
-	private Expression parseParametrizedExpression(Section section) {
-		Section bindingsSection = section.lastSubsection();
-		Expression target = parseExpression(section.getSubSection(section.start, bindingsSection.start-1));
-		VarType[] bindings = parseGenericBindings(bindingsSection);
-		return new ParameterizedExp(sourceRefOfSection(section), target, bindings);
+		return new ConstructorExp(sourceRefOfSection(section), structType, arguments);
 	}
 	
 	/** Assumes that the last subsection is a bracket section */
@@ -463,9 +423,9 @@ public class ExpressionParser extends AbstractParser {
 		VarType returnType;
 		try {
 			Pointer p = new Pointer(argsParentheses.start-1);
-			args = readArguments(unit, line, true, GenericContext.NO_CONTEXT, p, ALLOW_NONE, errors);
+			args = readArguments(unit, line, true, p, errors);
 			assertToken(line, p, TokenBase.TK_COLUMN, "Expected return type of lambda", errors);
-			returnType = parseType(unit, line, GenericContext.NO_CONTEXT, p, ALLOW_NONE, errors);
+			returnType = parseType(unit, line, p, errors);
 			assertToken(line, p, TokenBase.TK_LAMBDA_ACTION, "Unexpected token after lambda type", errors);
 		} catch (ParsingException x) {
 			return Invalids.EXPRESSION;

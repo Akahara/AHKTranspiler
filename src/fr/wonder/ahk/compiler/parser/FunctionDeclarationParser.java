@@ -8,7 +8,6 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
@@ -45,36 +44,31 @@ class FunctionDeclarationParser extends AbstractParser {
 			
 			Pointer pointer = new Pointer(1);
 			
-			GenericContext genericContext = readGenericArray(unit, declaration, pointer, errors);
 			VarType returnType;
 			String funcName;
 			FunctionArgument[] funcArgs;
 			
 			if(declaration[pointer.position].base == TokenBase.TK_PARENTHESIS_OPEN) {
-				ArgumentList args = readArguments(unit, declaration, true, genericContext, pointer, ALLOW_NONE, errors);
+				ArgumentList args = readArguments(unit, declaration, true, pointer, errors);
 				returnType = new VarCompositeType(args.getNames(), args.getTypes());
 			} else if(declaration[pointer.position].base == TokenBase.TYPE_VOID) {
 				returnType = VarType.VOID;
 				pointer.position++;
 			} else {
-				returnType = parseType(unit, declaration, genericContext, pointer, ALLOW_NONE, errors);
+				returnType = parseType(unit, declaration, pointer, errors);
 			}
 			
 			assertHasNext(declaration, pointer, "Incomplete function declaration", errors, 3);
 			
 			funcName = assertToken(declaration, pointer, TokenBase.VAR_VARIABLE, "Expected function name", errors).text;
 			
-			funcArgs = readArguments(unit, declaration, true, genericContext, pointer, ALLOW_NONE, errors).asArray();
+			funcArgs = readArguments(unit, declaration, true, pointer, errors).asArray();
 			
 			if(pointer.position != declarationLength)
 				errors.add("Unexpected tokens" + unit.source.getErr(declaration,
 						pointer.position, declaration.length-1));
 			
-			FunctionSection function = new FunctionSection(
-					unit,
-					funcSourceRef,
-					genericContext,
-					modifiers);
+			FunctionSection function = new FunctionSection(unit, funcSourceRef, modifiers);
 			
 			function.arguments = funcArgs;
 			function.name = funcName;
@@ -98,7 +92,7 @@ class FunctionDeclarationParser extends AbstractParser {
 		function.body = new Statement[stop-start];
 		ErrorWrapper functionErrors = errors.subErrors("Unable to parse function");
 		for(int i = start; i < stop; i++)
-			function.body[i-start] = StatementParser.parseStatement(function.unit, lines[i], function.genericContext, functionErrors);
+			function.body[i-start] = StatementParser.parseStatement(function.unit, lines[i], functionErrors);
 		if(functionErrors.noErrors() && !function.modifiers.hasModifier(Modifier.NATIVE))
 			StatementsFinalizer.finalizeStatements(function);
 		return function;

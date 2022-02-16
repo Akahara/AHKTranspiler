@@ -10,7 +10,6 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.Alias;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -273,7 +272,7 @@ public class AliasDeclarationParser extends AbstractParser {
 			throw new ParsingException();
 		}
 		
-		return new VarFunctionType(returnType, arguments.getTypes(), GenericContext.NO_CONTEXT);
+		return new VarFunctionType(returnType, arguments.getTypes());
 	}
 	
 	private static VarType parseCompositeType(AliasParser alias, Pointer pointer) throws ParsingException, CyclicAliasDeclaration {

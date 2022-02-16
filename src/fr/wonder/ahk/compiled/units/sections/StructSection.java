@@ -9,7 +9,6 @@ import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -19,8 +18,6 @@ public class StructSection implements SourceElement {
 	public final Unit unit;
 	public final String name;
 	public final DeclarationModifiers modifiers;
-	public final GenericContext genericContext;
-	public final BlueprintImplementation[] implementedBlueprints;
 	
 	// set by the struct section parser
 	public VariableDeclaration[] members;
@@ -30,18 +27,12 @@ public class StructSection implements SourceElement {
 	
 	private StructPrototype prototype;
 	
-	public StructSection(Unit unit, SourceReference sourceRef,
-			String structName, GenericContext genericContext,
-			BlueprintRef[] implementedBlueprints,
-			DeclarationModifiers modifiers) {
+	public StructSection(Unit unit, SourceReference sourceRef, String structName, DeclarationModifiers modifiers) {
 		
 		this.sourceRef = sourceRef;
 		this.unit = unit;
 		this.name = structName;
-		this.genericContext = genericContext;
 		this.modifiers = modifiers;
-		this.implementedBlueprints = ArrayOperator.map(implementedBlueprints,
-				BlueprintImplementation[]::new, BlueprintImplementation::new);
 	}
 	
 	@Override
@@ -79,10 +70,6 @@ public class StructSection implements SourceElement {
 		return name;
 	}
 	
-	public boolean isParametrized() {
-		return genericContext.hasGenericMembers();
-	}
-	
 	/**
 	 * Must be called <b>after</b> the {@code setSignature} method of all members
 	 * and constructors of this structure.
@@ -92,12 +79,8 @@ public class StructSection implements SourceElement {
 				ArrayOperator.map(members, VariablePrototype[]::new, VariableDeclaration::getPrototype),
 				ArrayOperator.map(constructors, ConstructorPrototype[]::new, StructConstructor::getPrototype),
 				ArrayOperator.map(operators, OverloadedOperatorPrototype[]::new, OverloadedOperator::getPrototype),
-				genericContext,
-				implementedBlueprints,
 				modifiers,
 				signature);
-		for(BlueprintImplementation bpImpl : implementedBlueprints)
-			bpImpl.structure = prototype;
 	}
 	
 	public StructPrototype getPrototype() {

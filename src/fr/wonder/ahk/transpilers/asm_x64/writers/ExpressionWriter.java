@@ -13,29 +13,23 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
-import fr.wonder.ahk.compiled.expressions.ParameterizedExp;
 import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
-import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceElement;
-import fr.wonder.ahk.compiled.units.prototypes.BoundOverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter;
-import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 import fr.wonder.ahk.compiler.types.CompositionOperation;
 import fr.wonder.ahk.compiler.types.FunctionOperation;
 import fr.wonder.ahk.compiler.types.Operation;
-import fr.wonder.ahk.transpilers.asm_x64.units.BlueprintLayout;
 import fr.wonder.ahk.transpilers.asm_x64.units.ConcreteType;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
@@ -85,8 +79,6 @@ public class ExpressionWriter {
 			writeConstructorExp((ConstructorExp) exp, errors);
 		else if(exp instanceof NullExp)
 			writeNullExp((NullExp) exp, errors);
-		else if(exp instanceof ParameterizedExp)
-			writeParameterizedExp((ParameterizedExp) exp, errors);
 		else if(exp instanceof SimpleLambdaExp)
 			writeSimpleLambdaExp((SimpleLambdaExp) exp, errors);
 		else
@@ -96,29 +88,21 @@ public class ExpressionWriter {
 	public void writeFunctionExp(FunctionExpression functionExpression, ErrorWrapper errors) {
 		
 		Expression[] arguments;
-		BlueprintTypeParameter[] bptps = null;
 		int argsSpace;
 		
 		FunctionPrototype fexpFunctionPrototype = null;	// only used by FunctionExp
 		MemAddress fcexpClosurePointer = null;			// only used by FunctionCallExp
-		
-		// FIX <<<< currently the type parameters are not kept in function calls
-		// todo: when a call to something like List.at<[int]>(list, 0) is made,
-		// store [int] in the function call expression even if there are no GIPs
-		// to bind. otherwise the null instance of X (in func <[X]> X at(List<[X]> list, int index) )
-		// cannot be written
 		
 		// prepare call
 		if(functionExpression instanceof FunctionExp) {
 			FunctionExp fexp = (FunctionExp) functionExpression;
 			arguments = fexp.getArguments();
 			fexpFunctionPrototype = fexp.function;
-			bptps = fexp.typesParameters;
-			argsSpace = computeFunctionCallStackSpace(fexp.function.genericContext.typeParameters, bptps, arguments);
+			argsSpace = computeFunctionCallStackSpace(arguments);
 		} else if(functionExpression instanceof FunctionCallExp) {
 			FunctionCallExp fexp = (FunctionCallExp) functionExpression;
 			arguments = fexp.getArguments();
-			argsSpace = computeFunctionCallStackSpace(null, null, arguments);
+			argsSpace = computeFunctionCallStackSpace(arguments);
 			argsSpace += MemSize.POINTER_SIZE; // add closure pointer space
 			fcexpClosurePointer = new MemAddress(Register.RSP, argsSpace-MemSize.POINTER_SIZE);
 		} else {
@@ -136,7 +120,7 @@ public class ExpressionWriter {
 			writer.instructions.mov(fcexpClosurePointer, Register.RAX);
 		}
 		
-		writeFunctionArguments(bptps, arguments, errors);
+		writeFunctionArguments(arguments, errors);
 			
 		if(functionExpression instanceof FunctionExp) {
 			writer.instructions.call(RegistryManager.getFunctionRegistry(fexpFunctionPrototype));
@@ -150,50 +134,24 @@ public class ExpressionWriter {
 	}
 	
 	private void writeOperatorFunction(OperationExp exp, ErrorWrapper errors) {
-		int argsSpace = computeFunctionCallStackSpace(null, null, exp.getExpressions());
+		int argsSpace = computeFunctionCallStackSpace(exp.getExpressions());
 		writer.mem.addStackOffset(argsSpace);
 		writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
-		writeFunctionArguments(null, exp.getOperands(), errors);
+		writeFunctionArguments(exp.getOperands(), errors);
 		OverloadedOperatorPrototype op = (OverloadedOperatorPrototype) exp.getOperation();
-		if(op instanceof BoundOverloadedOperatorPrototype) {
-			BoundOverloadedOperatorPrototype bop = (BoundOverloadedOperatorPrototype) op;
-			writer.mem.moveData(Register.RAX, writer.sectionArguments.getGIPLocation(bop.genericType, bop.usedBlueprint));
-			int offsetInGIP = BlueprintLayout.getOperatorOffset(bop.usedBlueprint, bop.originalOperator);
-			writer.instructions.call(new MemAddress(Register.RAX, offsetInGIP*MemSize.POINTER_SIZE));
-		} else {
-			writer.instructions.call(RegistryManager.getFunctionRegistry(op.function));
-		}
+		writer.instructions.call(writer.unitWriter.requireExternLabel(RegistryManager.getFunctionRegistry(op.function)));
 		writer.mem.addStackOffset(-argsSpace);
 	}
 	
-	private int computeFunctionCallStackSpace(TypeParameter[] typeParameters, BlueprintTypeParameter[] bptps, Expression[] args) {
-		int argsSpace = args.length * MemSize.POINTER_SIZE;
-		if(typeParameters != null)
-			argsSpace += typeParameters.length * MemSize.POINTER_SIZE;
-		if(bptps != null)
-			argsSpace += bptps.length * MemSize.POINTER_SIZE;
-		return argsSpace;
+	private int computeFunctionCallStackSpace(Expression[] args) {
+		return args.length * MemSize.POINTER_SIZE;
 	}
 	
-	private void writeFunctionArguments(
-			BlueprintTypeParameter[] typesParameters,
-			Expression[] args,
-			ErrorWrapper errors) {
-		
+	private void writeFunctionArguments(Expression[] args, ErrorWrapper errors) {
 		for(int i = 0; i < args.length; i++) {
 			Expression arg = args[i];
 			Address argAddress = new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE);
 			writer.mem.writeTo(argAddress, arg, errors);
-		}
-		
-		if(typesParameters != null) {
-			for(int i = 0; i < typesParameters.length; i++) {
-				String typeImplReg = RegistryManager.getStructBlueprintImplRegistry(typesParameters[i].implementation);
-				writer.instructions.mov(new MemAddress(Register.RSP, (args.length+i) * MemSize.POINTER_SIZE), typeImplReg);
-				// TODO make some form of global layout for arguments
-				// currently both MemoryManager~#Scope and this method rely on a
-				// particular layout that must be maintained in both files
-			}
 		}
 	}
 
@@ -339,8 +297,6 @@ public class ExpressionWriter {
 		} else if(type instanceof VarFunctionType) {
 			VarFunctionType funcType = (VarFunctionType) type;
 			writer.closureWriter.writeConstantClosure(funcType.returnType, funcType.arguments.length);
-		} else if(type instanceof VarGenericType) {
-			writer.instructions.mov(Register.RAX, writer.sectionArguments.getNullInstanceLocation((VarGenericType) type));
 		} else if(type == VarType.STR) {
 			writer.instructions.mov(Register.RAX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
 		} else if(type instanceof VarNativeType) {
@@ -353,10 +309,6 @@ public class ExpressionWriter {
 	private void writeNullExp(NullExp exp, ErrorWrapper errors) {
 		VarType type = exp.getType().getActualType();
 		writeDefaultValue(type, exp, errors);
-	}
-
-	private void writeParameterizedExp(ParameterizedExp exp, ErrorWrapper errors) {
-		throw new UnimplementedException("Parametrized expressions"); // FIX implement asm parameterized expressions
 	}
 	
 	private void writeSimpleLambdaExp(SimpleLambdaExp exp, ErrorWrapper errors) {

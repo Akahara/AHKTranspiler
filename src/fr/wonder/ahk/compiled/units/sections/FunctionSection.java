@@ -16,7 +16,6 @@ public class FunctionSection implements SourceElement {
 	
 	public final SourceReference sourceRef;
 	public final Unit unit;
-	public final GenericContext genericContext;
 	
 	// set by the unit parser
 	public String name;
@@ -30,25 +29,22 @@ public class FunctionSection implements SourceElement {
 	// set by the linker using #makeSignature
 	private FunctionPrototype prototype;
 	
-	public FunctionSection(Unit unit, SourceReference sourceRef,
-			GenericContext genericContext, DeclarationModifiers modifiers) {
+	public FunctionSection(Unit unit, SourceReference sourceRef, DeclarationModifiers modifiers) {
 		this.sourceRef = sourceRef;
 		this.unit = unit;
-		this.genericContext = genericContext;
 		this.modifiers = modifiers;
 	}
 	
 	public static FunctionSection dummyFunction() {
 		FunctionSection func = new FunctionSection(
-				Invalids.UNIT, Invalids.SOURCE_REF,
-				Invalids.GENERIC_CONTEXT, DeclarationModifiers.NONE);
+				Invalids.UNIT, Invalids.SOURCE_REF, DeclarationModifiers.NONE);
 		func.body = new Statement[0];
 		return func;
 	}
 	
 	@Override
 	public String toString() {
-		return "func" + genericContext + " " + returnType + " " + name + "(" + Utils.toString(arguments) + ")";
+		return "func " + returnType + " " + name + "(" + Utils.toString(arguments) + ")";
 	}
 	
 	@Override
@@ -58,8 +54,7 @@ public class FunctionSection implements SourceElement {
 	
 	/** Called by the linker after the function argument types where computed */
 	public void setSignature(Signature signature) {
-		this.prototype = new FunctionPrototype(
-				signature, getFunctionType(), genericContext, modifiers);
+		this.prototype = new FunctionPrototype(signature, getFunctionType(), modifiers);
 	}
 	
 	/**
@@ -91,7 +86,7 @@ public class FunctionSection implements SourceElement {
 	 * cannot be called before the linker linked types.
 	 */
 	public VarFunctionType getFunctionType() {
-		return new VarFunctionType(returnType, getArgumentTypes(), genericContext);
+		return new VarFunctionType(returnType, getArgumentTypes());
 	}
 
 }

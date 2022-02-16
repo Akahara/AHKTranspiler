@@ -5,7 +5,6 @@ import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintImplementation;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 
@@ -73,11 +72,6 @@ public class RegistryManager {
 	
 	public static String getOperationClosureRegistry(NativeOperation op) {
 		return "closure_op_" + op.loType + op.operator.name() + op.roType;
-	}
-	
-	public static String getStructBlueprintImplRegistry(BlueprintImplementation bpImpl) {
-		return getUnitRegistry(bpImpl.structure.getSignature().declaringUnit) + "@"
-				+ bpImpl.structure.getName() + "_bpimpl_" + bpImpl.bpRef.name;
 	}
 	
 	public String getLambdaRegistry(SimpleLambda lambda) {

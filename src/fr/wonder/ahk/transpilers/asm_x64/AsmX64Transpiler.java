@@ -21,7 +21,6 @@ import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.ErrorWrapper.WrappedException;
 import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.files.FilesUtils;
-import fr.wonder.commons.loggers.AnsiLogger;
 import fr.wonder.commons.loggers.Logger;
 import fr.wonder.commons.systems.process.ProcessUtils;
 import fr.wonder.commons.utils.ArrayOperator;

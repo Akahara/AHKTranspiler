@@ -19,7 +19,7 @@ public abstract class Lambda {
 		this.sourceRef = sourceRef;
 		this.args = args;
 		this.returnType = returnType;
-		this.lambdaFunctionType = new VarFunctionType(returnType, getLambdaArgsTypes(), GenericContext.NO_CONTEXT);
+		this.lambdaFunctionType = new VarFunctionType(returnType, getLambdaArgsTypes());
 	}
 	
 	public VarType[] getLambdaArgsTypes() {

@@ -12,7 +12,6 @@ import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
-import fr.wonder.ahk.compiled.expressions.ParameterizedExp;
 import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
@@ -22,7 +21,6 @@ import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.prototypes.BoundOverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
@@ -31,7 +29,6 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.FunctionArguments;
@@ -49,8 +46,7 @@ class ExpressionLinker {
 		this.linker = linker;
 	}
 	
-	void linkExpressions(Unit unit, Scope scope, ExpressionHolder expressionHolder,
-			GenericContext genericContext, ErrorWrapper errors) {
+	void linkExpressions(Unit unit, Scope scope, ExpressionHolder expressionHolder, ErrorWrapper errors) {
 		
 		Expression[] expressions = expressionHolder.getExpressions();
 		for(int i = 0; i < expressions.length; i++) {
@@ -59,7 +55,7 @@ class ExpressionLinker {
 			if(exp == null)
 				continue;
 			
-			linkExpressions(unit, scope, exp, genericContext, errors);
+			linkExpressions(unit, scope, exp, errors);
 			
 			if(exp instanceof VarExp) {
 				linkVariableExpression(unit, scope, (VarExp) exp, errors);
@@ -74,14 +70,14 @@ class ExpressionLinker {
 				linkIndexingExpression((IndexingExp) exp, errors);
 				
 			} else if(exp instanceof FunctionCallExp) {
-				exp = linkFunctionExpression(unit, (FunctionCallExp) exp, genericContext, errors);
+				exp = linkFunctionExpression(unit, (FunctionCallExp) exp, errors);
 				expressions[i] = exp;
 				
 			} else if(exp instanceof OperationExp) {
-				linkOperationExpression(unit, (OperationExp) exp, genericContext, errors);
+				linkOperationExpression(unit, (OperationExp) exp, errors);
 			
 			} else if(exp instanceof ConstructorExp) {
-				linkConstructorExpression(unit, (ConstructorExp) exp, genericContext, errors);
+				linkConstructorExpression(unit, (ConstructorExp) exp, errors);
 				
 			} else if(exp instanceof DirectAccessExp) {
 				linkDirectAccessExp(unit, (DirectAccessExp) exp, errors);
@@ -91,9 +87,6 @@ class ExpressionLinker {
 				
 			} else if(exp instanceof SizeofExp) {
 				linkSizeofExp((SizeofExp) exp, errors);
-				
-			} else if(exp instanceof ParameterizedExp) {
-				linkParametrizedExp((ParameterizedExp) exp, genericContext, errors);
 				
 			} else if(exp instanceof SimpleLambdaExp) {
 				linkSimpleLambdaExp(unit, scope.getUnitScope(), (SimpleLambdaExp) exp, errors);
@@ -172,7 +165,7 @@ class ExpressionLinker {
 		exp.type = expType;
 	}
 
-	private void linkConstructorExpression(Unit unit, ConstructorExp exp, GenericContext genericContext, ErrorWrapper errors) {
+	private void linkConstructorExpression(Unit unit, ConstructorExp exp, ErrorWrapper errors) {
 		exp.constructor = Invalids.CONSTRUCTOR_PROTOTYPE;
 		exp.type = Invalids.STRUCT_TYPE;
 		
@@ -182,13 +175,6 @@ class ExpressionLinker {
 			return;
 		}
 		StructPrototype structure = ((VarStructType) baseType).structure;
-		if(!GenericBindings.validateBindings(structure.genericContext, exp.genericBindings, exp, errors))
-			return;
-		else if(structure.hasGenericBindings()) {
-			structure = linker.typesTable.genericBindings.bindGenerics(structure, exp.genericBindings, genericContext);
-			baseType = new VarStructType(structure.getName());
-			((VarStructType) baseType).structure = structure;
-		}
 		
 		ConstructorPrototype[] accessibleConstructors = structure.constructors;
 		
@@ -206,7 +192,7 @@ class ExpressionLinker {
 		}
 	}
 
-	private void linkOperationExpression(Unit unit, OperationExp exp, GenericContext context, ErrorWrapper errors) {
+	private void linkOperationExpression(Unit unit, OperationExp exp, ErrorWrapper errors) {
 		
 		Operation op = linker.typesTable.getOperation(
 				exp.getLOType(), exp.getROType(),
@@ -218,8 +204,6 @@ class ExpressionLinker {
 		} else if(op instanceof OverloadedOperatorPrototype) {
 			OverloadedOperatorPrototype oop = (OverloadedOperatorPrototype) op;
 			unit.prototype.externalAccesses.add(oop);
-			if(!(oop instanceof BoundOverloadedOperatorPrototype))
-				unit.prototype.externalAccesses.add(oop.function);
 		}
 		
 		// #setOperation replaces the operation expression operands by cast expressions if needed
@@ -268,31 +252,16 @@ class ExpressionLinker {
 			throw null;
 	}
 
-	private Expression linkFunctionExpression(Unit unit, FunctionCallExp fexp, GenericContext functionGenericContext, ErrorWrapper errors) {
+	private Expression linkFunctionExpression(Unit unit, FunctionCallExp fexp, ErrorWrapper errors) {
 		
 		FunctionExpression finalFunction;
 		VarFunctionType functionType;
 		// if possible, replace the FunctionCallExp by a FunctionExp
 		if(fexp.getFunction() instanceof VarExp && ((VarExp) fexp.getFunction()).declaration instanceof FunctionPrototype) {
 			FunctionPrototype function = (FunctionPrototype) ((VarExp) fexp.getFunction()).declaration;
-			FunctionExp functionExpression = new FunctionExp(fexp, function, null);
+			FunctionExp functionExpression = new FunctionExp(fexp, function);
 			finalFunction = functionExpression;
 			functionType = function.functionType;
-		} else if(fexp.getFunction() instanceof ParameterizedExp && ((ParameterizedExp) fexp.getFunction()).getTarget() instanceof VarExp &&
-				((VarExp) ((ParameterizedExp) fexp.getFunction()).getTarget()).declaration instanceof FunctionPrototype) {
-			ParameterizedExp pexp = (ParameterizedExp) fexp.getFunction();
-			VarExp parameterized = (VarExp) pexp.getTarget();
-			FunctionPrototype parametrizedFunc = (FunctionPrototype) parameterized.declaration;
-			
-			VarFunctionType boundType = (VarFunctionType) linker.typesTable.genericBindings.bindType(
-					parametrizedFunc.genericContext,
-					parametrizedFunc.functionType,
-					pexp.genericBindings,
-					null,
-					functionGenericContext);
-			FunctionExp functionExpression = new FunctionExp(fexp, parametrizedFunc, pexp.typesParameters);
-			finalFunction = functionExpression;
-			functionType = boundType;
 		} else if(fexp.getFunction().getType() instanceof VarFunctionType) {
 			functionType = (VarFunctionType) fexp.getFunction().getType();
 			finalFunction = fexp;
@@ -310,9 +279,6 @@ class ExpressionLinker {
 					+ functionType.arguments.length + " but " 
 					+ finalFunction.argumentCount() 
 					+ " are given:" + finalFunction.getErr());
-		} else if(functionType.hasGenericTyping()) {
-			errors.add("Function type has unresolved generic types:" + finalFunction.getErr());
-			functionType.hasGenericTyping();
 		} else {
 			for(int j = 0; j < functionType.arguments.length; j++) {
 				linker.checkAffectationType(finalFunction, j, functionType.arguments[j], errors);
@@ -339,26 +305,6 @@ class ExpressionLinker {
 		VarType mesured = exp.getExpression().getType();
 		if(!SizeofExp.isMesurableType(mesured))
 			errors.add("Type " + mesured + " is not mesurable:" + exp.getErr());
-	}
-	
-	private void linkParametrizedExp(ParameterizedExp exp, GenericContext genericContext, ErrorWrapper errors) {
-		VarType targetType = exp.getTarget().getType();
-		exp.type = Invalids.TYPE;
-		if(!(targetType instanceof VarFunctionType)) {
-			errors.add("Type " + targetType + " cannot be parameterized:" + exp.getErr());
-			return;
-		}
-		VarFunctionType fType = (VarFunctionType) targetType;
-		GenericContext genc = fType.genericContext;
-		VarType[] bindings = exp.genericBindings;
-		if(!genc.hasGenericMembers()) {
-			errors.add("Function type " + fType + " does not take generic bindings:" + exp.getErr());
-			return;
-		}
-		if(!GenericBindings.validateBindings(genc, bindings, exp, errors))
-			return;
-		exp.typesParameters = linker.typesTable.genericBindings.createBPTPs(genc, bindings);
-		exp.type = linker.typesTable.genericBindings.bindType(genc, fType, bindings, null, genericContext);
 	}
 	
 	private void linkSimpleLambdaExp(Unit unit, Scope currentScope, SimpleLambdaExp exp, ErrorWrapper errors) {

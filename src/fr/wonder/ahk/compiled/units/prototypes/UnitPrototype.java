@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import fr.wonder.ahk.compiled.units.Signature;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiler.linker.Signatures;
 import fr.wonder.commons.utils.ArrayOperator;
@@ -13,7 +12,7 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	
 	public static final UnitPrototype NULL_PROTOTYPE = 
 			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0],
-					new VariablePrototype[0], new StructPrototype[0], new BlueprintPrototype[0]);
+					new VariablePrototype[0], new StructPrototype[0]);
 	
 	public final String base;
 	public final String fullBase;
@@ -22,7 +21,6 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	public final FunctionPrototype[] functions;
 	public final VariablePrototype[] variables;
 	public final StructPrototype[] structures;
-	public final BlueprintPrototype[] blueprints;
 	
 	public final Signature signature;
 	
@@ -41,14 +39,13 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	
 	public UnitPrototype(String fullBase, String[] importations,
 			FunctionPrototype[] functions, VariablePrototype[] variables,
-			StructPrototype[] structures, BlueprintPrototype[] blueprints) {
+			StructPrototype[] structures) {
 		this.base = fullBase.substring(fullBase.lastIndexOf('.')+1);
 		this.fullBase = fullBase;
 		this.importations = importations;
 		this.functions = functions;
 		this.variables = variables;
 		this.structures = structures;
-		this.blueprints = blueprints;
 		this.signature = Signatures.of(this);
 	}
 	

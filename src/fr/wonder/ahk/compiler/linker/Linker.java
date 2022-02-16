@@ -19,11 +19,9 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.TypeAccess;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Compiler;
@@ -51,8 +49,6 @@ public class Linker {
 	// set by #prelinkUnits
 	UnitPrototype[] prototypes;
 	Map<String, StructPrototype[]> declaredStructures;
-	Map<String, BlueprintPrototype[]> declaredBlueprints;
-	
 	
 	public Linker(CompiledHandle handle) {
 		this.projectHandle = handle;
@@ -89,12 +85,10 @@ public class Linker {
 		
 		this.prototypes = ArrayOperator.map(units, UnitPrototype[]::new, u -> u.prototype);
 		this.declaredStructures = new HashMap<>();
-		this.declaredBlueprints = new HashMap<>();
 		
 		// collect global structures and blueprints
 		for(UnitPrototype u : prototypes) {
 			declaredStructures.put(u.fullBase, u.structures);
-			declaredBlueprints.put(u.fullBase, u.blueprints);
 		}
 		
 		for(Unit unit : units) {
@@ -127,7 +121,7 @@ public class Linker {
 		}
 		
 		for(VariableDeclaration var : unit.variables) {
-			expressions.linkExpressions(unit, unitScope, var, GenericContext.NO_CONTEXT, errors);
+			expressions.linkExpressions(unit, unitScope, var, errors);
 			checkAffectationType(var, 0, var.getType(), errors);
 		}
 		
@@ -141,7 +135,7 @@ public class Linker {
 		Scope lambdaScope = currentScope.getUnitScope().innerScope();
 		for(FunctionArgument arg : lambda.args)
 			lambdaScope.registerVariable(arg, arg, errors);
-		expressions.linkExpressions(unit, lambdaScope, lambda, GenericContext.NO_CONTEXT, errors);
+		expressions.linkExpressions(unit, lambdaScope, lambda, errors);
 	}
 
 	/**
@@ -322,10 +316,6 @@ public class Linker {
 		return searchTypeAccess(unit, declaredStructures, name);
 	}
 
-	BlueprintPrototype searchBlueprint(Unit unit, String name) {
-		return searchTypeAccess(unit, declaredBlueprints, name);
-	}
-	
 	private <T extends TypeAccess> T searchTypeAccess(Unit unit, Map<String, T[]> declaredAccesses, String name) {
 		for(T t : declaredAccesses.get(unit.fullBase)) {
 			if(t.getSignature().name.equals(name))

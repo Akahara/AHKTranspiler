@@ -1,9 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintTypeParameter;
 import fr.wonder.ahk.utils.Utils;
-import fr.wonder.commons.annotations.Nullable;
 
 /**
  * Replaces {@link FunctionCallExp} when the {@link FunctionCallExp#getFunction() function argument}
@@ -18,13 +16,10 @@ import fr.wonder.commons.annotations.Nullable;
 public class FunctionExp extends FunctionExpression {
 	
 	public final FunctionPrototype function;
-	@Nullable
-	public final BlueprintTypeParameter[] typesParameters;
 
-	public FunctionExp(FunctionCallExp funcCall, FunctionPrototype function, BlueprintTypeParameter[] typesParameters) {
+	public FunctionExp(FunctionCallExp funcCall, FunctionPrototype function) {
 		super(funcCall.sourceRef, funcCall.getArguments());
 		this.function = function;
-		this.typesParameters = typesParameters;
 	}
 	
 	@Override

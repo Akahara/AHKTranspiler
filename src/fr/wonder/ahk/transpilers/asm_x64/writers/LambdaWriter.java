@@ -1,8 +1,6 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.GenericImplementationParameter;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
-import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 import fr.wonder.ahk.transpilers.asm_x64.units.FunctionArgumentsLayout;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
@@ -11,7 +9,7 @@ public class LambdaWriter extends AbstractWriter {
 	private final SimpleLambda lambda;
 	
 	public LambdaWriter(UnitWriter writer, SimpleLambda lambda) {
-		super(writer, new FunctionArgumentsLayout(lambda.args, new TypeParameter[0], new GenericImplementationParameter[0]), 0);
+		super(writer, new FunctionArgumentsLayout(lambda.args), 0);
 		this.lambda = lambda;
 	}
 

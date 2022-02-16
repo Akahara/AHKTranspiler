@@ -69,14 +69,14 @@ class StatementLinker {
 			// handle special statements
 			if(st instanceof ForSt && ((ForSt) st).declaration != null) {
 				ForSt forst = (ForSt) st;
-				linker.expressions.linkExpressions(unit, scope, forst.declaration, func.genericContext, errors);
+				linker.expressions.linkExpressions(unit, scope, forst.declaration, errors);
 				linkStatement(unit, func, forst.declaration, errors);
 				declareVariable(forst.declaration, scope, errors);
-				linker.expressions.linkExpressions(unit, scope, forst.affectation, func.genericContext, errors);
+				linker.expressions.linkExpressions(unit, scope, forst.affectation, errors);
 				linkStatement(unit, func, forst.affectation, errors);
 			}
 			
-			linker.expressions.linkExpressions(unit, scope, st, func.genericContext, errors);
+			linker.expressions.linkExpressions(unit, scope, st, errors);
 			linkStatement(unit, func, st, errors);
 			
 			if(st instanceof VariableDeclaration)

@@ -5,9 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import fr.wonder.ahk.compiled.expressions.types.VarBoundStructType;
-import fr.wonder.ahk.compiled.units.ExternalTypeAccess.ParametrizedAccess;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiler.tokens.Token;
 
 public class ExternalAccesses<T> {
@@ -29,10 +26,6 @@ public class ExternalAccesses<T> {
 		T type = constructor.apply(token.text);
 		accesses.put(token.text, new ExternalTypeAccess<>(type, token));
 		return type;
-	}
-	
-	public void addParametrizedInstance(VarBoundStructType bound, GenericContext context, Token token) {
-		accesses.get(bound.name).parametrizedInstances.add(new ParametrizedAccess(bound, token, context));
 	}
 
 	public Collection<ExternalTypeAccess<T>> getAccesses() {

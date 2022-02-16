@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-import fr.wonder.ahk.compiled.expressions.types.VarType;
-import fr.wonder.ahk.compiled.units.sections.TypeParameter;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
 import fr.wonder.commons.utils.StringUtils;
@@ -68,22 +66,6 @@ public class Utils {
 		if(sb.length() > 0)
 			sb.setLength(sb.length()-2);
 		return sb.toString();
-	}
-	
-	public static <T> String typeParametersString(TypeParameter[] typeParameters) {
-		if(typeParameters == null)
-			return "";
-		return TokenBase.TK_GENERIC_BINDING_BEGIN.syntax +
-				StringUtils.join(", ", typeParameters) +
-				TokenBase.TK_GENERIC_BINDING_END.syntax;
-	}
-	
-	public static <T> String genericBindingsString(VarType[] genericBindings) {
-		if(genericBindings == null)
-			return "";
-		return TokenBase.TK_GENERIC_BINDING_BEGIN.syntax +
-				StringUtils.join(", ", genericBindings) +
-				TokenBase.TK_GENERIC_BINDING_END.syntax;
 	}
 	
 	public static <T> String mapToString(T[] array, Function<T, ?> getter) {

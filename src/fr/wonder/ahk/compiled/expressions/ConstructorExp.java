@@ -9,16 +9,13 @@ import fr.wonder.ahk.utils.Utils;
 public class ConstructorExp extends Expression {
 	
 	public final VarType constructorType;
-	public final VarType[] genericBindings;
 	
 	/** Set by the linker */
 	public ConstructorPrototype constructor;
 	
-	public ConstructorExp(SourceReference sourceRef, VarType constructorType,
-			VarType[] genericBindings, Expression[] arguments) {
+	public ConstructorExp(SourceReference sourceRef, VarType constructorType, Expression[] arguments) {
 		super(sourceRef, arguments);
 		this.constructorType = constructorType;
-		this.genericBindings = genericBindings;
 	}
 	
 	@Override
@@ -28,7 +25,7 @@ public class ConstructorExp extends Expression {
 	
 	@Override
 	public String toString() {
-		return constructorType + Utils.genericBindingsString(genericBindings) + "(" + Utils.toString(expressions) + ")";
+		return constructorType + "(" + Utils.toString(expressions) + ")";
 	}
 
 }

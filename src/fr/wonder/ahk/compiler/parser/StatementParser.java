@@ -12,7 +12,6 @@ import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
-import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.AffectationSt;
@@ -33,7 +32,6 @@ import fr.wonder.ahk.compiled.statements.WhileSt;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.parser.ExpressionParser.Section;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
@@ -46,13 +44,13 @@ import fr.wonder.commons.exceptions.UnreachableException;
 
 public class StatementParser extends AbstractParser {
 
-	public static Statement parseStatement(Unit unit, Token[] line, GenericContext genc, ErrorWrapper errors) {
-		return new StatementParser(unit, line, genc, errors).parseStatement();
+	public static Statement parseStatement(Unit unit, Token[] line, ErrorWrapper errors) {
+		return new StatementParser(unit, line, errors).parseStatement();
 	}
 	
-	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line, GenericContext genc, 
+	public static VariableDeclaration parseVariableDeclaration(Unit unit, Token[] line,
 			DeclarationModifiers modifiers, ErrorWrapper errors) {
-		return new StatementParser(unit, line, genc, errors).parseVariableDeclaration(0, line.length, modifiers, errors);
+		return new StatementParser(unit, line, errors).parseVariableDeclaration(0, line.length, modifiers, errors);
 	}
 	
 	private Statement parseStatement() {
@@ -78,7 +76,6 @@ public class StatementParser extends AbstractParser {
 		case TYPE_FLOAT:
 		case TYPE_INT:
 		case TYPE_STR:
-		case VAR_GENERIC:
 		case VAR_UNIT: // (Structure token)
 			// avoid 'int:(3.) >> Kernel.out' from being treated as an int declaration
 			if(line.length > 1 && line[1].base != TokenBase.TK_COMMA)
@@ -103,18 +100,16 @@ public class StatementParser extends AbstractParser {
 	
 	private final Unit unit;
 	private final Token[] line;
-	private final GenericContext genc;
 	private final ErrorWrapper errors;
 	
-	private StatementParser(Unit unit, Token[] line, GenericContext genc, ErrorWrapper errors) {
+	private StatementParser(Unit unit, Token[] line, ErrorWrapper errors) {
 		this.unit = unit;
 		this.line = line;
-		this.genc = genc;
 		this.errors = errors;
 	}
 
 	private AffectationSt parseDirectAffectationStatement(int begin, int end, ErrorWrapper subErrors) {
-		Expression leftOperand = ExpressionParser.parseExpression(unit, line, genc, begin, end-1, subErrors);
+		Expression leftOperand = ExpressionParser.parseExpression(unit, line, begin, end-1, subErrors);
 		if(!subErrors.noErrors())
 			return Invalids.AFFECTATION_STATEMENT;
 		Token last = line[end-1];
@@ -131,7 +126,7 @@ public class StatementParser extends AbstractParser {
 			
 			assertHasNext(line, pointer, "Invalid variable declaration", subErrors);
 			
-			VarType type = parseType(unit, line, genc, pointer, ALLOW_NONE, subErrors);
+			VarType type = parseType(unit, line, pointer, subErrors);
 			
 			String varName = assertToken(line, pointer, TokenBase.VAR_VARIABLE, "Expected variable name", subErrors).text;
 			
@@ -141,7 +136,7 @@ public class StatementParser extends AbstractParser {
 			} else {
 				assertToken(line, pointer, TokenBase.KW_EQUAL, "Expected affectation value", subErrors);
 				assertHasNext(line, pointer, "Expected affectation value", subErrors);
-				defaultValue = ExpressionParser.parseExpression(unit, line, genc, pointer.position, end, subErrors);
+				defaultValue = ExpressionParser.parseExpression(unit, line, pointer.position, end, subErrors);
 			}
 			
 			return new VariableDeclaration(unit, SourceReference.fromLine(line),
@@ -163,7 +158,7 @@ public class StatementParser extends AbstractParser {
 			return new NullExp(sourceRef);
 		else if(type == Invalids.TYPE)
 			return Invalids.EXPRESSION;
-		else if(type instanceof VarArrayType || type instanceof VarGenericType || type instanceof VarFunctionType)
+		else if(type instanceof VarArrayType || type instanceof VarFunctionType)
 			return new NullExp(sourceRef);
 		else
 			throw new UnreachableException("Unimplemented type default value for " + type);
@@ -176,7 +171,7 @@ public class StatementParser extends AbstractParser {
 			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
 			assertParentheses(line, 1, conditionEnd, errors);
-			Expression condition = ExpressionParser.parseExpression(unit, line, genc, 2, conditionEnd, errors);
+			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
 			return new IfSt(SourceReference.fromLine(line), condition, singleLine);
 		} catch (ParsingException e) {
 			return Invalids.STATEMENT;
@@ -196,7 +191,7 @@ public class StatementParser extends AbstractParser {
 			boolean singleLine = line[line.length-1].base != TokenBase.TK_BRACE_OPEN;
 			int conditionEnd = line.length-1-(singleLine ? 0 : 1);
 			assertParentheses(line, 1, conditionEnd, errors);
-			Expression condition = ExpressionParser.parseExpression(unit, line, genc, 2, conditionEnd, errors);
+			Expression condition = ExpressionParser.parseExpression(unit, line, 2, conditionEnd, errors);
 			return new WhileSt(SourceReference.fromLine(line), condition, singleLine, isDoWhile);
 		} catch (ParsingException e) {
 			return Invalids.STATEMENT;
@@ -240,7 +235,7 @@ public class StatementParser extends AbstractParser {
 					errors.subErrors("Expected variable declaration in for statement"));
 		}
 		if(secondSplit != firstSplit+1) {
-			condition = ExpressionParser.parseExpression(unit, line, genc, firstSplit+1, secondSplit, 
+			condition = ExpressionParser.parseExpression(unit, line, firstSplit+1, secondSplit, 
 					errors.subErrors("Expected condition in for statement"));
 		} else {
 			SourceReference sourceRef = SourceReference.fromLine(line, firstSplit, secondSplit);
@@ -281,10 +276,10 @@ public class StatementParser extends AbstractParser {
 		}
 		VariableDeclaration declaration = parseVariableDeclaration(2, simpleRangeMarker, DeclarationModifiers.NONE, errors);
 		int maxBegin = simpleRangeSecond == -1 ? simpleRangeMarker+1 : simpleRangeSecond+1;
-		Expression maximum = ExpressionParser.parseExpression(unit, line, genc, maxBegin, conditionEnd, errors);
+		Expression maximum = ExpressionParser.parseExpression(unit, line, maxBegin, conditionEnd, errors);
 		LiteralExp<? extends Number> step;
 		if(simpleRangeSecond != -1) {
-			Expression increment = ExpressionParser.parseExpression(unit, line, genc, simpleRangeMarker+1, simpleRangeSecond, errors);
+			Expression increment = ExpressionParser.parseExpression(unit, line, simpleRangeMarker+1, simpleRangeSecond, errors);
 			if(!(increment instanceof IntLiteral) && !(increment instanceof FloatLiteral)) {
 				errors.add("Invalid step in for statement, expected float or int literal:" + increment.getErr());
 				return Invalids.STATEMENT;
@@ -314,14 +309,14 @@ public class StatementParser extends AbstractParser {
 				return Invalids.STATEMENT;
 			}
 			pointer.position = 2;
-			VarType type = parseType(unit, line, genc, pointer, ALLOW_NONE, errors);
+			VarType type = parseType(unit, line, pointer, errors);
 			assertHasNext(line, pointer, "Incomplete foreach statement", errors);
 			assertToken(line, pointer, TokenBase.TK_COLUMN, "Expected ':'", errors);
 			VariableDeclaration var = new VariableDeclaration(unit,
 					SourceReference.fromLine(line, 2, pointer.position-1),
 					line[3].text, type, DeclarationModifiers.NONE, null);
 			Expression iterable = ExpressionParser.parseExpression(
-					unit, line, genc, pointer.position, conditionEnd, errors);
+					unit, line, pointer.position, conditionEnd, errors);
 			
 			return new ForEachSt(SourceReference.fromLine(line),
 					singleLine, var, iterable);
@@ -336,7 +331,7 @@ public class StatementParser extends AbstractParser {
 		if(line.length == 1) {
 			return new ReturnSt(sourceRef);
 		} else {
-			Expression[] returnValues = ExpressionParser.parseArgumentList(unit, line, genc, 1, line.length, errors);
+			Expression[] returnValues = ExpressionParser.parseArgumentList(unit, line, 1, line.length, errors);
 			if(returnValues.length == 1)
 				return new ReturnSt(sourceRef, returnValues[0]);
 			else
@@ -373,8 +368,8 @@ public class StatementParser extends AbstractParser {
 	
 	/** Assumes that {@code opPos != -1} */
 	private AffectationSt parseAffectationStatement(int variableBegin, int opPos, int valueEnd, ErrorWrapper subErrors) {
-		Expression leftOperand = ExpressionParser.parseExpression(unit, line, genc, variableBegin, opPos, subErrors);
-		Expression rightOperand = ExpressionParser.parseExpression(unit, line, genc, opPos+1, valueEnd, subErrors);
+		Expression leftOperand = ExpressionParser.parseExpression(unit, line, variableBegin, opPos, subErrors);
+		Expression rightOperand = ExpressionParser.parseExpression(unit, line, opPos+1, valueEnd, subErrors);
 		if(line[opPos].base != TokenBase.KW_EQUAL) {
 			Operator op = Tokens.getAffectationOperator(line[opPos].base);
 			rightOperand = new OperationExp(SourceReference.fromLine(line, variableBegin, valueEnd-1),
@@ -389,9 +384,9 @@ public class StatementParser extends AbstractParser {
 		if(line[opPos].base != TokenBase.KW_EQUAL)
 			errors.add("Multiple affectations only support the '=' operator" + line[opPos].getErr());
 		
-		Expression[] variables = ExpressionParser.parseArgumentList(unit, line, genc, 0, opPos,
+		Expression[] variables = ExpressionParser.parseArgumentList(unit, line, 0, opPos,
 				errors.subErrors("Cannot parse affectation variables"));
-		Expression[] values = ExpressionParser.parseArgumentList(unit, line, genc, opPos+1, line.length,
+		Expression[] values = ExpressionParser.parseArgumentList(unit, line, opPos+1, line.length,
 				errors.subErrors("Cannot parse affectation values"));
 		
 		return new MultipleAffectationSt(SourceReference.fromLine(line),
@@ -399,7 +394,7 @@ public class StatementParser extends AbstractParser {
 	}
 	
 	private Statement tryParseExpressionStatement() {
-		Expression statementAsExpression = ExpressionParser.parseExpression(unit, line, genc, 0, line.length, errors);
+		Expression statementAsExpression = ExpressionParser.parseExpression(unit, line, 0, line.length, errors);
 		if(statementAsExpression instanceof FunctionCallExp)
 			return new FunctionSt(statementAsExpression.sourceRef, (FunctionCallExp) statementAsExpression);
 		if(statementAsExpression instanceof OperationExp)

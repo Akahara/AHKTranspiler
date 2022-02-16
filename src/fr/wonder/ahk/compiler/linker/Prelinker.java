@@ -5,12 +5,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import fr.wonder.ahk.compiled.expressions.types.VarBoundStructType;
-import fr.wonder.ahk.compiled.expressions.types.VarSelfType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.ExternalTypeAccess;
-import fr.wonder.ahk.compiled.units.ExternalTypeAccess.ParametrizedAccess;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
@@ -18,10 +15,6 @@ import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.TypeAccess;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
-import fr.wonder.ahk.compiled.units.sections.Blueprint;
-import fr.wonder.ahk.compiled.units.sections.BlueprintOperator;
-import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
@@ -53,15 +46,6 @@ class Prelinker {
 				con.setSignature(Signatures.of(con));
 			struct.setSignature(Signatures.of(struct));
 		}
-		for(Blueprint bp : unit.blueprints) {
-			for(VariableDeclaration var : bp.variables)
-				var.setSignature(Signatures.of(var, bp));
-			for(FunctionSection func : bp.functions)
-				func.setSignature(Signatures.of(func, bp));
-			for(BlueprintOperator op : bp.operators)
-				op.setSignature(Signatures.of(op, bp));
-			bp.setSignature(Signatures.of(bp));
-		}
 		
 		FunctionPrototype[] functions = ArrayOperator.map(
 				unit.functions,
@@ -75,23 +59,17 @@ class Prelinker {
 				unit.structures,
 				StructPrototype[]::new,
 				StructSection::getPrototype);
-		BlueprintPrototype[] blueprints = ArrayOperator.map(
-				unit.blueprints,
-				BlueprintPrototype[]::new,
-				Blueprint::getPrototype);
 		unit.prototype = new UnitPrototype(
 				unit.fullBase,
 				unit.importations,
 				functions,
 				variables,
-				structures,
-				blueprints);
+				structures);
 	}
 	
 	void prelinkTypes(Unit unit, ErrorWrapper errors) {
 		// link the structure types instances to their structure prototypes
 		linkStructTypes(unit, errors);
-		linkBlueprints(unit, errors);
 	}
 
 	private void linkStructTypes(Unit unit, ErrorWrapper errors) {
@@ -111,27 +89,8 @@ class Prelinker {
 		}
 	}
 	
-	private void linkBlueprints(Unit unit, ErrorWrapper errors) {
-		
-		for(ExternalTypeAccess<BlueprintRef> bpAccess : unit.usedBlueprintTypes.getAccesses()) {
-			BlueprintRef refInstance = bpAccess.typeInstance;
-			BlueprintPrototype blueprint = linker.searchBlueprint(unit, refInstance.name);
-			if(blueprint == null) {
-				errors.add("Unknown blueprint used: " + refInstance.name + 
-						" (" + bpAccess.occurrenceCount + " references)" +
-						bpAccess.firstOccurrence.getErr());
-				blueprint = Invalids.BLUEPRINT_PROTOTYPE;
-			} else {
-				unit.prototype.externalAccesses.add(blueprint);
-			}
-			refInstance.blueprint = blueprint;
-		}
-	}
-	
 	/** Computes functions and variables signatures, validates units and sets unit.prototype */
 	void prelinkUnit(Unit unit, ErrorWrapper errors) {
-		
-		linkParametrizedTypes(unit, errors);
 		
 		// validate unit
 		
@@ -147,39 +106,10 @@ class Prelinker {
 			validateStructOperators(structure, errors);
 		}
 		
-		// check blueprints
-		for(int i = 0; i < unit.blueprints.length; i++) {
-			Blueprint blueprint = unit.blueprints[i];
-			validateVariableSet(blueprint.variables, errors);
-//			validateBlueprintConstructors(blueprint, errors);
-			validateBlueprintOperators(blueprint, errors);
-			validateFunctionSet(blueprint.functions, blueprint.variables, errors);
-		}
-		
 		// make sure there cannot be confusion in types usage
 		validateAccessibleStructures(unit, errors);
-		validateAccessibleBlueprints(unit, errors);
 	}
 
-	private void linkParametrizedTypes(Unit unit, ErrorWrapper errors) {
-		
-		for(ExternalTypeAccess<VarStructType> structAccess : unit.usedStructTypes.getAccesses()) {
-			StructPrototype structure = structAccess.typeInstance.structure;
-			for(ParametrizedAccess parametrizedInstance : structAccess.parametrizedInstances) {
-				VarBoundStructType boundType = parametrizedInstance.type;
-				if(structure == Invalids.STRUCT_PROTOTYPE) {
-					boundType.structure = Invalids.STRUCT_PROTOTYPE;
-				} else if(GenericBindings.validateBindings(structure.genericContext,
-						boundType.boundTypes, parametrizedInstance.occurrence, errors)) {
-					boundType.structure = linker.typesTable.genericBindings.bindGenerics(
-							structure, boundType.boundTypes, parametrizedInstance.genericContext);
-				} else {
-					boundType.structure = Invalids.STRUCT_PROTOTYPE;
-				}
-			}
-		}
-	}
-	
 	private static void validateVariableSet(VariableDeclaration[] variables, ErrorWrapper errors) {
 		for(int i = 0; i < variables.length; i++) {
 			String varName = variables[i].name;
@@ -294,10 +224,6 @@ class Prelinker {
 		validateTypeAccesses(unit, linker.declaredStructures, errors);
 	}
 
-	private void validateAccessibleBlueprints(Unit unit, ErrorWrapper errors) {
-		validateTypeAccesses(unit, linker.declaredBlueprints, errors);
-	}
-	
 	private <T extends TypeAccess> void validateTypeAccesses(Unit unit, Map<String, T[]> declaredAccesses, ErrorWrapper errors) {
 		List<T> accessibleAccesses = new ArrayList<>();
 		accessibleAccesses.addAll(Arrays.asList(declaredAccesses.get(unit.fullBase)));
@@ -316,22 +242,4 @@ class Prelinker {
 		}
 	}
 	
-	private void validateBlueprintOperators(Blueprint bp, ErrorWrapper errors) {
-		for(int i = 0; i < bp.operators.length; i++) {
-			BlueprintOperator o1 = bp.operators[i];
-			OverloadedOperatorPrototype op1 = o1.prototype;
-			// check overload duplicates
-			for(int j = 0; j < i; j++) {
-				BlueprintOperator o2 = bp.operators[j];
-				OverloadedOperatorPrototype op2 = o2.prototype;
-				if(op1.loType.equals(op2.loType) && op1.roType.equals(op2.roType))
-					errors.add("Duplicate operator found:" + o1.getErr() + o2.getErr());
-			}
-			// check types
-			if(op1.loType != VarSelfType.SELF && op1.roType != VarSelfType.SELF) {
-				errors.add("Blueprint operators must take at least one 'Self' argument:" + o1.getErr());
-			}
-		}
-	}
-
 }

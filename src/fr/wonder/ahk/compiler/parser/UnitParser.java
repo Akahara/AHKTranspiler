@@ -6,10 +6,8 @@ import java.util.List;
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
-import fr.wonder.ahk.compiled.units.sections.Blueprint;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
@@ -115,7 +113,6 @@ public class UnitParser extends AbstractParser {
 		List<FunctionSection> functions = new ArrayList<>();
 		List<VariableDeclaration> variables = new ArrayList<>();
 		List<StructSection> structures = new ArrayList<>();
-		List<Blueprint> blueprints = new ArrayList<>();
 		
 		ModifiersHolder modifiers = new ModifiersHolder();
 		
@@ -157,22 +154,10 @@ public class UnitParser extends AbstractParser {
 				i = structEnd;
 				structures.add(struct);
 				
-			} else if(line[0].base == TokenBase.KW_BLUEPRINT) {
-				DeclarationModifiers mods = modifiers.getModifiers();
-				if(line[line.length-1].base != TokenBase.TK_BRACE_OPEN) {
-					errors.add("Expected '{' to begin blueprint:" + line[line.length-1].getErr());
-					continue;
-				}
-				int blueprintEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
-				ErrorWrapper subErrors = errors.subErrors("Cannot parse a blueprint declaration");
-				Blueprint blueprint = BlueprintParser.parseBlueprint(unit, lines, i, blueprintEnd, mods, subErrors);
-				i = blueprintEnd;
-				blueprints.add(blueprint);
-				
 			} else if(Tokens.isVarType(line[0].base)) {
 				// parse variable declaration
 				DeclarationModifiers mods = modifiers.getModifiers();
-				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, GenericContext.NO_CONTEXT, mods, errors);
+				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, mods, errors);
 				variables.add(var);
 				
 			} else {
@@ -183,7 +168,6 @@ public class UnitParser extends AbstractParser {
 		unit.variables = variables.toArray(VariableDeclaration[]::new);
 		unit.functions = functions.toArray(FunctionSection[]::new);
 		unit.structures = structures.toArray(StructSection[]::new);
-		unit.blueprints = blueprints.toArray(Blueprint[]::new);
 	}
 	
 	private static int getSectionEnd(Token[][] lines, Token sectionStop, int start) {

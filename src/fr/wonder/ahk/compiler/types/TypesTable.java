@@ -5,25 +5,16 @@ import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
-import fr.wonder.ahk.compiled.expressions.types.VarGenericType;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
-import fr.wonder.ahk.compiled.expressions.types.VarSelfType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceElement;
-import fr.wonder.ahk.compiled.units.prototypes.BoundOverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
-import fr.wonder.ahk.compiled.units.prototypes.blueprints.BlueprintPrototype;
-import fr.wonder.ahk.compiled.units.sections.BlueprintRef;
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
-import fr.wonder.ahk.compiler.linker.GenericBindings;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.types.Triplet;
 
 public class TypesTable {
-	
-	public final GenericBindings genericBindings = new GenericBindings();
 	
 	private final Map<Triplet<VarType, VarType, Operator>, OverloadedOperatorPrototype> operations = new HashMap<>();
 	private final Map<Triplet<VarType, VarType, Operator>, Operation> functionOperations = new HashMap<>();
@@ -57,10 +48,6 @@ public class TypesTable {
 	
 	private Operation getOperation(OperationQuery query, ErrorWrapper errors) {
 		// only the left operand may be null
-		
-		// if both operands are generics, search in their operations
-		if(query.lo instanceof VarGenericType || query.ro instanceof VarGenericType)
-			return getOperationInGenerics(query, errors);
 		
 		// if both operands are primitives, only search through native operations
 		if((query.lo instanceof VarNativeType || query.lo == null) && query.ro instanceof VarNativeType) {
@@ -176,7 +163,7 @@ public class TypesTable {
 			errors.add("No known function operation for " + query.fullErr());
 			return null;
 		}
-		VarFunctionType funcType = new VarFunctionType(resultOp.resultType, funcTypeArgs, GenericContext.NO_CONTEXT);
+		VarFunctionType funcType = new VarFunctionType(resultOp.resultType, funcTypeArgs);
 		FunctionOperation funcOperation = new FunctionOperation(query.lo, query.ro, resultOp, funcType);
 		functionOperations.put(opKey(query.lo, query.ro, query.operator), funcOperation);
 		return funcOperation;
@@ -199,7 +186,6 @@ public class TypesTable {
 			f2 = (VarFunctionType) query.lo;
 		}
 		
-//		if(!FunctionArguments.matchNoConversions(new VarType[] { f1.returnType }, f2.arguments)) {
 		if(f2.arguments.length != 1 || !f1.returnType.equals(f2.arguments[0])) {
 			errors.add("Invalid function composition " + f1.getSignature() + " and " +
 					f2.getSignature() + " " + query.queryElement.getErr());
@@ -212,51 +198,6 @@ public class TypesTable {
 		functionOperations.put(opKey(composedR), composedR);
 		
 		return query.operator == Operator.SHR ? composed : composedR;
-	}
-	
-	private Operation getOperationInGenerics(OperationQuery query, ErrorWrapper errors) {
-		
-		if(query.lo.equals(query.ro)) {
-			BlueprintRef[] typeRestrictions = ((VarGenericType) query.lo).typeParameter.typeRestrictions;
-			for(BlueprintRef r : typeRestrictions) {
-				for(OverloadedOperatorPrototype op : r.blueprint.operators) {
-					if(op.operator == query.operator && op.loType == VarSelfType.SELF && op.roType == VarSelfType.SELF)
-						return createBoundOperator(query.lo, query.ro, (VarGenericType) query.lo, r.blueprint, op);
-				}
-			}
-		} else if(query.lo instanceof VarGenericType && query.ro instanceof VarGenericType) {
-			errors.add("Incompatible generic types " + query.fullErr());
-			return null;
-		}
-		
-		VarGenericType genericType = (VarGenericType) (query.lo instanceof VarGenericType ? query.lo : query.ro);
-		
-		for(BlueprintRef r : genericType.typeParameter.typeRestrictions) {
-			for(OverloadedOperatorPrototype op : r.blueprint.operators) {
-				if(op.operator == query.operator && 
-						isCompatibleGenericOperand(op.loType, query.lo) &&
-						isCompatibleGenericOperand(op.roType, query.ro)) // TODO add conversions in generics operations
-					return createBoundOperator(query.lo, query.ro, genericType, r.blueprint, op);
-			}
-		}
-		
-		errors.add("Generic type " + genericType + " does not declare operation in blueprints " + query.fullErr());
-		return null;
-	}
-	
-	private static boolean isCompatibleGenericOperand(VarType expected, VarType givenOperand) {
-		return expected == VarSelfType.SELF ? givenOperand instanceof VarGenericType : expected.equals(givenOperand);
-	}
-	
-	private static BoundOverloadedOperatorPrototype createBoundOperator(VarType l, VarType r,
-			VarGenericType selfBinding, BlueprintPrototype usedBlueprint, OverloadedOperatorPrototype op) {
-		return new BoundOverloadedOperatorPrototype(
-				l,
-				r,
-				op.resultType == VarSelfType.SELF ? selfBinding : op.resultType,
-				(VarGenericType) (l instanceof VarGenericType ? l : r),
-				usedBlueprint,
-				op);
 	}
 	
 }

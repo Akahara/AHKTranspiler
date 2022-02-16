@@ -7,9 +7,7 @@ public enum TokenBase {
 	
 	VAR_UNIT("[A-Z]\\w*"),
 	VAR_VARIABLE("[a-z]\\w*"),
-	VAR_GENERIC("[A-Z]"),
 	VAR_MODIFIER("@[a-z]\\w*"),
-	VAR_BLUEPRINT("#\\w*"),
 	
 	LIT_INT("\\d+"),
 	LIT_FLOAT("\\d+\\.\\d*"),
@@ -38,8 +36,6 @@ public enum TokenBase {
 	KW_GLOBAL("global"),
 	KW_LOCAL("local"),
 	KW_OPERATOR("operator"),
-	KW_BLUEPRINT("blueprint"),
-	KW_SELF("Self"),
 	
 	TYPE_VOID("void"),
 	TYPE_INT("int"),
@@ -75,8 +71,6 @@ public enum TokenBase {
 	TK_APOSTROPHE("'"),
 	TK_BACK_APOSTROPHE("`"),
 	
-	TK_GENERIC_BINDING_BEGIN("<["),
-	TK_GENERIC_BINDING_END("]>"),
 	TK_LAMBDA_ACTION("=>"),
 	
 	/** not to mistake with {@link #KW_EQUAL}, this one is <code>==</code> */

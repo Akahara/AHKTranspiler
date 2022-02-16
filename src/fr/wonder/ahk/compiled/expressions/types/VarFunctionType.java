@@ -2,7 +2,6 @@ package fr.wonder.ahk.compiled.expressions.types;
 
 import java.util.Objects;
 
-import fr.wonder.ahk.compiled.units.sections.GenericContext;
 import fr.wonder.ahk.utils.Utils;
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -12,14 +11,12 @@ public class VarFunctionType extends VarType {
 	
 	public final VarType returnType;
 	public final VarType[] arguments;
-	public final GenericContext genericContext;
 	
 	private String signature;
 	
-	public VarFunctionType(VarType returnType, VarType[] arguments, GenericContext genericContext) {
+	public VarFunctionType(VarType returnType, VarType[] arguments) {
 		this.returnType = returnType;
 		this.arguments = arguments;
-		this.genericContext = genericContext;
 	}
 
 	@Override
