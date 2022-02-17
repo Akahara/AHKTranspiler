@@ -1,0 +1,8 @@
+# 
+# This test is expected to fail with
+#
+compilation_error
+Linking error
+Cannot make use of type .*, type .* type does not match .*
+Cannot make use of type .*, type .* type does not match .*
+Member .* of structure .* has type .* which cannot be accessed

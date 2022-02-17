@@ -56,9 +56,9 @@ global func int main() {
 	int j = 3;
 	if(true) {
 		int k = 5;
-		Kernel.printi(l);
+		Kernel.out << l;
 	}
-	Kernel.printnl();
+	Kernel.out << "\n";
 	Kernel.printlni(gcd(24, 18));
 	Kernel.printlni(gcd2(24, 18));
 	Kernel.printlni(7/3);
@@ -74,14 +74,7 @@ global func int main() {
 	Kernel.printlni(array[1]);
 	Kernel.println("------ Expected a division/modulus table");
 	for(int i : -10..10) {
-		Kernel.printi(i);
-		Kernel.print(" / 5 = ");
-		Kernel.printi(i/5);
-		Kernel.print("   ");
-		Kernel.printi(i);
-		Kernel.print(" % 5 = ");
-		Kernel.printi(i%5);
-		Kernel.printnl();
+		Kernel.out << i << " / 5 = " << i/5 << "   " << i << " % 5 = " << i%5 << "\n";
 	}
 	Kernel.println("------ Expected -1 3 -2 -3 63 12 12 10 2");
 	Kernel.printlni(-2/2);

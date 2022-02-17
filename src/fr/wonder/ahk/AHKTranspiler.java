@@ -22,7 +22,7 @@ import fr.wonder.commons.systems.process.ProcessUtils;
 
 public class AHKTranspiler {
 	
-	public static ProjectHandle createProject(File dir, File manifestFile) throws IOException {
+	public static ProjectHandle createProject(File dir, File manifestFile) throws IOException, IllegalArgumentException {
 		List<File> files = FilesUtils.listFiles(dir, f->f.isFile() && f.getName().endsWith(".ahk"));
 		files.removeIf(f -> f.getAbsolutePath().contains("ex_"));
 		UnitSource[] sources = new UnitSource[files.size()];

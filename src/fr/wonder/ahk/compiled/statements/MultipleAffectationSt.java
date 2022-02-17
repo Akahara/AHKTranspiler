@@ -29,7 +29,7 @@ public class MultipleAffectationSt extends Statement {
 	 * and cannot be modified between calls.
 	 */
 	public Expression[] getVariables() {
-		return Arrays.copyOfRange(expressions, expressions.length - variableCount, expressions.length);
+		return Arrays.copyOfRange(expressions, 0, variableCount);
 	}
 	
 	/**
@@ -38,7 +38,7 @@ public class MultipleAffectationSt extends Statement {
 	 * calls.
 	 */
 	public Expression[] getValues() {
-		return Arrays.copyOfRange(expressions, 0, expressions.length - variableCount);
+		return Arrays.copyOfRange(expressions, variableCount, expressions.length);
 	}
 
 	@Override

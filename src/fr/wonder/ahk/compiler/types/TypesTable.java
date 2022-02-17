@@ -117,7 +117,7 @@ public class TypesTable {
 				return null;
 			}
 			
-			resultOp = getOperation(query, errors);
+			resultOp = getOperation(new OperationQuery(f1.returnType, f2.returnType, query.operator, query.queryElement), errors);
 			if(resultOp != null && 
 					(!resultOp.loType.equals(f1.returnType) ||
 					 !resultOp.roType.equals(f2.returnType))) {
@@ -145,7 +145,7 @@ public class TypesTable {
 		} else if(query.ro instanceof VarFunctionType) {
 			// obj + func
 			VarFunctionType f = (VarFunctionType) query.ro;
-			resultOp = getOperation(query, errors);
+			resultOp = getOperation(new OperationQuery(query.lo, f.returnType, query.operator, query.queryElement), errors);
 			funcTypeArgs = f.arguments;
 			if(resultOp != null && !resultOp.roType.equals(f.returnType)) {
 				errors.add("Invalid constant type " + resultOp.roType + 
