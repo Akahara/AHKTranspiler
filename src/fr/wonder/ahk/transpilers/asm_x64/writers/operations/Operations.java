@@ -24,6 +24,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
+import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.exceptions.UnimplementedException;
 
@@ -319,9 +320,45 @@ class Operations {
 		is.ret(8);
 	}
 
-
 	static void op_floatPOWERfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		throw new UnimplementedException("unimplemented power operation");
+		/*
+		 * The uncommented code works fine to compute exp(leftOperand)
+		 * 
+		 * the remaining commented code was an attempt at computing ln(rightOperand)
+		 */
+		
+		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
+		MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.instructions.mov(floatst, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+//		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, 1072632447);
+//		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+//		asmWriter.writer.instructions.add(OpCode.FSUBP);
+//		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, 1512775);
+//		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
+//		asmWriter.writer.instructions.add(OpCode.FDIVP);
+//		asmWriter.writer.instructions.addCasted(OpCode.FISTTP, MemSize.QWORD, floatst);
+//		asmWriter.writer.instructions.add(OpCode.SHL, Register.RAX, 32);
+//		// "long" -> "double"
+//		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+//		asmWriter.writer.mem.moveData(floatst, ro);
+//		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+//		asmWriter.writer.instructions.add(OpCode.FMULP);
+		
+		// https://stackoverflow.com/questions/48713712/calculating-expx-in-x86-assembly
+		asmWriter.writer.instructions.add(new SpecialInstruction("fldl2e"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fmulp st1,st0"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fld1"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fscale"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fxch"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fld1"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fxch"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fprem"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("f2xm1"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("faddp st1,st0"));
+		asmWriter.writer.instructions.add(new SpecialInstruction("fmulp st1,st0"));
+		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
+		asmWriter.writer.instructions.mov(Register.RAX, floatst);
 	}
 	
 	static void fc_floatPOWERfloat(InstructionSet is) {
