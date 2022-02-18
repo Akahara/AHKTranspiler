@@ -16,7 +16,7 @@ public class SimpleLambdaExp extends Expression {
 	
 	@Override
 	public String toString() {
-		String returnType = lambda.returnType == VarType.VOID ? "" : lambda.returnType.toString();
+		String returnType = lambda.getReturnType() == VarType.VOID ? "" : lambda.getReturnType().toString();
 		return "(" + returnType + ": " + Utils.toString(lambda.args) + ") => " + lambda.getBody().toString();
 	}
 

@@ -165,6 +165,9 @@ public class NativeOperation extends Operation {
 		// "special" operators
 		if((l == STR || r == STR) && o == ADD)
 			return STR_ADD_STR;
+		else if(l == STR || r == STR)
+			return null;
+		
 		if(o == Operator.NOT) {
 			if(l != null)
 				throw new IllegalArgumentException("The negation operation takes one argument only");

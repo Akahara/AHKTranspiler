@@ -31,7 +31,7 @@ public class ConversionExp extends Expression {
 
 	/** Returns true if the type of the casted expression is not the destination type */
 	public boolean isEffective() {
-		return getValue().getType() != castType;
+		return !getValue().getType().equals(castType);
 	}
 	
 }

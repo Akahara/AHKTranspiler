@@ -12,7 +12,7 @@ public class MultiLineLambda extends Lambda {
 	
 	@Override
 	public String toString() {
-		return "Lambda(" + (returnType == VarType.VOID ? "" : returnType) + ": " + Utils.toString(args) + ")";
+		return "Lambda(" + (getReturnType() == VarType.VOID ? "" : getReturnType()) + ": " + Utils.toString(args) + ")";
 	}
 
 	public boolean hasClosureArguments() {

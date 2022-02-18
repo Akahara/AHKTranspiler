@@ -126,8 +126,10 @@ public class ExpressionWriter {
 			writer.instructions.call(RegistryManager.getFunctionRegistry(fexpFunctionPrototype));
 		} else if(functionExpression instanceof FunctionCallExp) {
 			writer.instructions.mov(Register.RAX, fcexpClosurePointer);
-			writer.instructions.call(new MemAddress(Register.RAX));
 			// when called, the function will have access to the closure in rax
+			writer.instructions.call(new MemAddress(Register.RAX));
+			// remove the closure pointer offset from the stack
+			writer.instructions.add(OpCode.ADD, Register.RSP, MemSize.POINTER_SIZE);
 		}
 		
 		writer.mem.addStackOffset(-argsSpace);

@@ -76,7 +76,7 @@ global func int main() {
 	for(int i : -10..10) {
 		Kernel.out << i << " / 5 = " << i/5 << "   " << i << " % 5 = " << i%5 << "\n";
 	}
-	Kernel.println("------ Expected -1 3 -2 -3 63 12 12 10 2");
+	Kernel.println("------ Expected -1 3 -1 -3 63 12 12 10 2");
 	Kernel.printlni(-2/2);
 	Kernel.printlni(int:(3.8));
 	Kernel.printlni(int:(2+(-3.5)));

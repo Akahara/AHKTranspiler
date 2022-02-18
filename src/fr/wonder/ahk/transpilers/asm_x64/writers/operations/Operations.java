@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.NumberLiteral;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiler.types.NativeOperation;
@@ -24,9 +25,7 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
-import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
 
 class Operations {
 
@@ -67,7 +66,7 @@ class Operations {
 		putOperation(INT, INT, MOD, Operations::op_intMODint, Operations::fc_intMODint);
 		putOperation(INT, INT, SHR, Operations::op_intSHRint, null);
 		putOperation(INT, INT, SHL, Operations::op_intSHLint, null);
-		putOperation(INT, INT, POWER, Operations::op_intPOWERint, Operations::fc_intPOWERint);
+		putOperation(INT, INT, POWER, Operations::op_intPOWERint, null);
 		putOperation(INT, INT, LOWER, opSimpleCmpOperation(OpCode.SETL), fcSimpleCmpOperation(OpCode.SETL));
 		putOperation(INT, INT, LEQUALS, opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETLE));
 		putOperation(INT, INT, GREATER, opSimpleCmpOperation(OpCode.SETG), fcSimpleCmpOperation(OpCode.SETG));
@@ -79,7 +78,7 @@ class Operations {
 		putOperation(FLOAT, FLOAT, SUBSTRACT, opSimpleFPUOperation(OpCode.FSUBP, 0), fcSimpleFPUOperation(OpCode.FSUBP, 0));
 		putOperation(FLOAT, FLOAT, DIVIDE, opSimpleFPUOperation(OpCode.FDIVP, 0), fcSimpleFPUOperation(OpCode.FDIVP, 0));
 		putOperation(FLOAT, FLOAT, MOD, opSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER), fcSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER));
-		putOperation(FLOAT, FLOAT, POWER, Operations::op_floatPOWERfloat, Operations::fc_floatPOWERfloat);
+		putOperation(FLOAT, FLOAT, POWER, Operations::op_floatPOWERfloat, null);
 		
 		putOperation(BOOL, BOOL, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
 		putOperation(INT, INT, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
@@ -284,18 +283,61 @@ class Operations {
 	}
 	
 	static void op_intPOWERint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		if(rightOperand instanceof IntLiteral && ((IntLiteral) rightOperand).value == 2) {
-			asmWriter.writer.expWriter.writeExpression(leftOperand, errors);
-			asmWriter.writer.instructions.add(OpCode.IMUL, Register.RAX, Register.RAX);
-		} else {
-			throw new UnimplementedException("unimplemented power operation"); // TODO int and float power operations
-			// also repair fc_intPOWERint
+		int p2 = powerGetSimpleMultiplicationCount(rightOperand);
+		if(p2 == -1) {
+			errors.add("The x64 transpiler only allows for the square (^2) power operation" + rightOperand.getErr());
+			return;
 		}
+		
+		asmWriter.writer.expWriter.writeExpression(leftOperand, errors);
+		while(p2-- > 0)
+			asmWriter.writer.instructions.add(OpCode.IMUL, Register.RAX, Register.RAX);
 	}
 	
-	static void fc_intPOWERint(InstructionSet is) {
-		is.mov(Register.RAX, 99999);
-		is.ret(16);
+	static void op_floatPOWERfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		int p2 = powerGetSimpleMultiplicationCount(rightOperand);
+		if(p2 == -1) {
+			errors.add("The x64 transpiler only allows for the square (^2) power operation" + rightOperand.getErr());
+			return;
+		}
+		
+		MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+		asmWriter.writer.expWriter.writeExpression(leftOperand, errors);
+		asmWriter.writer.instructions.mov(floatst, Register.RAX);
+		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+		while(p2-- > 0)
+			asmWriter.writer.instructions.add(OpCode.FMUL, Register.ST0, Register.ST0);
+		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
+		asmWriter.writer.instructions.mov(Register.RAX, floatst);
+	}
+	
+	/**
+	 * For a operation of the type {@code a^b} where {@code b} is a power of 2
+	 * this method will return the number of times {@code a} must be multiplied
+	 * with itself to get the full result.
+	 * <p>
+	 * ie: applied to {@code a^8}, this method will return 3, because doing {@code a<-a*a}
+	 * 3 times will result in {@code a^8}.
+	 * <p>
+	 * If {@code b} is not an int literal or is not a power of 2 this method will return -1.
+	 */
+	static int powerGetSimpleMultiplicationCount(Expression rightOperand) {
+		if(!(rightOperand instanceof NumberLiteral<?>))
+			return -1;
+		Number n = ((NumberLiteral<?>) rightOperand).value;
+		if(n.doubleValue() != n.longValue())
+			return -1; // float literal with a non zero decimal part
+		long power = n.longValue();
+		if(power == 0 || (power & (power-1)) != 0)
+			return -1;
+		// basically we compute log_2(power)
+		int ln2 = 0;
+		power >>= 1;
+		while(power != 0) {
+			power >>= 1;
+			ln2++;
+		}
+		return ln2;
 	}
 
 	static void op_nullSUBfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -318,51 +360,6 @@ class Operations {
 		is.mov(Register.RAX, fcSOp);
 		is.add(OpCode.XOR, Register.RAX, 1);
 		is.ret(8);
-	}
-
-	static void op_floatPOWERfloat(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		/*
-		 * The uncommented code works fine to compute exp(leftOperand)
-		 * 
-		 * the remaining commented code was an attempt at computing ln(rightOperand)
-		 */
-		
-		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
-		MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
-		asmWriter.writer.instructions.mov(floatst, Register.RAX);
-		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
-//		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, 1072632447);
-//		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-//		asmWriter.writer.instructions.add(OpCode.FSUBP);
-//		asmWriter.writer.instructions.mov(GlobalLabels.ADDRESS_FLOATST, 1512775);
-//		asmWriter.writer.instructions.addCasted(OpCode.FILD, MemSize.QWORD, GlobalLabels.ADDRESS_FLOATST);
-//		asmWriter.writer.instructions.add(OpCode.FDIVP);
-//		asmWriter.writer.instructions.addCasted(OpCode.FISTTP, MemSize.QWORD, floatst);
-//		asmWriter.writer.instructions.add(OpCode.SHL, Register.RAX, 32);
-//		// "long" -> "double"
-//		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
-//		asmWriter.writer.mem.moveData(floatst, ro);
-//		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
-//		asmWriter.writer.instructions.add(OpCode.FMULP);
-		
-		// https://stackoverflow.com/questions/48713712/calculating-expx-in-x86-assembly
-		asmWriter.writer.instructions.add(new SpecialInstruction("fldl2e"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fmulp st1,st0"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fld1"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fscale"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fxch"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fld1"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fxch"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fprem"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("f2xm1"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("faddp st1,st0"));
-		asmWriter.writer.instructions.add(new SpecialInstruction("fmulp st1,st0"));
-		asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
-		asmWriter.writer.instructions.mov(Register.RAX, floatst);
-	}
-	
-	static void fc_floatPOWERfloat(InstructionSet is) {
-		fc_intPOWERint(is); // unimplemented as well !!!!
 	}
 
 	static void op_strADDstr(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {

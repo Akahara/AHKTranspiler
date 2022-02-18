@@ -25,6 +25,7 @@ import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Compiler;
+import fr.wonder.ahk.compiler.optimization.UnitOptimizer;
 import fr.wonder.ahk.compiler.parser.StatementParser;
 import fr.wonder.ahk.compiler.types.ConversionTable;
 import fr.wonder.ahk.compiler.types.TypesTable;
@@ -73,6 +74,14 @@ public class Linker {
 		}
 		
 		errors.assertNoErrors();
+		
+		for(Unit unit : units) {
+			ErrorWrapper subErrors = errors.subErrors("Unable to optimize unit " + unit.fullBase);
+			UnitOptimizer.optimize(projectHandle, unit, subErrors);
+		}
+		
+		errors.assertNoErrors();
+		
 		return new LinkedHandle(units, projectHandle.manifest);
 	}
 
@@ -136,6 +145,7 @@ public class Linker {
 		for(FunctionArgument arg : lambda.args)
 			lambdaScope.registerVariable(arg, arg, errors);
 		expressions.linkExpressions(unit, lambdaScope, lambda, errors);
+		checkAffectationType(lambda, 0, lambda.getReturnType(), errors);
 	}
 
 	/**

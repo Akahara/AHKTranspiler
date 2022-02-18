@@ -23,7 +23,15 @@ public abstract class LiteralExp<T> extends Expression {
 		return o instanceof LiteralExp && value.equals(((LiteralExp<?>)o).value);
 	}
 	
-	public static class IntLiteral extends LiteralExp<Long> {
+	public static abstract class NumberLiteral<T extends Number> extends LiteralExp<T> {
+
+		protected NumberLiteral(SourceReference sourceRef, VarType type, T value) {
+			super(sourceRef, type, value);
+		}
+		
+	}
+	
+	public static class IntLiteral extends NumberLiteral<Long> {
 		
 		public IntLiteral(SourceReference sourceRef, long i) {
 			super(sourceRef, VarType.INT, i);
@@ -31,7 +39,7 @@ public abstract class LiteralExp<T> extends Expression {
 		
 	}
 	
-	public static class FloatLiteral extends LiteralExp<Double> {
+	public static class FloatLiteral extends NumberLiteral<Double> {
 		
 		public FloatLiteral(SourceReference sourceRef, double f) {
 			super(sourceRef, VarType.FLOAT, f);

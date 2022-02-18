@@ -45,7 +45,7 @@ public enum OpCode {
 	/** FPU: converts and load an int on top of the fpu stack */
 	FILD,
 	/** FPU: converts the top of the fpu stack to an int and pop it to memory*/
-	FISTP,
+	FISTTP,
 	/** FPU: pops the top of the fpu stack to memory */
 	FSTP,
 	/** FPU: add the value 1 on the stack */
@@ -60,6 +60,7 @@ public enum OpCode {
 	FDIVP,
 	/** FPU: stores the remainder of st(0)/st(1) in st(0) */
 	FPREM,
+	FMUL,
 	
 	/* set-byte-if-<condition> */
 	SETE, SETNE, SETNZ, SETL, SETLE, SETG, SETGE,

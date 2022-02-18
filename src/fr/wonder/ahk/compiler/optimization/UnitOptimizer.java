@@ -6,12 +6,12 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
-import fr.wonder.ahk.handles.ProjectHandle;
+import fr.wonder.ahk.handles.CompiledHandle;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 
 public class UnitOptimizer {
 	
-	public static void optimize(ProjectHandle handle, Unit u, ErrorWrapper errors) {
+	public static void optimize(CompiledHandle handle, Unit u, ErrorWrapper errors) {
 		if(handle.manifest.LITERAL_OPTIMIZATION)
 			optimizeExpressions(u, errors.subErrors("Errors while optimizing expressions"));
 	}

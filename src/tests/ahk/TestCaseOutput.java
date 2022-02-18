@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 import fr.wonder.commons.files.FilesUtils;
+import fr.wonder.commons.utils.ColorUtils;
 
 public abstract class TestCaseOutput {
 	
@@ -32,12 +33,12 @@ public abstract class TestCaseOutput {
 				if(!compiledSuccessfully) {
 					int split = 0;
 					for(int i = 0; i < 5 && split != -1; i++)
-						split = compilerOutput.indexOf('\n', split);
+						split = compilerOutput.indexOf('\n', split+1);
 					log.append("Compiler error:\n");
 					if(split == -1) {
-						log.append(compilerOutput);
+						log.append(compilerOutput + ColorUtils.ANSI.RESET);
 					} else {
-						log.append(compilerOutput.substring(0, split+1));
+						log.append(compilerOutput.substring(0, split) + ColorUtils.ANSI.RESET);
 						log.append("...\n");
 					}
 				}

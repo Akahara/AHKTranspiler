@@ -47,6 +47,12 @@ public class Tests {
 			instances.add(instance);
 			threads.add(thread);
 			thread.start();
+			
+			/*
+			 * Note: currently, some parts of the x64 transpiler are not thread-safe
+			 * so tests cannot be run simultaneously
+			 */
+			try { thread.join(); } catch (InterruptedException e) { throw new UnreachableException(); }
 		}
 		for(Thread t : threads) {
 			try { t.join(); } catch (InterruptedException e) { throw new UnreachableException(); }

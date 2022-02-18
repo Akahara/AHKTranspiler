@@ -27,6 +27,7 @@
 ;  +24    u8 *second_closure
 ;  +32    u8 *operation_func - function pointer, NOT a closure
 ; -----------------------------
+
 ; 1 operand operation composition closure memory block:
 ; -----------------------------
 ;  ...
@@ -36,7 +37,6 @@
 
 segment .data
 
-global closure_run_none
 global closure_run_constant
 global closure_run_composed
 global closure_run_operation_1
@@ -53,29 +53,16 @@ extern error_throw
 segment .text
 
 
-; used for noop lambdas
-closure_run_none: ;;; FIX : CANNOT BE USED, does not clean the arguments from the stack
-  mov rax,[rax+8]   ; arguments count
-  mov rcx,rsp       ; return address
-  lea rsp,[8*rbx+8] ; "pop" the arguments space and this method's return address
-  
-  xor rax,rax       ; return zero by principle
-  
-  jmp [rcx] ; "return", this method's return address is no longer
-              ; "in" the stack but it still exists where it was
-              ;  originally (its address is lower than rsp)
-
-
 closure_run_constant:
   mov rbx,[rax+8]       ; arguments count
   mov rcx,rsp
   lea rsp,[rsp+8*rbx+8] ; "pop" the arguments space and this method's return address
   
-  mov rax,[rax+16]  ; return value
+  mov rax,[rax+16]      ; return value
   
-  jmp [rcx] ; "return", this method's return address is no longer
-                    ; "in" the stack but it still exists where it was
-                    ;  originally (its address is lower than rsp)
+  jmp [rcx]             ; "return", this method's return address is no longer
+                        ; "in" the stack but it still exists where it was
+                        ;  originally (its address is lower than rsp)
   
 
 ; when called, $rax must be the pointer to the closure
@@ -223,5 +210,5 @@ closure_run_operation_1:
   jmp [rcx]
   
   
-  &native_operation_closures
+&native_operation_closures
   

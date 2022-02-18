@@ -23,7 +23,7 @@ class Conversions {
 		MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
 		asmWriter.writer.instructions.mov(floatst, Register.RAX);
 		asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
-		asmWriter.writer.instructions.addCasted(OpCode.FISTP, MemSize.QWORD, floatst);
+		asmWriter.writer.instructions.addCasted(OpCode.FISTTP, MemSize.QWORD, floatst);
 		asmWriter.writer.instructions.mov(Register.RAX, floatst);
 	}
 	

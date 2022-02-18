@@ -9,7 +9,6 @@ public abstract class Lambda {
 
 	public final SourceReference sourceRef;
 	
-	public final VarType returnType;
 	public final FunctionArgument[] args;
 	public final LambdaClosureArgument[] closureArguments = new LambdaClosureArgument[0]; // TODO implement lambda closure arguments
 	
@@ -18,8 +17,11 @@ public abstract class Lambda {
 	public Lambda(SourceReference sourceRef, FunctionArgument[] args, VarType returnType) {
 		this.sourceRef = sourceRef;
 		this.args = args;
-		this.returnType = returnType;
 		this.lambdaFunctionType = new VarFunctionType(returnType, getLambdaArgsTypes());
+	}
+	
+	public VarType getReturnType() {
+		return lambdaFunctionType.returnType;
 	}
 	
 	public VarType[] getLambdaArgsTypes() {

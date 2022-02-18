@@ -215,7 +215,6 @@ public class FunctionWriter extends AbstractWriter {
 	}
 	
 	private void writeRangedForStatement(RangedForSt st, ErrorWrapper errors) {
-		// TODO the for-in-range statement can be optimized a bit with the 'loop' instruction
 		MemAddress varAddress = mem.writeDeclaration(st.getVariableDeclaration(), errors);
 		mem.declareDummyStackVariable("RangedFor.Max");
 		MemAddress maxAddress = varAddress.addOffset(-8);

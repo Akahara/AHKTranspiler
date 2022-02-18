@@ -14,7 +14,6 @@ public enum Operator {
 	LEQUALS		(-20, false),
 	NEQUALS		(-20, false),
 
-	POWER		(-10, false),
 	NOT			(-10, true),
 
 	SHR			(0, false),
@@ -25,6 +24,7 @@ public enum Operator {
 	MULTIPLY	(20, false),
 	DIVIDE		(20, false),
 	MOD			(30, false),
+	POWER		(30, false),
 
 	BITWISE_OR	(40, false),
 	BITWISE_AND	(40, false),
