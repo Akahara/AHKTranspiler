@@ -55,7 +55,6 @@ public class ExpressionOptimizer {
 		if(literal instanceof BoolLiteral)
 			return ((Boolean) literal.value) ? 1 : 0;
 		return (Number) literal.value;
-		
 	}
 	
 	private static LiteralExp<?> optimizeOperationExp(OperationExp exp, ErrorWrapper errors) {
@@ -77,6 +76,8 @@ public class ExpressionOptimizer {
 		// take care of special types (only string actually)
 		if(op == NativeOperation.STR_ADD_STR)
 			return new StrLiteral(exp.sourceRef, l.toString() + r.toString());
+		if(op == NativeOperation.STR_STRICTEQUALS_STR || op == NativeOperation.STR_EQUALS_STR)
+			return new BoolLiteral(exp.sourceRef, l.toString().equals(r.toString()));
 		
 		Number ln = l instanceof Boolean ? ((Boolean)l ? 1 : 0) : (Number) l;
 		Number rn = r instanceof Boolean ? ((Boolean)r ? 1 : 0) : (Number) r;
@@ -156,7 +157,7 @@ public class ExpressionOptimizer {
 		if(castType == VarType.FLOAT)
 			return new FloatLiteral(literal.sourceRef, n.doubleValue());
 		else if(castType == VarType.INT)
-			return new FloatLiteral(literal.sourceRef, n.longValue());
+			return new IntLiteral(literal.sourceRef, n.longValue());
 		
 		throw new UnreachableException("Unknown conversion: " + exp);
 	}

@@ -16,16 +16,17 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.NumberLiteral;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiler.types.NativeOperation;
+import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.Address;
-import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.exceptions.UnimplementedException;
 
 class Operations {
 
@@ -72,13 +73,17 @@ class Operations {
 		putOperation(INT, INT, GREATER, opSimpleCmpOperation(OpCode.SETG), fcSimpleCmpOperation(OpCode.SETG));
 		putOperation(INT, INT, GEQUALS, opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETGE));
 		
-		putOperation(null, FLOAT, SUBSTRACT, Operations::op_nullSUBfloat, Operations::fc_nullSUBfloat);
 		putOperation(FLOAT, FLOAT, ADD, opSimpleFPUOperation(OpCode.FADDP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FADDP, 0));
-		putOperation(FLOAT, FLOAT, MULTIPLY, opSimpleFPUOperation(OpCode.FMULP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FMULP, 0));
 		putOperation(FLOAT, FLOAT, SUBSTRACT, opSimpleFPUOperation(OpCode.FSUBP, 0), fcSimpleFPUOperation(OpCode.FSUBP, 0));
+		putOperation(null,  FLOAT, SUBSTRACT, Operations::op_nullSUBfloat, Operations::fc_nullSUBfloat);
+		putOperation(FLOAT, FLOAT, MULTIPLY, opSimpleFPUOperation(OpCode.FMULP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FMULP, 0));
 		putOperation(FLOAT, FLOAT, DIVIDE, opSimpleFPUOperation(OpCode.FDIVP, 0), fcSimpleFPUOperation(OpCode.FDIVP, 0));
 		putOperation(FLOAT, FLOAT, MOD, opSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER), fcSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER));
 		putOperation(FLOAT, FLOAT, POWER, Operations::op_floatPOWERfloat, null);
+		putOperation(FLOAT, FLOAT, LOWER, opSimpleFPUCmpOperation(OpCode.SETB), fcSimpleFPUCmpOperation(OpCode.SETB));
+		putOperation(FLOAT, FLOAT, LEQUALS, opSimpleFPUCmpOperation(OpCode.SETBE), fcSimpleFPUCmpOperation(OpCode.SETBE));
+		putOperation(FLOAT, FLOAT, GREATER, opSimpleFPUCmpOperation(OpCode.SETA), fcSimpleFPUCmpOperation(OpCode.SETA));
+		putOperation(FLOAT, FLOAT, GEQUALS, opSimpleFPUCmpOperation(OpCode.SETAE), fcSimpleFPUCmpOperation(OpCode.SETAE));
 		
 		putOperation(BOOL, BOOL, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
 		putOperation(INT, INT, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
@@ -89,6 +94,7 @@ class Operations {
 		
 		putOperation(null, BOOL, NOT, Operations::op_nullNOTbool, Operations::fc_nullNOTbool);
 		putOperation(STR, STR, ADD, Operations::op_strADDstr, Operations::fc_strADDstr);
+//		putOperation(STR, STR, EQUALS, Operations::op_strEQUALSstr, Operations::fc_strEQUALSstr);  // TODO implement string comparison operation
 
 		putOperation(BOOL, BOOL, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
 		putOperation(INT, INT, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
@@ -100,6 +106,8 @@ class Operations {
 		putOperation(INT, INT, BITWISE_OR, Operations::op_intBITORint, Operations::fc_intBITORint);
 		putOperation(INT, INT, BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
 	}
+	
+	static OperationWriter op_anySEQUALany = Operations::op_universalEquality;
 
 	/** the address of the first operand for operations closures */
 	private static final MemAddress fcOp1 = new MemAddress(Register.RSP, 16);
@@ -107,6 +115,13 @@ class Operations {
 	private static final MemAddress fcOp2 = new MemAddress(Register.RSP, 8);
 	/** the address of the operand for single operand operations */
 	private static final MemAddress fcSOp = new MemAddress(Register.RSP, 8);
+	
+	public static OperationWriter getOperationWriter(Operation op) {
+		if(op.operator == Operator.STRICTEQUALS)
+			return op_anySEQUALany;
+		else
+			return nativeOperations.get(op);
+	}
 	
 	static NativeFunctionWriter fcSimpleFPUOperation(OpCode opCode, int opFPUflags) {
 		return is -> {
@@ -124,7 +139,7 @@ class Operations {
 			is.addCasted(OpCode.FSTP, MemSize.QWORD, fcOp1);
 			is.mov(Register.RAX, fcOp1);
 			if((opFPUflags & F_POPAFTER) != 0)
-				is.add(OpCode.FSTP);
+				is.add(OpCode.FSTP, Register.ST0);
 			is.ret(16);
 		};
 	}
@@ -146,25 +161,54 @@ class Operations {
 			asmWriter.writer.instructions.addCasted(OpCode.FSTP, MemSize.QWORD, floatst);
 			asmWriter.writer.instructions.mov(Register.RAX, floatst);
 			if((opFPUflags & F_POPAFTER) != 0)
-				asmWriter.writer.instructions.add(OpCode.FSTP);
+				asmWriter.writer.instructions.add(OpCode.FSTP, Register.ST0);
 		};
 	}
 	
-	static OperationWriter opSimpleCmpOperation(OpCode set) {
+	static OperationWriter opSimpleCmpOperation(OpCode opCode) {
 		return (leftOperand, rightOperand, asmWriter, errors) -> {
 			asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
 			asmWriter.writer.instructions.cmp(Register.RAX, Register.RBX);
 			asmWriter.writer.instructions.mov(Register.RAX, 0);
-			asmWriter.writer.instructions.add(OpCode.SETL, Register.AL);
+			asmWriter.writer.instructions.add(opCode, Register.AL);
 		};
 	}
 	
-	static NativeFunctionWriter fcSimpleCmpOperation(OpCode set) {
+	static OperationWriter opSimpleFPUCmpOperation(OpCode opCode) {
+		return (leftOperand, rightOperand, asmWriter, errors) -> {
+			OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, false, errors);
+			MemAddress floatst = asmWriter.writer.unitWriter.requireExternLabel(GlobalLabels.ADDRESS_FLOATST);
+			asmWriter.writer.instructions.mov(floatst, Register.RAX);
+			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+			asmWriter.writer.mem.moveData(floatst, ro);
+			asmWriter.writer.instructions.addCasted(OpCode.FLD, MemSize.QWORD, floatst);
+			asmWriter.writer.instructions.clearRegister(Register.RAX);
+			asmWriter.writer.instructions.add(OpCode.FXCH); // exchange because st0 will be compared to st1, not the opposite
+			asmWriter.writer.instructions.add(OpCode.FUCOMIP, Register.ST0, Register.ST1);
+			asmWriter.writer.instructions.add(OpCode.FSTP);
+			asmWriter.writer.instructions.add(opCode, Register.AL);
+		};
+	}
+	
+	static NativeFunctionWriter fcSimpleCmpOperation(OpCode opCode) {
 		return is -> {
 			is.clearRegister(Register.RAX);
 			is.mov(Register.RBX, fcOp1);
 			is.cmp(Register.RBX, fcOp2);
-			is.add(set, Register.AL);
+			is.add(opCode, Register.AL);
+			is.ret(16);
+		};
+	}
+	
+	static NativeFunctionWriter fcSimpleFPUCmpOperation(OpCode opCode) {
+		return is -> {
+			// load in reverse order because st0 is compared to st1, not the opposite
+			is.addCasted(OpCode.FLD, MemSize.QWORD, fcOp2);
+			is.addCasted(OpCode.FLD, MemSize.QWORD, fcOp1);
+			is.clearRegister(Register.RAX);
+			is.add(OpCode.FUCOMIP);
+			is.add(OpCode.FSTP);
+			is.add(opCode, Register.AL);
 			is.ret(16);
 		};
 	}
@@ -393,21 +437,17 @@ class Operations {
 		is.repeat(OpCode.MOVSB);
 	}
 	
+	private static void op_strEQUALSstr(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
+		throw new UnimplementedException("Unimplemented operation: str==str");
+	}
+	
+	private static void fc_strEQUALSstr(InstructionSet is) {
+		throw new UnimplementedException("Unimplemented operation: str==str");
+	}
+	
 	static void op_universalEquality(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		// TODO find a better way of avoiding 64bits immediate values 
-		// a lot of instructions cannot take 64bits immediate values, only 32bits.
-		// cmp is one of them, therefore we should move both operand to registers
-		// before using cmp
-		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, true, errors);
-		if(ro instanceof ImmediateValue && ((ImmediateValue) ro).text.equals("0")) {
-			asmWriter.writer.instructions.test(Register.RAX);
-		} else {
-			asmWriter.writer.instructions.cmp(Register.RAX, ro);
-		}
-		
-//		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
-//		asmWriter.writer.instructions.cmp(Register.RAX, Register.RBX);
-		
+		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+		asmWriter.writer.instructions.add(OpCode.CMP, Register.RAX, Register.RBX);
 		asmWriter.writer.instructions.mov(Register.RAX, 0); // clear rax without setting rflags
 		asmWriter.writer.instructions.add(OpCode.SETE, Register.AL);
 	}
@@ -421,20 +461,8 @@ class Operations {
 	}
 
 	static void op_universalNEquality(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		// TODO find a better way of avoiding 64bits immediate values 
-		// a lot of instructions cannot take 64bits immediate values, only 32bits.
-		// cmp is one of them, therefore we should move both operand to registers
-		// before using cmp
-		OperationParameter ro = asmWriter.prepareRAXRBX(leftOperand, rightOperand, true, errors);
-		if(ro instanceof ImmediateValue && ((ImmediateValue) ro).text.equals("0")) {
-			asmWriter.writer.instructions.test(Register.RAX);
-		} else {
-			asmWriter.writer.instructions.cmp(Register.RAX, ro);
-		}
-		
-//		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
-//		asmWriter.writer.instructions.cmp(Register.RAX, Register.RBX);
-		
+		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+		asmWriter.writer.instructions.add(OpCode.CMP, Register.RAX, Register.RBX);
 		asmWriter.writer.instructions.mov(Register.RAX, 0); // clear rax without setting rflags
 		asmWriter.writer.instructions.add(OpCode.SETNE, Register.AL);
 	}

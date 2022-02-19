@@ -15,7 +15,10 @@ QWF = "0x%016x"
 inferior = None
 
 def log(*args):
-	gdb.write(''.join(str(a) for a in args) + C_RESET + "\n")
+	msg = ''.join(str(a) for a in args)
+	if msg[-1] != '\n':
+		msg += "\n"
+	gdb.write(msg + C_RESET)
 	
 def eval(cmd):
 	return int(gdb.parse_and_eval(cmd))
@@ -234,6 +237,17 @@ def memcmd_printstack(*args):
 		for j in range(0, cols):
 			content += " " + QWF % stack_content[i+j]
 		log("#", i//cols, " ", C_BLUE, QWF % address, C_RESET, content)
+		
+		
+def memcmd_printfpu(*args):
+	log(exec("info all-registers st0"))
+	log(exec("info all-registers st1"))
+	log(exec("info all-registers st2"))
+	log(exec("info all-registers st3"))
+	
+	
+def memcmd_printeflags(*args):
+	log(exec("info register eflags"))
 
 
 class MemCommand(gdb.Command):
@@ -260,4 +274,6 @@ if __name__ == "__main__":
 	MemCommand("inspectmem", memcmd_inspectmem)
 	MemCommand("memtable", memcmd_memtable)
 	MemCommand("printstack", memcmd_printstack)
+	MemCommand("ifpu", memcmd_printfpu)
+	MemCommand("iflags", memcmd_printeflags)
 

@@ -1,0 +1,22 @@
+normal 0
+Expected: 9 3. 2. 6561. 625.
+9
+3.0
+2.0
+6561.0
+625
+Expected: T T T
+true
+true
+true
+Expected: F T T
+false
+true
+true
+Expected: F F T
+false
+false
+true
+Expected: 7 1
+7
+1

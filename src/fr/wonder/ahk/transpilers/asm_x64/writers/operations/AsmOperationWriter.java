@@ -1,7 +1,10 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 
 import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.*;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
+import static fr.wonder.ahk.compiled.expressions.types.VarType.STR;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -96,11 +99,12 @@ public class AsmOperationWriter {
 	/* ============================================ Operations ============================================ */
 	
 	public void writeOperation(OperationExp exp, ErrorWrapper errors) {
-		OperationWriter opw = Operations.nativeOperations.get(exp.getOperation());
-		if(opw == null)
+		OperationWriter opw = Operations.getOperationWriter(exp.getOperation());
+		if(opw == null) {
 			errors.add("Unimplemented assembly operation! " + exp.operationString() + exp.getErr());
-		else
-			opw.write(exp.getLeftOperand(), exp.getRightOperand(), this, errors);
+			return;
+		}
+		opw.write(exp.getLeftOperand(), exp.getRightOperand(), this, errors);
 	}
 	
 	/**

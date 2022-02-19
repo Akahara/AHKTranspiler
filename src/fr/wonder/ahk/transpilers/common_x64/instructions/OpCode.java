@@ -60,10 +60,17 @@ public enum OpCode {
 	FDIVP,
 	/** FPU: stores the remainder of st(0)/st(1) in st(0) */
 	FPREM,
+	/** FPU: multiply st(0) and st(1), store to st(0) */
 	FMUL,
+	/** FPU: compare st(0) and st(1) and pop, modify EFLAGS (ZP PF CF)  */
+	FUCOMIP,
+	/** FPU: exchange st(0) and st(1) */
+	FXCH,
 	
 	/* set-byte-if-<condition> */
-	SETE, SETNE, SETNZ, SETL, SETLE, SETG, SETGE,
+	SETE, SETNE, SETNZ,
+	SETL, SETLE, SETG, SETGE,
+	SETB, SETBE, SETA, SETAE,
 	
 	/** clear direction flag */
 	CLD,

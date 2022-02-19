@@ -4,7 +4,7 @@ import static fr.wonder.ahk.compiled.expressions.Operator.ADD;
 import static fr.wonder.ahk.compiled.expressions.Operator.AND;
 import static fr.wonder.ahk.compiled.expressions.Operator.NOT;
 import static fr.wonder.ahk.compiled.expressions.Operator.OR;
-import static fr.wonder.ahk.compiled.expressions.Operator.SUBSTRACT;
+import static fr.wonder.ahk.compiled.expressions.Operator.*;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
 import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
@@ -104,7 +104,12 @@ public class NativeOperation extends Operation {
 		return ArrayOperator.indexOf(nativeOrder, t);
 	}
 	
+	/** string addition "ab"+"cd" = "abcd" */
 	public static final NativeOperation STR_ADD_STR = new NativeOperation(STR, STR, ADD, STR);
+	/** string text comparison "ab"=="ab" = true */
+	public static final NativeOperation STR_EQUALS_STR = new NativeOperation(STR, STR, EQUALS, BOOL);
+	/** string reference comparison x===x == true */
+	public static final NativeOperation STR_STRICTEQUALS_STR = new NativeOperation(STR, STR, STRICTEQUALS, BOOL);
 	/** boolean negation "!x" */
 	public static final NativeOperation NOT_BOOL = new NativeOperation(null, BOOL, NOT, BOOL);
 	/** negation "-x" */
@@ -135,7 +140,7 @@ public class NativeOperation extends Operation {
 				O,I,O,
 				O,O,F,
 			},
-			{ // == != < > <= >= ===
+			{ // == != < > <= >=
 				B,O,O,
 				O,B,O,
 				O,O,B,
@@ -165,17 +170,21 @@ public class NativeOperation extends Operation {
 		// "special" operators
 		if((l == STR || r == STR) && o == ADD)
 			return STR_ADD_STR;
+		if(l == STR && r == STR && o == EQUALS)
+			return STR_EQUALS_STR;
+		if(l == STR && r == STR && o == STRICTEQUALS)
+			return STR_STRICTEQUALS_STR;
 		else if(l == STR || r == STR)
 			return null;
 		
-		if(o == Operator.NOT) {
+		if(o == NOT) {
 			if(l != null)
 				throw new IllegalArgumentException("The negation operation takes one argument only");
 			if(getOrder(r) != -1) // r is int/float/bool
 				return NOT_BOOL;
 			return null;
 		}
-		if(o == Operator.SUBSTRACT && l == null) {
+		if(o == SUBSTRACT && l == null) {
 			if(r == INT)
 				return NEG_INT;
 			else if(r == FLOAT)
