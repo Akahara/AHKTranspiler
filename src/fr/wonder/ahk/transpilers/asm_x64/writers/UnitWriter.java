@@ -9,6 +9,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
+import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
@@ -82,7 +83,7 @@ public class UnitWriter {
 	private final DataSectionWriter dataSectionWriter;
 	
 	/** populated by {@link #writeDataSegment(ErrorWrapper)} and used by {@link #getStringConstantLabel(StrLiteral)} */
-	private final List<StrLiteral> strConstants = new ArrayList<>();
+	private final List<String> strConstants = new ArrayList<>();
 	
 	private int specialCallCount = 0;
 	
@@ -96,11 +97,11 @@ public class UnitWriter {
 	
 	// ------------------------ registries & labels ------------------------
 	
-	public String getStringConstantLabel(StrLiteral lit) {
+	public String getStringConstantLabel(String str) {
 		// beware! strConstants.indexOf cannot be used because the #equals method of StrLiteral
 		// will return true if two literals hold equal strings.
 		for(int i = 0; i < strConstants.size(); i++) {
-			if(strConstants.get(i) == lit)
+			if(strConstants.get(i).equals(str))
 				return "str_cst_" + i;
 		}
 		throw new IllegalStateException("Unregistered string constant");
@@ -123,7 +124,7 @@ public class UnitWriter {
 		else if(exp instanceof BoolLiteral)
 			return ((BoolLiteral) exp).value ? "1" : "0";
 		else if(exp instanceof StrLiteral)
-			return getStringConstantLabel((StrLiteral) exp);
+			return getStringConstantLabel(((StrLiteral) exp).value);
 		else
 			throw new IllegalStateException("Unhandled literal type " + exp.getClass());
 	}
@@ -175,10 +176,15 @@ public class UnitWriter {
 	
 	private void collectStrConstants(ExpressionHolder holder) {
 		for(Expression e : holder.getExpressions()) {
-			if(e instanceof StrLiteral)
-				strConstants.add((StrLiteral) e);
-			else
+			if(e instanceof StrLiteral) {
+				String literal = ((StrLiteral) e).value;
+				if(!strConstants.contains(literal))
+					strConstants.add(literal);
+			} else if(e instanceof SimpleLambdaExp) {
+				collectStrConstants(((SimpleLambdaExp) e).lambda);
+			} else {
 				collectStrConstants(e);
+			}
 		}
 	}
 	

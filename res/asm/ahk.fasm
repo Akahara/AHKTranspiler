@@ -1,0 +1,12 @@
+; --------------------------------------------- ;
+; This file exists solely to indicate that the
+; generated executable was written with the AHK
+; language, it can be used by debuggers to add
+; specific functionalities
+; --------------------------------------------- ;
+
+section .data
+
+global AHK_LANGUAGE
+
+AHK_LANGUAGE db 132 ; magic number

@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
-import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
@@ -132,12 +131,12 @@ public class DataSectionWriter {
 		instructions.skip();
 	}
 	
-	public void writeStrConstants(List<StrLiteral> strConstants) {
+	public void writeStrConstants(List<String> strConstants) {
 		if(strConstants.isEmpty())
 			return;
 		instructions.comment("String constants");
-		for(StrLiteral cst : strConstants)
-			instructions.add(new StringDefinition(writer.getStringConstantLabel(cst), cst.value));
+		for(String cst : strConstants)
+			instructions.add(new StringDefinition(writer.getStringConstantLabel(cst), cst));
 		instructions.skip();
 	}
 	

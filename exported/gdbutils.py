@@ -1,4 +1,7 @@
 import gdb
+import re
+
+IS_AHK_CONTEXT = False
 
 TABLE_SIZE = None
 C_GOLD = "\u001b[38;5;220m"
@@ -247,7 +250,28 @@ def memcmd_printfpu(*args):
 	
 	
 def memcmd_printeflags(*args):
-	log(exec("info register eflags"))
+	def print_flag(eflags, bit, flag_name):
+		if (eflags & (1<<bit)) != 0:
+			log("- ", flag_name)
+			return eflags^(1<<bit)
+		return eflags
+		
+	flags = exec("info register eflags")
+	log(flags)
+	eflags = int(re.split(" +", flags)[1], 16)
+	eflags ^= 1<<1 # (ignore the reserved, always on bit)
+	eflags = print_flag(eflags, 0, C_BLUE+"Carry"+C_RESET+" flag")
+	eflags = print_flag(eflags, 2,  C_BLUE+"Parity"+C_RESET+" flag")
+	eflags = print_flag(eflags, 4,  "Adjust flag")
+	print_flag(eflags, 6,  C_BLUE+"Zero"+C_RESET+" flag")
+	eflags = print_flag(eflags, 6,  C_BLUE+"Equal"+C_RESET+" flag")
+	eflags = print_flag(eflags, 7,  C_BLUE+"Sign"+C_RESET+" flag")
+	eflags = print_flag(eflags, 9,  C_RED+"Interrupt enable"+C_RESET+" flag")
+	eflags = print_flag(eflags, 11, C_BLUE+"Overflow"+C_RESET+" flag")
+	eflags = print_flag(eflags, 16, C_RED+"Resume"+C_RESET+" flag")
+	if eflags != 0:
+		log("Remaining: ", hex(eflags))
+	
 
 
 class MemCommand(gdb.Command):
@@ -258,13 +282,21 @@ class MemCommand(gdb.Command):
 		self.dont_repeat()
 		
 	def prepare_command(self):
-		global inferior
+		global inferior, IS_AHK_CONTEXT
 		inferior = gdb.inferiors()[0]
-		AllocTable.reload_tables()
+		
+		try:
+			gdb.parse_and_eval("(void)AHK_LANGUAGE")
+			IS_AHK_CONTEXT = True
+		except gdb.error:
+			IS_AHK_CONTEXT = False
+			
+		if IS_AHK_CONTEXT:
+			AllocTable.reload_tables()
 	
 	def invoke(self, argument, from_tty):
 		self.prepare_command()
-		log(">>> ", self.name, " ", argument)
+		log("AHK> " if IS_AHK_CONTEXT else ">> ", self.name, " ", argument)
 		self.function(argument)
 		
 
@@ -276,4 +308,3 @@ if __name__ == "__main__":
 	MemCommand("printstack", memcmd_printstack)
 	MemCommand("ifpu", memcmd_printfpu)
 	MemCommand("iflags", memcmd_printeflags)
-

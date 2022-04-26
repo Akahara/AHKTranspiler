@@ -34,7 +34,8 @@ public class ProcessFiles {
 	
 	public static String[] writeFiles(LinkedHandle handle, File dir, ErrorWrapper errors) throws IOException {
 		List<String> files = new ArrayList<>();
-		
+
+		files.add(copyNative(dir, "asm/ahk.fasm", "ahk.asm"));
 		files.add(copyNative(dir, "asm/natives/intrinsic.fasm", "intrinsic.asm"));
 		files.add(writeOSIntrinsic(handle, dir, errors));
 		files.add(writeEntryPoint(handle, dir, errors));

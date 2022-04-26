@@ -78,6 +78,8 @@ public enum OpCode {
 	REP,
 	/** string operation: move byte */
 	MOVSB,
+	/** string operator: compare byte */
+	CMPSB,
 	/** string operation: store qword (copy rax to rdi and move rdi according to the direction flag) */
 	STOSQ,
 	

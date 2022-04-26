@@ -26,7 +26,6 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
 
 class Operations {
 
@@ -94,7 +93,7 @@ class Operations {
 		
 		putOperation(null, BOOL, NOT, Operations::op_nullNOTbool, Operations::fc_nullNOTbool);
 		putOperation(STR, STR, ADD, Operations::op_strADDstr, Operations::fc_strADDstr);
-//		putOperation(STR, STR, EQUALS, Operations::op_strEQUALSstr, Operations::fc_strEQUALSstr);  // TODO implement string comparison operation
+		putOperation(STR, STR, EQUALS, Operations::op_strEQUALSstr, Operations::fc_strEQUALSstr);
 
 		putOperation(BOOL, BOOL, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
 		putOperation(INT, INT, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
@@ -140,7 +139,7 @@ class Operations {
 			is.mov(Register.RAX, fcOp1);
 			if((opFPUflags & F_POPAFTER) != 0)
 				is.add(OpCode.FSTP, Register.ST0);
-			is.ret(16);
+			is.ret(2 * MemSize.POINTER_SIZE);
 		};
 	}
 	
@@ -196,7 +195,7 @@ class Operations {
 			is.mov(Register.RBX, fcOp1);
 			is.cmp(Register.RBX, fcOp2);
 			is.add(opCode, Register.AL);
-			is.ret(16);
+			is.ret(2 * MemSize.POINTER_SIZE);
 		};
 	}
 	
@@ -209,7 +208,7 @@ class Operations {
 			is.add(OpCode.FUCOMIP);
 			is.add(OpCode.FSTP);
 			is.add(opCode, Register.AL);
-			is.ret(16);
+			is.ret(2 * MemSize.POINTER_SIZE);
 		};
 	}
 	
@@ -247,7 +246,7 @@ class Operations {
 	static void fc_intADDint(InstructionSet is) {
 		is.mov(Register.RAX, fcOp1);
 		is.add(OpCode.ADD, Register.RAX, fcOp2);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 
 	static void op_intSUBint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -258,7 +257,7 @@ class Operations {
 	static void fc_intSUBint(InstructionSet is) {
 		is.mov(Register.RAX, fcOp1);
 		is.add(OpCode.SUB, Register.RAX, fcOp2);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 
 	static void op_nullSUBint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -269,7 +268,7 @@ class Operations {
 	static void fc_nullSUBint(InstructionSet is) {
 		is.mov(Register.RAX, fcSOp);
 		is.add(OpCode.NEG, Register.RAX);
-		is.ret(8);
+		is.ret(MemSize.POINTER_SIZE);
 	}
 
 	static void op_intMODint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -286,7 +285,7 @@ class Operations {
 		is.add(OpCode.CQO);
 		is.add(OpCode.IDIV, Register.RBX);
 		is.mov(Register.RAX, Register.RDX);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 
 	static void op_intMULint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -298,7 +297,7 @@ class Operations {
 	static void fc_intMULint(InstructionSet is) {
 		is.mov(Register.RAX, fcOp1);
 		is.add(OpCode.IMUL, Register.RAX, fcOp2);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 
 	static void op_intDIVint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -313,7 +312,7 @@ class Operations {
 		is.mov(Register.RBX, fcOp2);
 		is.add(OpCode.CQO);
 		is.add(OpCode.IDIV, Register.RBX);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 
 	static void op_intSHRint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -392,7 +391,7 @@ class Operations {
 	static void fc_nullSUBfloat(InstructionSet is) {
 		is.mov(Register.RAX, fcSOp);
 		is.add(OpCode.XOR, Register.RAX, GlobalLabels.ADDRESS_FSIGNBIT);
-		is.ret(8);
+		is.ret(MemSize.POINTER_SIZE);
 	}
 
 	static void op_nullNOTbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -403,7 +402,7 @@ class Operations {
 	static void fc_nullNOTbool(InstructionSet is) {
 		is.mov(Register.RAX, fcSOp);
 		is.add(OpCode.XOR, Register.RAX, 1);
-		is.ret(8);
+		is.ret(MemSize.POINTER_SIZE);
 	}
 
 	static void op_strADDstr(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -413,7 +412,7 @@ class Operations {
 	
 	static void fc_strADDstr(InstructionSet is) {
 		addStrings(is, fcAllocCall(is, 0));
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 	
 	private static void addStrings(InstructionSet is, Consumer<OperationParameter> allocCall) {
@@ -438,11 +437,29 @@ class Operations {
 	}
 	
 	private static void op_strEQUALSstr(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
-		throw new UnimplementedException("Unimplemented operation: str==str");
+		asmWriter.forcePrepareRAXRBX(leftOperand, rightOperand, errors);
+		asmWriter.writer.instructions.lea(Register.RSI, new MemAddress(Register.RAX, -MemSize.POINTER_SIZE));
+		asmWriter.writer.instructions.lea(Register.RDI, new MemAddress(Register.RBX, -MemSize.POINTER_SIZE));
+		asmWriter.writer.instructions.add(OpCode.CLD);
+		asmWriter.writer.instructions.mov(Register.RCX, new MemAddress(Register.RSI));
+		asmWriter.writer.instructions.add(OpCode.ADD, Register.RCX, MemSize.POINTER_SIZE);
+		asmWriter.writer.instructions.repeat(OpCode.CMPSB);
+		asmWriter.writer.instructions.mov(Register.RAX, 0);
+		asmWriter.writer.instructions.add(OpCode.SETE, Register.AL); // FIX probably not the right setCC instruction
 	}
 	
 	private static void fc_strEQUALSstr(InstructionSet is) {
-		throw new UnimplementedException("Unimplemented operation: str==str");
+		is.mov(Register.RSI, fcOp1);
+		is.mov(Register.RDI, fcOp2);
+		is.add(OpCode.SUB, Register.RSI, MemSize.POINTER_SIZE);
+		is.add(OpCode.SUB, Register.RDI, MemSize.POINTER_SIZE);
+		is.add(OpCode.CLD);
+		is.mov(Register.RCX, new MemAddress(Register.RSI));
+		is.add(OpCode.ADD, Register.RCX, MemSize.POINTER_SIZE);
+		is.repeat(OpCode.CMPSB);
+		is.mov(Register.RAX, 0);
+		is.add(OpCode.SETE, Register.AL);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 	
 	static void op_universalEquality(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -457,7 +474,7 @@ class Operations {
 		is.cmp(Register.RAX, fcOp2);
 		is.mov(Register.RAX, 0); // clear rax without setting rflags
 		is.add(OpCode.SETE, Register.AL);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 
 	static void op_universalNEquality(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -472,7 +489,7 @@ class Operations {
 		is.cmp(Register.RAX, fcOp2);
 		is.mov(Register.RAX, 0); // clear rax without setting rflags
 		is.add(OpCode.SETNE, Register.AL);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 	
 	static void op_boolORbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -487,7 +504,7 @@ class Operations {
 	static void fc_boolORbool(InstructionSet is) {
 		is.mov(Register.RAX, fcOp1);
 		is.add(OpCode.OR, Register.RAX, fcOp2);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 	
 	static void op_boolANDbool(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -502,7 +519,7 @@ class Operations {
 	static void fc_boolANDbool(InstructionSet is) {
 		is.mov(Register.RAX, fcOp1);
 		is.add(OpCode.AND, Register.RAX, fcOp2);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 	
 	static void op_intBITORint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -513,7 +530,7 @@ class Operations {
 	static void fc_intBITORint(InstructionSet is) {
 		is.mov(Register.RAX, fcOp1);
 		is.add(OpCode.OR, Register.RAX, fcOp2);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 	
 	static void op_intBITANDint(Expression leftOperand, Expression rightOperand, AsmOperationWriter asmWriter, ErrorWrapper errors) {
@@ -524,7 +541,7 @@ class Operations {
 	static void fc_intBITANDint(InstructionSet is) {
 		is.mov(Register.RAX, fcOp1);
 		is.add(OpCode.AND, Register.RAX, fcOp2);
-		is.ret(16);
+		is.ret(2 * MemSize.POINTER_SIZE);
 	}
 	
 }

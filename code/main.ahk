@@ -6,6 +6,7 @@ unit Main;
 
 alias Func = func float(float);
 alias Fg = func float();
+alias Fh = func str();
 
 global func int main() {
 	Kernel.out << "Expected: 9 3. 2. 6561. 625.\n";
@@ -42,7 +43,19 @@ global func int main() {
 	Kernel.out << (i5 === 4) << "\n";
 	Kernel.out << (sab === "ab") << "\n";
 	Kernel.out << (sab === sab) << "\n";
-	//Kernel.out << (sab == "ab") << "\n";
+	
+	Kernel.out << "Expected: T T F\n";
+	
+	Kernel.out << (sab == "ab") << "\n";
+	Kernel.out << ("a"+"b" == "ab") << "\n";
+	Kernel.out << ("abc" == "ab") << "\n";
+	
+	Kernel.out << "Expected: abcd T F\n";
+	
+	Fh h = ():str => "abcd";
+	Kernel.out << h() << "\n";
+	Kernel.out << (h == "ab" + "cd")() << "\n";
+	Kernel.out << (h == "cd")() << "\n";
 	
 	Kernel.out << "Expected: 7 1" << "\n";
 	

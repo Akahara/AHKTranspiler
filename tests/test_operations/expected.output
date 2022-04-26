@@ -13,10 +13,18 @@ Expected: F T T
 false
 true
 true
-Expected: F F T
-false
+Expected: F T T
 false
 true
+true
+Expected: T T F
+true
+true
+false
+Expected: abcd T F
+abcd
+true
+false
 Expected: 7 1
 7
 1
