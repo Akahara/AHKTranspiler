@@ -103,10 +103,10 @@ Currently the default compiler is the AHK to x64 assembly one, it compiles fine 
 > Obviously AHK is not complete yet, I'm working on it in my free time and progress is slow and steady.
 
 Current goals I'd like to implement:
-- [x] a garbage collector, currently instances can be created but they are not freed
-- [ ] lambdas
+- [x] a garbage collector (not yet called automatically)
+- [x] lambdas (and closures!)
 - [ ] enums
-- [ ] file IO
+- [ ] file IO (exists somewhat)
 - [ ] multithreading
 - [ ] a new, more optimized x64 compiler
 - [ ] crossplatform support (one day)
