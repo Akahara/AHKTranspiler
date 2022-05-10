@@ -57,6 +57,11 @@ public class MemAddress implements Address {
 	public MemAddress addOffset(int offset) {
 		return new MemAddress(base, index, scale, this.offset+offset);
 	}
+
+	/** Returns a <b>new instance</b> of MemAddress with the same index, scale and offset but different base */
+	public MemAddress changeBase(Address newBase) {
+		return new MemAddress(newBase, index, scale, offset);
+	}
 	
 	@Override
 	public String toString() {

@@ -22,6 +22,7 @@ import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
+import fr.wonder.ahk.compiled.units.sections.LambdaClosureArgument;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.Compiler;
@@ -144,6 +145,10 @@ public class Linker {
 		Scope lambdaScope = currentScope.getUnitScope().innerScope();
 		for(FunctionArgument arg : lambda.args)
 			lambdaScope.registerVariable(arg, arg, errors);
+		for(LambdaClosureArgument arg : lambda.closureArguments) {
+			arg.setOriginalVariable(currentScope.getVariable(arg.getVarName(), arg, errors));
+			lambdaScope.registerVariable(arg, arg, errors);
+		}
 		expressions.linkExpressions(unit, lambdaScope, lambda, errors);
 		checkAffectationType(lambda, 0, lambda.getReturnType(), errors);
 	}

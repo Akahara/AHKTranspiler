@@ -15,6 +15,8 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiled.units.sections.LambdaClosureArgument;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.asm_x64.writers.AbstractWriter;
@@ -24,6 +26,7 @@ import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.Operation
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
 import fr.wonder.ahk.transpilers.common_x64.Register;
 import fr.wonder.ahk.transpilers.common_x64.addresses.ImmediateValue;
+import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
@@ -123,7 +126,16 @@ public class AsmOperationWriter {
 		if(e2 instanceof LiteralExp) {
 			return new ImmediateValue(writer.unitWriter.getValueString((LiteralExp<?>) e2));
 		} else if(e2 instanceof VarExp) {
-			return writer.mem.getVarAddress(((VarExp) e2).declaration);
+			VarAccess access = ((VarExp) e2).declaration;
+			if(access instanceof LambdaClosureArgument) {
+				MemAddress inClosureAddress = (MemAddress) writer.mem.getVarAddress(access);
+				writer.instructions.mov(Register.RBX, inClosureAddress.base);
+				writer.instructions.mov(Register.RBX, inClosureAddress.changeBase(Register.RBX));
+				return Register.RBX;
+			} else {
+				// imediate variables or function arguments are imediately accessible on the stack
+				return writer.mem.getVarAddress(access);
+			}
 		} else {
 			writer.mem.addStackOffset(8);
 			writer.instructions.push(Register.RAX);

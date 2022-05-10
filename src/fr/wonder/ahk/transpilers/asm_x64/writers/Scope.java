@@ -7,6 +7,7 @@ import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
+import fr.wonder.ahk.compiled.units.sections.LambdaClosureArgument;
 import fr.wonder.ahk.transpilers.asm_x64.units.FunctionArgumentsLayout;
 import fr.wonder.ahk.transpilers.common_x64.MemSize;
 import fr.wonder.ahk.transpilers.common_x64.Register;
@@ -42,6 +43,8 @@ class Scope {
 		// search through the function arguments
 		if(var instanceof FunctionArgument)
 			return sectionArguments.getArgumentLocation((FunctionArgument) var);
+		if(var instanceof LambdaClosureArgument)
+			return sectionArguments.getClosureArgumentLocation((LambdaClosureArgument) var);
 		
 		// search through the stack frame
 		for(int i = 0; i < variables.size(); i++) {

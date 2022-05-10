@@ -1,5 +1,6 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers;
 
+import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
@@ -7,6 +8,7 @@ import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.types.NativeOperation;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class RegistryManager {
 	
@@ -78,12 +80,11 @@ public class RegistryManager {
 		int idx = writer.unit.lambdas.indexOf(lambda);
 		if(idx == -1)
 			throw new IllegalArgumentException("Lambda does not exist in given unit");
-		return "lambda_@" + idx;
+		return "lambda_@" + idx + "_" + lambda.lambdaFunctionType.getSignature() +
+				"_" + String.join("", ArrayOperator.map(lambda.getLambdaArgsTypes(), String[]::new, VarType::getSignature));
 	}
 	
 	public String getLambdaClosureRegistry(SimpleLambda lambda) {
-		if(lambda.hasClosureArguments())
-			throw new IllegalArgumentException("Cannot use a lambda closure with arguments directly");
 		return getLambdaRegistry(lambda) + "_closure";
 	}
 

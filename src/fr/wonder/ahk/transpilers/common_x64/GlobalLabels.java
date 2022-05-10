@@ -33,8 +33,8 @@ public class GlobalLabels {
 	public static final String CLOSURE_RUN_OPERATION_2 = "closure_run_operation_2";
 	
 	/** Standard library */ // TODO handle the standard library in a different way/class
-	public static final String AHK_STRINGS_INT2STR = "ahk_Strings_int2str";
+	public static final String AHK_STRINGS_INT2STR   = "ahk_Strings_int2str";
 	public static final String AHK_STRINGS_FLOAT2STR = "ahk_Strings_float2str";
-	public static final String AHK_STRINGS_BOOL2STR = "ahk_Strings_bool2str";
+	public static final String AHK_STRINGS_BOOL2STR  = "ahk_Strings_bool2str";
 	
 }

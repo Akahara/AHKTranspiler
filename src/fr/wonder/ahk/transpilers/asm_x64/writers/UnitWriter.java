@@ -170,7 +170,6 @@ public class UnitWriter {
 		dataSectionWriter.writeGlobalDeclarations();
 		dataSectionWriter.writeVariableDeclarations(initializedVariables);
 		dataSectionWriter.writeFunctionClosures();
-		dataSectionWriter.writeLambdas();
 		dataSectionWriter.writeStrConstants(strConstants);
 	}
 	

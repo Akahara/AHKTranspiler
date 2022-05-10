@@ -39,7 +39,6 @@ import fr.wonder.ahk.transpilers.common_x64.addresses.LabelAddress;
 import fr.wonder.ahk.transpilers.common_x64.addresses.MemAddress;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.commons.exceptions.ErrorWrapper;
-import fr.wonder.commons.exceptions.UnimplementedException;
 import fr.wonder.commons.exceptions.UnreachableException;
 import fr.wonder.commons.utils.ArrayOperator;
 
@@ -88,7 +87,7 @@ public class ExpressionWriter {
 	public void writeFunctionExp(FunctionExpression functionExpression, ErrorWrapper errors) {
 		
 		Expression[] arguments;
-		int argsSpace;
+		int argsSpace, argsPadding;
 		
 		FunctionPrototype fexpFunctionPrototype = null;	// only used by FunctionExp
 		MemAddress fcexpClosurePointer = null;			// only used by FunctionCallExp
@@ -99,12 +98,14 @@ public class ExpressionWriter {
 			arguments = fexp.getArguments();
 			fexpFunctionPrototype = fexp.function;
 			argsSpace = computeFunctionCallStackSpace(arguments);
+			argsPadding = 0;
 		} else if(functionExpression instanceof FunctionCallExp) {
 			FunctionCallExp fexp = (FunctionCallExp) functionExpression;
 			arguments = fexp.getArguments();
 			argsSpace = computeFunctionCallStackSpace(arguments);
-			argsSpace += MemSize.POINTER_SIZE; // add closure pointer space
-			fcexpClosurePointer = new MemAddress(Register.RSP, argsSpace-MemSize.POINTER_SIZE);
+			argsSpace += MemSize.POINTER_SIZE; // add closure space
+			argsPadding = 1;
+			fcexpClosurePointer = new MemAddress(Register.RSP);
 		} else {
 			throw new IllegalArgumentException("Expression is not callable: " + functionExpression.getClass());
 		}
@@ -120,26 +121,28 @@ public class ExpressionWriter {
 			writer.instructions.mov(fcexpClosurePointer, Register.RAX);
 		}
 		
-		writeFunctionArguments(arguments, errors);
+		writeFunctionArguments(arguments, argsPadding, errors);
 			
 		if(functionExpression instanceof FunctionExp) {
 			writer.instructions.call(RegistryManager.getFunctionRegistry(fexpFunctionPrototype));
 		} else if(functionExpression instanceof FunctionCallExp) {
 			writer.instructions.mov(Register.RAX, fcexpClosurePointer);
-			// when called, the function will have access to the closure in rax
-			writer.instructions.call(new MemAddress(Register.RAX));
 			// remove the closure pointer offset from the stack
 			writer.instructions.add(OpCode.ADD, Register.RSP, MemSize.POINTER_SIZE);
+			// when called, the function will have access to the closure in rax
+			writer.instructions.call(new MemAddress(Register.RAX));
 		}
-		
-		writer.mem.addStackOffset(-argsSpace);
+
+		if(argsSpace != 0) {
+			writer.mem.addStackOffset(-argsSpace);
+		}
 	}
 	
 	private void writeOperatorFunction(OperationExp exp, ErrorWrapper errors) {
 		int argsSpace = computeFunctionCallStackSpace(exp.getExpressions());
 		writer.mem.addStackOffset(argsSpace);
 		writer.instructions.add(OpCode.SUB, Register.RSP, argsSpace);
-		writeFunctionArguments(exp.getOperands(), errors);
+		writeFunctionArguments(exp.getOperands(), 0, errors);
 		OverloadedOperatorPrototype op = (OverloadedOperatorPrototype) exp.getOperation();
 		writer.instructions.call(writer.unitWriter.requireExternLabel(RegistryManager.getFunctionRegistry(op.function)));
 		writer.mem.addStackOffset(-argsSpace);
@@ -149,10 +152,11 @@ public class ExpressionWriter {
 		return args.length * MemSize.POINTER_SIZE;
 	}
 	
-	private void writeFunctionArguments(Expression[] args, ErrorWrapper errors) {
+	/** @param argsPadding number of argument slots to skip, set to 1 when a closure is stored on the stack */
+	private void writeFunctionArguments(Expression[] args, int argsPadding, ErrorWrapper errors) {
 		for(int i = 0; i < args.length; i++) {
 			Expression arg = args[i];
-			Address argAddress = new MemAddress(Register.RSP, i*MemSize.POINTER_SIZE);
+			Address argAddress = new MemAddress(Register.RSP, (i+argsPadding)*MemSize.POINTER_SIZE);
 			writer.mem.writeTo(argAddress, arg, errors);
 		}
 	}
@@ -314,10 +318,23 @@ public class ExpressionWriter {
 	}
 	
 	private void writeSimpleLambdaExp(SimpleLambdaExp exp, ErrorWrapper errors) {
-		if(exp.lambda.hasClosureArguments())
-			throw new UnimplementedException("lambda with closure arguments"); // TODO implement lambda closure arguments
-		String lambdaLabel = writer.unitWriter.registries.getLambdaClosureRegistry(exp.lambda);
-		writer.instructions.mov(Register.RAX, new LabelAddress(lambdaLabel));
+		String lambdaLabel = writer.unitWriter.registries.getLambdaRegistry(exp.lambda);
+		if(exp.lambda.hasClosureArguments()) {
+			writer.unitWriter.callAlloc((exp.lambda.closureArguments.length + 1) * MemSize.POINTER_SIZE);
+			writer.instructions.mov(new MemAddress(Register.RAX), lambdaLabel);
+			writer.instructions.push(Register.RAX);
+			writer.mem.addStackOffset(MemSize.POINTER_SIZE);
+			MemAddress closureStorageAddress = new MemAddress(Register.RSP);
+			for(int i = 0; i < exp.lambda.closureArguments.length; i++) {
+				Address varAddress = writer.mem.getVarAddress(exp.lambda.closureArguments[i].getOriginalVariable());
+				writer.mem.moveData(new MemAddress(closureStorageAddress, (1+i) * MemSize.POINTER_SIZE), varAddress);
+			}
+			writer.instructions.pop(Register.RAX);
+			writer.mem.addStackOffset(-MemSize.POINTER_SIZE);
+		} else {
+			writer.unitWriter.callAlloc(MemSize.POINTER_SIZE);
+			writer.instructions.mov(new MemAddress(Register.RAX), new LabelAddress(lambdaLabel));
+		}
 	}
 
 }

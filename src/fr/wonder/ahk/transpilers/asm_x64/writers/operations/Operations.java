@@ -445,7 +445,7 @@ class Operations {
 		asmWriter.writer.instructions.add(OpCode.ADD, Register.RCX, MemSize.POINTER_SIZE);
 		asmWriter.writer.instructions.repeat(OpCode.CMPSB);
 		asmWriter.writer.instructions.mov(Register.RAX, 0);
-		asmWriter.writer.instructions.add(OpCode.SETE, Register.AL); // FIX probably not the right setCC instruction
+		asmWriter.writer.instructions.add(OpCode.SETE, Register.AL);
 	}
 	
 	private static void fc_strEQUALSstr(InstructionSet is) {

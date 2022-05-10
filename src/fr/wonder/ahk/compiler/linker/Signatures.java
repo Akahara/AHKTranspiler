@@ -86,4 +86,12 @@ public class Signatures {
 				computedSignature);
 	}
 	
+	public static Signature ofClosureArgument(VarAccess originalVariable) {
+		String computedSignature = "closure_arg_" + originalVariable.getSignature().computedSignature;
+		return new Signature(
+				VarAccess.INNER_UNIT,
+				originalVariable.getSignature().name,
+				computedSignature);
+	}
+	
 }

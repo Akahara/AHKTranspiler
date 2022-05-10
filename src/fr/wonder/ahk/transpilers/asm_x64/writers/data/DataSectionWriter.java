@@ -11,7 +11,6 @@ import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
-import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.transpilers.asm_x64.units.modifiers.NativeModifier;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
@@ -119,18 +118,6 @@ public class DataSectionWriter {
 		instructions.skip();
 	}
 
-	public void writeLambdas() {
-		if(unit.lambdas.isEmpty())
-			return;
-		instructions.comment("Lambdas");
-		for(SimpleLambda lambda : unit.lambdas) {
-			String closure = writer.registries.getLambdaClosureRegistry(lambda);
-			String lambdaFunctionLabel = writer.registries.getLambdaRegistry(lambda);
-			instructions.add(new GlobalVarDeclaration(closure, MemSize.QWORD, lambdaFunctionLabel));
-		}
-		instructions.skip();
-	}
-	
 	public void writeStrConstants(List<String> strConstants) {
 		if(strConstants.isEmpty())
 			return;

@@ -89,7 +89,7 @@ class ExpressionLinker {
 				linkSizeofExp((SizeofExp) exp, errors);
 				
 			} else if(exp instanceof SimpleLambdaExp) {
-				linkSimpleLambdaExp(unit, scope.getUnitScope(), (SimpleLambdaExp) exp, errors);
+				linkSimpleLambdaExp(unit, scope, (SimpleLambdaExp) exp, errors);
 				
 			} else if(exp instanceof NullExp || exp instanceof LiteralExp<?>) {
 				// pass

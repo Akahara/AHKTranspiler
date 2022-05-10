@@ -25,6 +25,7 @@ import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.sections.LambdaClosureArgument;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.Invalids;
 import fr.wonder.ahk.compiler.tokens.SectionToken;
@@ -411,6 +412,24 @@ public class ExpressionParser extends AbstractParser {
 		return -1;
 	}
 	
+	private LambdaClosureArgument[] parseClosureArgumentsList(Section section, Pointer p) throws ParsingException {
+		List<LambdaClosureArgument> arguments = new ArrayList<>();
+		assertToken(line, p, TokenBase.TK_BRACKET_OPEN, "Expected '[' to begin closure arguments", errors);
+		if(line[p.position].base != TokenBase.TK_BRACE_CLOSE) {
+			while(true) {
+				Token argToken = assertToken(line, p, TokenBase.VAR_VARIABLE, "Expected closure argument name", errors);
+				String argName = argToken.text;
+				arguments.add(new LambdaClosureArgument(argToken.sourceRef, argName));
+				assertHasNext(line, p, "Expected closure argument list", errors);
+				if(line[p.position].base != TokenBase.TK_COMMA)
+					break;
+				p.position++;
+			}
+		}
+		assertToken(line, p, TokenBase.TK_BRACKET_CLOSE, "Expected ']' to end closure arguments", errors);
+		return arguments.toArray(LambdaClosureArgument[]::new);
+	}
+	
 	private Expression parseLambdaExpression(Section section, int lambdaOperatorIndex) {
 		Section argsParentheses = section.firstSubsection();
 		if(argsParentheses == null || argsParentheses.start > lambdaOperatorIndex)
@@ -421,9 +440,15 @@ public class ExpressionParser extends AbstractParser {
 			return withError("Unexpected tokens before lambda" + unit.source.getErr(line, section.start, argsParentheses.start-1));
 		ArgumentList args;
 		VarType returnType;
+		LambdaClosureArgument[] closureArguments;
 		try {
 			Pointer p = new Pointer(argsParentheses.start-1);
 			args = readArguments(unit, line, true, p, errors);
+			TokenBase nextToken = line[p.position].base;
+			if(nextToken == TokenBase.TK_BRACKET_OPEN)
+				closureArguments = parseClosureArgumentsList(section.subsections.get(1), p);
+			else
+				closureArguments = LambdaClosureArgument.NO_ARGUMENTS;
 			assertToken(line, p, TokenBase.TK_COLUMN, "Expected return type of lambda", errors);
 			returnType = parseType(unit, line, p, errors);
 			assertToken(line, p, TokenBase.TK_LAMBDA_ACTION, "Unexpected token after lambda type", errors);
@@ -432,7 +457,7 @@ public class ExpressionParser extends AbstractParser {
 		}
 		Expression body = parseExpression(section.getSubSection(lambdaOperatorIndex+1, section.stop));
 		SourceReference lambdaSourceRef = sourceRefOfSection(section);
-		SimpleLambda lambda = new SimpleLambda(lambdaSourceRef, returnType, args.asArray(), body);
+		SimpleLambda lambda = new SimpleLambda(lambdaSourceRef, returnType, args.asArray(), closureArguments, body);
 		unit.lambdas.add(lambda);
 		return new SimpleLambdaExp(lambdaSourceRef, lambda);
 	}

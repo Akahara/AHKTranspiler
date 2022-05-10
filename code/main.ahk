@@ -38,7 +38,7 @@ global func int main() {
 	Kernel.out << (f3>=f3)() << "\n";
 	Kernel.out << (f5>f3)() << "\n";
 	
-	Kernel.out << "Expected: F F T\n";
+	Kernel.out << "Expected: F T T\n";
 	
 	Kernel.out << (i5 === 4) << "\n";
 	Kernel.out << (sab === "ab") << "\n";
