@@ -58,52 +58,52 @@ class Operations {
 	}
 	
 	static {
-		putOperation(INT, INT, ADD, Operations::op_intADDint, Operations::fc_intADDint);
-		putOperation(INT, INT, SUBSTRACT, Operations::op_intSUBint, Operations::fc_intSUBint);
-		putOperation(null, INT, SUBSTRACT, Operations::op_nullSUBint, Operations::fc_nullSUBint);
-		putOperation(INT, INT, MULTIPLY, Operations::op_intMULint, Operations::fc_intMULint);
-		putOperation(INT, INT, DIVIDE, Operations::op_intDIVint, Operations::fc_intDIVint);
-		putOperation(INT, INT, MOD, Operations::op_intMODint, Operations::fc_intMODint);
-		putOperation(INT, INT, SHR, Operations::op_intSHRint, null);
-		putOperation(INT, INT, SHL, Operations::op_intSHLint, null);
-		putOperation(INT, INT, POWER, Operations::op_intPOWERint, null);
-		putOperation(INT, INT, LOWER, opSimpleCmpOperation(OpCode.SETL), fcSimpleCmpOperation(OpCode.SETL));
-		putOperation(INT, INT, LEQUALS, opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETLE));
-		putOperation(INT, INT, GREATER, opSimpleCmpOperation(OpCode.SETG), fcSimpleCmpOperation(OpCode.SETG));
-		putOperation(INT, INT, GEQUALS, opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETGE));
+		putOperation(INT,  INT, ADD,       Operations::op_intADDint,   Operations::fc_intADDint);
+		putOperation(INT,  INT, SUBSTRACT, Operations::op_intSUBint,   Operations::fc_intSUBint);
+		putOperation(null, INT, SUBSTRACT, Operations::op_nullSUBint,  Operations::fc_nullSUBint);
+		putOperation(INT,  INT, MULTIPLY,  Operations::op_intMULint,   Operations::fc_intMULint);
+		putOperation(INT,  INT, DIVIDE,    Operations::op_intDIVint,   Operations::fc_intDIVint);
+		putOperation(INT,  INT, MOD,       Operations::op_intMODint,   Operations::fc_intMODint);
+		putOperation(INT,  INT, SHR,       Operations::op_intSHRint,   null);
+		putOperation(INT,  INT, SHL,       Operations::op_intSHLint,   null);
+		putOperation(INT,  INT, POWER,     Operations::op_intPOWERint, null);
+		putOperation(INT,  INT, LOWER,     opSimpleCmpOperation(OpCode.SETL),  fcSimpleCmpOperation(OpCode.SETL) );
+		putOperation(INT,  INT, LEQUALS,   opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETLE));
+		putOperation(INT,  INT, GREATER,   opSimpleCmpOperation(OpCode.SETG),  fcSimpleCmpOperation(OpCode.SETG) );
+		putOperation(INT,  INT, GEQUALS,   opSimpleCmpOperation(OpCode.SETLE), fcSimpleCmpOperation(OpCode.SETGE));
 		
-		putOperation(FLOAT, FLOAT, ADD, opSimpleFPUOperation(OpCode.FADDP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FADDP, 0));
+		putOperation(FLOAT, FLOAT, ADD,       opSimpleFPUOperation(OpCode.FADDP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FADDP, 0));
 		putOperation(FLOAT, FLOAT, SUBSTRACT, opSimpleFPUOperation(OpCode.FSUBP, 0), fcSimpleFPUOperation(OpCode.FSUBP, 0));
 		putOperation(null,  FLOAT, SUBSTRACT, Operations::op_nullSUBfloat, Operations::fc_nullSUBfloat);
-		putOperation(FLOAT, FLOAT, MULTIPLY, opSimpleFPUOperation(OpCode.FMULP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FMULP, 0));
-		putOperation(FLOAT, FLOAT, DIVIDE, opSimpleFPUOperation(OpCode.FDIVP, 0), fcSimpleFPUOperation(OpCode.FDIVP, 0));
-		putOperation(FLOAT, FLOAT, MOD, opSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER), fcSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER));
-		putOperation(FLOAT, FLOAT, POWER, Operations::op_floatPOWERfloat, null);
-		putOperation(FLOAT, FLOAT, LOWER, opSimpleFPUCmpOperation(OpCode.SETB), fcSimpleFPUCmpOperation(OpCode.SETB));
-		putOperation(FLOAT, FLOAT, LEQUALS, opSimpleFPUCmpOperation(OpCode.SETBE), fcSimpleFPUCmpOperation(OpCode.SETBE));
-		putOperation(FLOAT, FLOAT, GREATER, opSimpleFPUCmpOperation(OpCode.SETA), fcSimpleFPUCmpOperation(OpCode.SETA));
-		putOperation(FLOAT, FLOAT, GEQUALS, opSimpleFPUCmpOperation(OpCode.SETAE), fcSimpleFPUCmpOperation(OpCode.SETAE));
+		putOperation(FLOAT, FLOAT, MULTIPLY,  opSimpleFPUOperation(OpCode.FMULP, F_COMMUTATIVE), fcSimpleFPUOperation(OpCode.FMULP, 0));
+		putOperation(FLOAT, FLOAT, DIVIDE,    opSimpleFPUOperation(OpCode.FDIVP, 0), fcSimpleFPUOperation(OpCode.FDIVP, 0));
+		putOperation(FLOAT, FLOAT, MOD,       opSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER), fcSimpleFPUOperation(OpCode.FPREM, F_SWAP_ARGS | F_POPAFTER));
+		putOperation(FLOAT, FLOAT, POWER,     Operations::op_floatPOWERfloat, null);
+		putOperation(FLOAT, FLOAT, LOWER,     opSimpleFPUCmpOperation(OpCode.SETB),  fcSimpleFPUCmpOperation(OpCode.SETB) );
+		putOperation(FLOAT, FLOAT, LEQUALS,   opSimpleFPUCmpOperation(OpCode.SETBE), fcSimpleFPUCmpOperation(OpCode.SETBE));
+		putOperation(FLOAT, FLOAT, GREATER,   opSimpleFPUCmpOperation(OpCode.SETA),  fcSimpleFPUCmpOperation(OpCode.SETA) );
+		putOperation(FLOAT, FLOAT, GEQUALS,   opSimpleFPUCmpOperation(OpCode.SETAE), fcSimpleFPUCmpOperation(OpCode.SETAE));
 		
-		putOperation(BOOL, BOOL, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
-		putOperation(INT, INT, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
-		putOperation(FLOAT, FLOAT, EQUALS, Operations::op_universalEquality, Operations::fc_universalEquality);
-		putOperation(BOOL, BOOL, NEQUALS, Operations::op_universalNEquality, Operations::fc_universalNEquality);
-		putOperation(INT, INT, NEQUALS, Operations::op_universalNEquality, Operations::fc_universalNEquality);
+		putOperation(BOOL,  BOOL,  EQUALS,  Operations::op_universalEquality,  Operations::fc_universalEquality );
+		putOperation(INT,   INT,   EQUALS,  Operations::op_universalEquality,  Operations::fc_universalEquality );
+		putOperation(FLOAT, FLOAT, EQUALS,  Operations::op_universalEquality,  Operations::fc_universalEquality );
+		putOperation(BOOL,  BOOL,  NEQUALS, Operations::op_universalNEquality, Operations::fc_universalNEquality);
+		putOperation(INT,   INT,   NEQUALS, Operations::op_universalNEquality, Operations::fc_universalNEquality);
 		putOperation(FLOAT, FLOAT, NEQUALS, Operations::op_universalNEquality, Operations::fc_universalNEquality);
 		
-		putOperation(null, BOOL, NOT, Operations::op_nullNOTbool, Operations::fc_nullNOTbool);
-		putOperation(STR, STR, ADD, Operations::op_strADDstr, Operations::fc_strADDstr);
-		putOperation(STR, STR, EQUALS, Operations::op_strEQUALSstr, Operations::fc_strEQUALSstr);
+		putOperation(null, BOOL, NOT,    Operations::op_nullNOTbool,  Operations::fc_nullNOTbool );
+		putOperation(STR,  STR,  ADD,    Operations::op_strADDstr,    Operations::fc_strADDstr   );
+		putOperation(STR,  STR,  EQUALS, Operations::op_strEQUALSstr, Operations::fc_strEQUALSstr);
 
-		putOperation(BOOL, BOOL, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
-		putOperation(INT, INT, OR, Operations::op_boolORbool, Operations::fc_boolORbool);
+		putOperation(BOOL, BOOL, OR,  Operations::op_boolORbool,  Operations::fc_boolORbool );
+		putOperation(INT,  INT,  OR,  Operations::op_boolORbool,  Operations::fc_boolORbool );
 		putOperation(BOOL, BOOL, AND, Operations::op_boolANDbool, Operations::fc_boolANDbool);
-		putOperation(INT, INT, AND, Operations::op_boolANDbool, Operations::fc_boolANDbool);
+		putOperation(INT,  INT,  AND, Operations::op_boolANDbool, Operations::fc_boolANDbool);
 
-		putOperation(BOOL, BOOL, BITWISE_OR, Operations::op_intBITORint, Operations::fc_intBITORint);
+		putOperation(BOOL, BOOL, BITWISE_OR,  Operations::op_intBITORint,  Operations::fc_intBITORint );
 		putOperation(BOOL, BOOL, BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
-		putOperation(INT, INT, BITWISE_OR, Operations::op_intBITORint, Operations::fc_intBITORint);
-		putOperation(INT, INT, BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
+		putOperation(INT,  INT,  BITWISE_OR,  Operations::op_intBITORint,  Operations::fc_intBITORint );
+		putOperation(INT,  INT,  BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
 	}
 	
 	static OperationWriter op_anySEQUALany = Operations::op_universalEquality;

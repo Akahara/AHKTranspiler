@@ -272,11 +272,27 @@ def memcmd_printeflags(*args):
 	if eflags != 0:
 		log("Remaining: ", hex(eflags))
 	
+	
+def memcmd_ahkhelp(*args):
+	log("Commands:")
+	for cmd in MemCommand.commands_list:
+		log(" ", cmd)
+		
 
+def memcmd_multibreakpoints(*args):
+	if len(args) == 0:
+		log(C_RED, "Usage: multibreakpoints <label>")
+	for i in range(10):
+		exec("breakpoint "+args[0]+".dbg_"+str(i))
+	
+	
 
 class MemCommand(gdb.Command):
+	commands_list = []
+
 	def __init__(self, name, function):
 		super().__init__(name, gdb.COMMAND_DATA)
+		MemCommand.commands_list.append(name)
 		self.function = function
 		self.name = name
 		self.dont_repeat()
@@ -303,8 +319,10 @@ class MemCommand(gdb.Command):
 if __name__ == "__main__":
 	for i in range(10):
 		exec("break break" + str(i))
+	MemCommand("ahkhelp", memcmd_ahkhelp)
 	MemCommand("inspectmem", memcmd_inspectmem)
 	MemCommand("memtable", memcmd_memtable)
 	MemCommand("printstack", memcmd_printstack)
 	MemCommand("ifpu", memcmd_printfpu)
 	MemCommand("iflags", memcmd_printeflags)
+	MemCommand("multibreakpoints", memcmd_multibreakpoints)

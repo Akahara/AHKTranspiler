@@ -184,7 +184,7 @@ public class ExpressionWriter {
 	private void writeConversionExp(ConversionExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getValue(), errors);
 		if(exp.isEffective())
-			writer.opWriter.writeConversion(exp.getValue().getType(), exp.castType, errors);
+			writer.opWriter.writeConversion(exp.getValue().getType(), exp.castType, exp, errors);
 	}
 	
 	private void writeArrayExp(ArrayExp exp, ErrorWrapper errors) {

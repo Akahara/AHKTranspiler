@@ -112,9 +112,12 @@ public class ProcessFiles {
 	
 	private static String writeClosures(File dir) throws IOException {
 		Tuple<String, String> closures = AsmOperationWriter.writeOperationsAsClosures();
+		Tuple<String, String> conversions = AsmOperationWriter.writeConversionsAsClosures();
 		String source = formatNative("asm/natives/closures.fasm",
 				"&native_operation_closures_globals", closures.a,
-				"&native_operation_closures", closures.b);
+				"&native_operation_closures", closures.b,
+				"&native_conversion_closures_globals", conversions.a,
+				"&native_conversion_closures", conversions.b);
 		return writeFile(dir, source, "natives/closures.asm");
 	}
 	

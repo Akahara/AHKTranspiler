@@ -31,10 +31,15 @@ public class GlobalLabels {
 	public static final String CLOSURE_RUN_CONSTANT = "closure_run_constant";
 	public static final String CLOSURE_RUN_OPERATION_1 = "closure_run_operation_1";
 	public static final String CLOSURE_RUN_OPERATION_2 = "closure_run_operation_2";
+	public static final String CLOSURE_RUN_CASTED = "closure_run_casted";
+	
+	/** a noop function, pops 0 arguments from the stack, keeps rax the same */
+	public static final String FUNCTION_NOOP = "function_noop";
 	
 	/** Standard library */ // TODO handle the standard library in a different way/class
 	public static final String AHK_STRINGS_INT2STR   = "ahk_Strings_int2str";
 	public static final String AHK_STRINGS_FLOAT2STR = "ahk_Strings_float2str";
 	public static final String AHK_STRINGS_BOOL2STR  = "ahk_Strings_bool2str";
+	
 	
 }

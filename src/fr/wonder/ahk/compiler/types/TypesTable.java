@@ -25,6 +25,7 @@ public class TypesTable {
 	
 	private static class OperationQuery {
 		
+		/** Right/Left operand */
 		private final VarType lo, ro;
 		private final Operator operator;
 		private final SourceElement queryElement;
@@ -121,7 +122,8 @@ public class TypesTable {
 			if(resultOp != null && 
 					(!resultOp.loType.equals(f1.returnType) ||
 					 !resultOp.roType.equals(f2.returnType))) {
-				errors.add("Result types " + f1.returnType + " are incompatible for operation " +
+				errors.add("Result types " + f1.returnType + " and " +
+					 f2.returnType + " are incompatible for operation " +
 					 query.operator + query.queryElement.getErr());
 				return null; // TODO support casts right before closure operations
 							 // (func float() + func int() = func float())

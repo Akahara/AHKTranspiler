@@ -219,20 +219,9 @@ public class ExpressionParser extends AbstractParser {
 		// parse conversion expression
 		if(section.subsections.size() == 1 && lastSection.type == SectionToken.SEC_PARENTHESIS &&
 				lastSection.start == section.start+3 && line[section.start+1].base == TokenBase.TK_COLUMN) {
-			
-			Token typeToken = line[section.start];
-			VarType type;
-			if(typeToken.base == TokenBase.VAR_STRUCT) {
-				errors.add("Cannot cast to a struct type:" + typeToken.getErr());
-				type = Invalids.TYPE;
-			} else {
-				type = parseType(unit, line, new Pointer(section.start), errors);
-			}
-			if(type != null) {
-				Expression casted = parseExpression(lastSection);
-				return new ConversionExp(sourceRefOfSection(section), type, casted, false);
-			}
-			return withError("Expected a type to cast to:" + typeToken.getErr());
+			VarType type = parseType(unit, line, new Pointer(section.start), errors);
+			Expression casted = parseExpression(lastSection);
+			return new ConversionExp(sourceRefOfSection(section), type, casted, false);
 		}
 		
 		// parse sizeof

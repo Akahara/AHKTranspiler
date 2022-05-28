@@ -1,0 +1,9 @@
+normal 0
+Expected: 3.0
+3.0
+Expected: 7
+7
+Expected: 9.0
+9.0
+Expected ~7.6
+7.59999999

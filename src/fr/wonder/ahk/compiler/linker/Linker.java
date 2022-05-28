@@ -202,7 +202,7 @@ public class Linker {
 			return;
 		}
 		
-		if(ConversionTable.canConvertImplicitely(value.getType(), validType)) {
+		if(ConversionTable.canConvertImplicitly(value.getType(), validType)) {
 			value = new ConversionExp(value, validType);
 			valueHolder.getExpressions()[valueIndex] = value;
 		} else {

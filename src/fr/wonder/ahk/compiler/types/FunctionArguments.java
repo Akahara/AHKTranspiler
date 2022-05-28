@@ -29,7 +29,7 @@ public class FunctionArguments {
 		for(int i = 0; i < args.length; i++) {
 			if(args[i].equals(provided[i]))
 				continue;
-			else if(ConversionTable.canConvertImplicitely(provided[i], args[i]))
+			else if(ConversionTable.canConvertImplicitly(provided[i], args[i]))
 				count++;
 			else
 				return -1;

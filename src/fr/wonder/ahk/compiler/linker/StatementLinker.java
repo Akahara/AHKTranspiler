@@ -118,7 +118,7 @@ class StatementLinker {
 
 	private void linkElseSt(ElseSt st, ErrorWrapper errors) {
 		Expression condition = st.getCondition();
-		if(condition != null && !ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
+		if(condition != null && !ConversionTable.canConvertImplicitly(condition.getType(), VarType.BOOL))
 			errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 	}
 
@@ -183,7 +183,7 @@ class StatementLinker {
 
 	private void linkIfSt(IfSt st, ErrorWrapper errors) {
 		Expression condition = st.getCondition();
-		if(!ConversionTable.canConvertImplicitely(condition.getType(), VarType.BOOL))
+		if(!ConversionTable.canConvertImplicitly(condition.getType(), VarType.BOOL))
 			errors.add("Invalid expression, conditions can only have the bool type:" + st.getErr());
 	}
 

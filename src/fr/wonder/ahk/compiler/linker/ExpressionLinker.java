@@ -199,7 +199,7 @@ class ExpressionLinker {
 				exp.operator, exp, errors);
 		
 		if(op == null) {
-			errors.add("Unimplemented operation! " + exp.operationString() + exp.getErr());
+			errors.add("Invalid operation! " + exp.operationString() + exp.getErr());
 			op = Invalids.OPERATION;
 		} else if(op instanceof OverloadedOperatorPrototype) {
 			OverloadedOperatorPrototype oop = (OverloadedOperatorPrototype) op;
@@ -292,8 +292,9 @@ class ExpressionLinker {
 	private void linkConversionExp(ConversionExp exp, ErrorWrapper errors) {
 		VarType origin = exp.getValue().getType();
 		VarType cast = exp.castType;
-		if(!ConversionTable.canConvertImplicitely(origin, cast) &&
-			(exp.isImplicit || !ConversionTable.canConvertExplicitely(origin, cast))) {
+		if(exp.isImplicit ?
+				!ConversionTable.canConvertImplicitly(origin, cast) :
+				!ConversionTable.canConvertExplicitly(origin, cast)) {
 			errors.add("Unable to convert explicitely from type " + origin + " to " + cast);
 			exp.type = Invalids.TYPE;
 		} else {

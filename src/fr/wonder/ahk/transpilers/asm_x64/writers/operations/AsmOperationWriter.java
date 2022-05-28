@@ -1,13 +1,5 @@
 package fr.wonder.ahk.transpilers.asm_x64.writers.operations;
 
-import static fr.wonder.ahk.compiled.expressions.Operator.*;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.BOOL;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.FLOAT;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.INT;
-import static fr.wonder.ahk.compiled.expressions.types.VarType.STR;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import fr.wonder.ahk.compiled.expressions.Expression;
@@ -15,12 +7,15 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
+import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.sections.LambdaClosureArgument;
 import fr.wonder.ahk.compiler.types.NativeOperation;
-import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.asm_x64.writers.AbstractWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.RegistryManager;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Conversions.ConversionFunctionWriter;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Conversions.ConversionWriter;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Jumps.JumpWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.NativeFunctionWriter;
 import fr.wonder.ahk.transpilers.asm_x64.writers.operations.Operations.OperationWriter;
 import fr.wonder.ahk.transpilers.common_x64.InstructionSet;
@@ -31,47 +26,8 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.commons.exceptions.ErrorWrapper;
 import fr.wonder.commons.types.Tuple;
-import fr.wonder.commons.utils.Assertions;
 
 public class AsmOperationWriter {
-	
-	private static final Map<Operation, JumpWriter> conditionalJumps = new HashMap<>();
-	private static final Map<Tuple<VarType, VarType>, ConversionWriter> conversions = new HashMap<>();
-	
-	private static interface JumpWriter {
-		
-		/** Writes the opcodes necessary to jump to the given label if the condition is <b>not</b> met */
-		void write(OperationExp condition, String label, AsmOperationWriter asmWriter, ErrorWrapper errors);
-		
-	}
-	
-	private static interface ConversionWriter {
-		
-		void write(VarType from, VarType to, AsmOperationWriter asmWriter, ErrorWrapper errors);
-		
-	}
-	
-	static {
-		conditionalJumps.put(NativeOperation.getOperation(INT, INT, EQUALS, false), Jumps::jump_intEQUint);
-		conditionalJumps.put(NativeOperation.getOperation(INT, INT, NEQUALS, false), Jumps::jump_intNEQUint);
-		conditionalJumps.put(NativeOperation.getOperation(INT, INT, LOWER, false), Jumps::jump_intLTint);
-		conditionalJumps.put(NativeOperation.getOperation(INT, INT, LEQUALS, false), Jumps::jump_intLEint);
-		conditionalJumps.put(NativeOperation.getOperation(INT, INT, GREATER, false), Jumps::jump_intGTint);
-		conditionalJumps.put(NativeOperation.getOperation(INT, INT, GEQUALS, false), Jumps::jump_intGEint);
-		
-		Assertions.assertNull(conditionalJumps.get(null), "An unimplemented native operation was given an asm jump implementation");
-	}
-	
-	static {
-		conversions.put(new Tuple<>(INT, FLOAT), Conversions::conv_intTOfloat);
-		conversions.put(new Tuple<>(FLOAT, INT), Conversions::conv_floatTOint);
-		conversions.put(new Tuple<>(BOOL, INT), (from, to, writer, errors) -> {}); // NOOP
-		conversions.put(new Tuple<>(INT, BOOL), Conversions::conv_intTObool);
-		
-		conversions.put(new Tuple<>(INT, STR), Conversions::conv_anyTOstr);
-		conversions.put(new Tuple<>(FLOAT, STR), Conversions::conv_anyTOstr);
-		conversions.put(new Tuple<>(BOOL, STR), Conversions::conv_anyTOstr);
-	}
 	
 	final AbstractWriter writer;
 	
@@ -86,6 +42,22 @@ public class AsmOperationWriter {
 		
 		for(Entry<NativeOperation, NativeFunctionWriter> writer : Operations.nativeFunctions.entrySet()) {
 			String label = RegistryManager.getOperationClosureRegistry(writer.getKey());
+			globalLabels.append("global " + label + "\n");
+			instructions.label(label);
+			writer.getValue().write(instructions);
+			instructions.skip();
+		}
+		
+		return new Tuple<>(globalLabels.toString(), instructions.toString());
+	}
+
+	public static Tuple<String, String> writeConversionsAsClosures() {
+		StringBuilder globalLabels = new StringBuilder();
+		InstructionSet instructions = new InstructionSet();
+		instructions.skip(); // begin by an empty line
+		
+		for(Entry<NativeConversion, ConversionFunctionWriter> writer : Conversions.conversionFunctions.entrySet()) {
+			String label = RegistryManager.getConversionsClosureRegistry(writer.getKey());
 			globalLabels.append("global " + label + "\n");
 			instructions.label(label);
 			writer.getValue().write(instructions);
@@ -166,7 +138,7 @@ public class AsmOperationWriter {
 	public void writeJump(Expression condition, String label, boolean jumpIfMet, ErrorWrapper errors) {
 		if(condition instanceof OperationExp && !jumpIfMet) {
 			OperationExp oc = (OperationExp) condition;
-			JumpWriter jump = conditionalJumps.get(oc.getOperation());
+			JumpWriter jump = Jumps.getJumpWriter(oc.getOperation());
 			if(jump != null) {
 				jump.write(oc, label, this, errors);
 				return;
@@ -179,10 +151,10 @@ public class AsmOperationWriter {
 	
 	/* ============================================ Conversions =========================================== */
 	
-	public void writeConversion(VarType from, VarType to, ErrorWrapper errors) {
-		ConversionWriter cw = conversions.get(new Tuple<>(from, to));
-		if(cw == null)
-			throw new IllegalArgumentException("Unimplemented conversion " + from + " -> " + to);
+	public void writeConversion(VarType from, VarType to, SourceElement source, ErrorWrapper errors) {
+		if(!Conversions.checkHasConversionWriter(from, to, source, errors))
+			return;
+		ConversionWriter cw = Conversions.getConversionWriter(from, to);
 		cw.write(from, to, this, errors);
 	}
 	

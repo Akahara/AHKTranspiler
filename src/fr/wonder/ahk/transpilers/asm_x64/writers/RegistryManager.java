@@ -8,6 +8,7 @@ import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiler.types.NativeOperation;
+import fr.wonder.ahk.transpilers.asm_x64.writers.operations.NativeConversion;
 import fr.wonder.commons.utils.ArrayOperator;
 
 public class RegistryManager {
@@ -74,6 +75,10 @@ public class RegistryManager {
 	
 	public static String getOperationClosureRegistry(NativeOperation op) {
 		return "closure_op_" + op.loType + op.operator.name() + op.roType;
+	}
+
+	public static String getConversionsClosureRegistry(NativeConversion conv) {
+		return "closure_conv_" + conv.from + "_" + conv.to;
 	}
 	
 	public String getLambdaRegistry(SimpleLambda lambda) {
