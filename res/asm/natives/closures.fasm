@@ -105,10 +105,18 @@ extern global_floatst
 segment .text
 
 
+; ==============================================================
+; Functions as a no-op taking 0 arguments.
+; Also functions as a conversion function that does nothing,
+; from int to int for example.
+; ==============================================================
 function_noop:
   ret
 
 
+; ==============================================================
+; A closure taking n arguments and returning a precomputed value
+; ==============================================================
 closure_run_constant:
   mov rbx,[rax+8]       ; arguments count
   mov rcx,rsp
@@ -121,8 +129,11 @@ closure_run_constant:
                         ;  originally (its address is lower than rsp)
   
 
-; when called, $rax must be the pointer to the closure
-; (see the composition closure memory block description)
+; ==============================================================
+; Run a compositio of two closures, the n arguments are passed
+; to the first and the result of the first is passed to the
+; second.
+; ==============================================================
 closure_run_composed:
   push rbp
   mov rbp,rsp
@@ -170,7 +181,9 @@ closure_run_composed:
               ;  originally (its address is lower than rsp)
   
   
+; ==============================================================
 ; run an operation closure with two closure operands
+; ==============================================================
 closure_run_operation_2:
   push rbp
   mov rbp,rsp
@@ -226,8 +239,9 @@ closure_run_operation_2:
   jmp [rcx]
   
 
-  
+; ==============================================================
 ; run an operation closure with a single operand
+; ==============================================================
 closure_run_operation_1:
   push rbp
   mov rbp,rsp
@@ -266,6 +280,11 @@ closure_run_operation_1:
   jmp [rcx]
   
 
+; ==============================================================
+; Run a casted closure, for example (int):int may be run with
+; a float as argument by casting it to a (float):int.
+; The return type can also be casted.
+; ==============================================================
 closure_run_casted:
   push rbp
   mov rbp,rsp

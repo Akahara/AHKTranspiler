@@ -26,12 +26,13 @@ public class GlobalLabels {
 	/** The special throw method label */
 	public static final String SPECIAL_THROW = "error_throw";
 	
-	/** FUTURE comment closure_run_composed */
-	public static final String CLOSURE_RUN_COMPOSED = "closure_run_composed";
-	public static final String CLOSURE_RUN_CONSTANT = "closure_run_constant";
-	public static final String CLOSURE_RUN_OPERATION_1 = "closure_run_operation_1";
-	public static final String CLOSURE_RUN_OPERATION_2 = "closure_run_operation_2";
-	public static final String CLOSURE_RUN_CASTED = "closure_run_casted";
+	/** See closures.fasm */
+	public static final String
+		CLOSURE_RUN_COMPOSED = "closure_run_composed",
+		CLOSURE_RUN_CONSTANT = "closure_run_constant",
+		CLOSURE_RUN_OPERATION_1 = "closure_run_operation_1",
+		CLOSURE_RUN_OPERATION_2 = "closure_run_operation_2",
+		CLOSURE_RUN_CASTED = "closure_run_casted";
 	
 	/** a noop function, pops 0 arguments from the stack, keeps rax the same */
 	public static final String FUNCTION_NOOP = "function_noop";

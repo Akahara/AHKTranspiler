@@ -133,8 +133,6 @@ class Conversions {
 				asmWriter.writer.instructions.mov(closurePointerAddress.addOffset(MemSize.POINTER_SIZE*(4+i)), conversionFunctionLabels[i]);
 			}
 		};
-		
-		// FUTURE allow for in-function function type conversion, or print an error message saying it is not possible
 	}
 	
 	private static String getConversionFunctionLabel(VarType from, VarType to) {
