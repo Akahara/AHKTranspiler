@@ -30,6 +30,7 @@ public enum TokenBase {
 	KW_FUNC("func"),
 	KW_STRUCT("struct"),
 	KW_CONSTRUCTOR("constructor"),
+	KW_ENUM("enum"),
 	KW_RETURN("return"),
 	KW_SIZEOF("sizeof"),
 	KW_ALIAS("alias"),
@@ -99,6 +100,11 @@ public enum TokenBase {
 	OP_DIRECT_PLUS("++"),
 	OP_DIRECT_MINUS("--"),
 	
+	/* Used by the tokenizer *after* tokenization, generated from multiple tokens */
+	
+	/** \@enumname::enumvalue */
+	VAR_ENUM(null)
+	
 	;
 	
 	/*
@@ -107,6 +113,8 @@ public enum TokenBase {
 	 */
 	
 	public static final TokenBase VAR_STRUCT = VAR_UNIT;
+	public static final TokenBase VAR_ALIAS = VAR_STRUCT;
+	public static final TokenBase VAR_ENUM_NAME = VAR_MODIFIER;
 	
 	public final String syntax;
 	

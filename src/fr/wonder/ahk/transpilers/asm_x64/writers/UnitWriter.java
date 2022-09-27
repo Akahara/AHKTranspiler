@@ -6,10 +6,12 @@ import java.util.List;
 import fr.wonder.ahk.compiled.expressions.Expression;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.EnumLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
 import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
+import fr.wonder.ahk.compiled.expressions.types.EnumValue;
 import fr.wonder.ahk.compiled.statements.Statement;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
@@ -41,6 +43,7 @@ import fr.wonder.ahk.transpilers.common_x64.instructions.OpCode;
 import fr.wonder.ahk.transpilers.common_x64.instructions.OperationParameter;
 import fr.wonder.ahk.transpilers.common_x64.instructions.SpecialInstruction;
 import fr.wonder.commons.exceptions.ErrorWrapper;
+import fr.wonder.commons.utils.ArrayOperator;
 
 public class UnitWriter {
 	
@@ -123,10 +126,16 @@ public class UnitWriter {
 			return ((FloatLiteral)exp).value == 0 ? "0" : "__float64__("+((FloatLiteral)exp).value+")";
 		else if(exp instanceof BoolLiteral)
 			return ((BoolLiteral) exp).value ? "1" : "0";
+		else if(exp instanceof EnumLiteral)
+			return getEnumConstantString(((EnumLiteral) exp).value);
 		else if(exp instanceof StrLiteral)
 			return getStringConstantLabel(((StrLiteral) exp).value);
 		else
 			throw new IllegalStateException("Unhandled literal type " + exp.getClass());
+	}
+	
+	private static String getEnumConstantString(EnumValue value) {
+		return ""+ArrayOperator.indexOf(value.enumType.getBackingType().enumValues, value.valueName);
 	}
 	
 	public String requireExternLabel(String label) {

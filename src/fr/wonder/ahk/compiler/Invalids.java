@@ -14,6 +14,7 @@ import fr.wonder.ahk.compiled.units.Signature;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.prototypes.ConstructorPrototype;
+import fr.wonder.ahk.compiled.units.prototypes.EnumPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
@@ -22,6 +23,7 @@ import fr.wonder.ahk.compiled.units.sections.Alias;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
+import fr.wonder.ahk.compiled.units.sections.EnumSection;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.Modifier;
@@ -73,7 +75,8 @@ public class Invalids {
 
 	public static final LiteralExp<?> LITERAL_EXPRESSION = new LiteralExp<Object>(SOURCE_REF, TYPE, null) {};
 
-	public static final StructSection STRUCTURE = new StructSection(UNIT, SOURCE_REF, STRING, MODIFIERS);
+	public static final StructSection STRUCTURE = new StructSection(SOURCE_REF, UNIT, STRING, MODIFIERS);
+	public static final EnumSection ENUM = new EnumSection(SOURCE_REF, UNIT, STRING, MODIFIERS);
 	
 	static {
 		STRUCTURE.members = new VariableDeclaration[0];
@@ -87,11 +90,12 @@ public class Invalids {
 	public static final VarStructType STRUCT_TYPE = new VarStructType(STRING);
 	
 	static {
-		STRUCT_TYPE.structure = STRUCT_PROTOTYPE;
+		STRUCT_TYPE.setBackingType(STRUCT_PROTOTYPE);
 	}
 	
 	public static final StructConstructor CONSTRUCTOR = new StructConstructor(STRUCTURE, SOURCE_REF, MODIFIERS, new FunctionArgument[0]);
 	public static final ConstructorPrototype CONSTRUCTOR_PROTOTYPE = new ConstructorPrototype(new VarType[0], new String[0], MODIFIERS, SIGNATURE);
+	public static final EnumPrototype ENUM_PROTOTYPE = new EnumPrototype(STRING, new String[0], MODIFIERS, SIGNATURE);
 
 	public static final VarFunctionType FUNCTION_TYPE = new VarFunctionType(TYPE, new VarType[0]);
 	public static final FunctionPrototype FUNCTION_PROTO = new FunctionPrototype(SIGNATURE, FUNCTION_TYPE, MODIFIERS);

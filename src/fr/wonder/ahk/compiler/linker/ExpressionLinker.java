@@ -10,12 +10,14 @@ import fr.wonder.ahk.compiled.expressions.FunctionExp;
 import fr.wonder.ahk.compiled.expressions.FunctionExpression;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.EnumLiteral;
 import fr.wonder.ahk.compiled.expressions.NullExp;
 import fr.wonder.ahk.compiled.expressions.OperationExp;
 import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
+import fr.wonder.ahk.compiled.expressions.types.EnumValue;
 import fr.wonder.ahk.compiled.expressions.types.VarArrayType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
@@ -90,6 +92,9 @@ class ExpressionLinker {
 				
 			} else if(exp instanceof SimpleLambdaExp) {
 				linkSimpleLambdaExp(unit, scope, (SimpleLambdaExp) exp, errors);
+				
+			} else if(exp instanceof EnumLiteral) {
+				linkEnumLiteralExp((EnumLiteral) exp, errors);
 				
 			} else if(exp instanceof NullExp || exp instanceof LiteralExp<?>) {
 				// pass
@@ -174,7 +179,7 @@ class ExpressionLinker {
 			errors.add("Invalid constructor type: " + baseType + exp.getErr());
 			return;
 		}
-		StructPrototype structure = ((VarStructType) baseType).structure;
+		StructPrototype structure = ((VarStructType) baseType).getBackingType();
 		
 		ConstructorPrototype[] accessibleConstructors = structure.constructors;
 		
@@ -193,14 +198,19 @@ class ExpressionLinker {
 	}
 
 	private void linkOperationExpression(Unit unit, OperationExp exp, ErrorWrapper errors) {
+		// skip if an error was already logged
+		if(exp.getLOType() == Invalids.TYPE || exp.getROType() == Invalids.TYPE) {
+			exp.setOperation(Invalids.OPERATION);
+			exp.type = Invalids.TYPE;
+			return;
+		}
 		
 		Operation op = linker.typesTable.getOperation(
 				exp.getLOType(), exp.getROType(),
 				exp.operator, exp, errors);
 		
 		if(op == null) {
-			errors.add("Invalid operation! " + exp.operationString() + exp.getErr());
-			op = Invalids.OPERATION;
+			op = Invalids.OPERATION; // an error was already logged
 		} else if(op instanceof OverloadedOperatorPrototype) {
 			OverloadedOperatorPrototype oop = (OverloadedOperatorPrototype) op;
 			unit.prototype.externalAccesses.add(oop);
@@ -219,7 +229,7 @@ class ExpressionLinker {
 			exp.type = Invalids.TYPE;
 			return;
 		}
-		StructPrototype prototype = ((VarStructType) instanceType).structure;
+		StructPrototype prototype = ((VarStructType) instanceType).getBackingType();
 		VariablePrototype member = prototype.getMember(exp.memberName);
 		VarType memberType = member == null ? null : member.type;
 		
@@ -311,6 +321,12 @@ class ExpressionLinker {
 	private void linkSimpleLambdaExp(Unit unit, Scope currentScope, SimpleLambdaExp exp, ErrorWrapper errors) {
 		linker.linkLambda(unit, currentScope, exp.lambda, errors);
 		exp.type = exp.lambda.lambdaFunctionType;
+	}
+
+	private void linkEnumLiteralExp(EnumLiteral exp, ErrorWrapper errors) {
+		EnumValue value = exp.value;
+		if(!value.enumType.getBackingType().hasValue(value.valueName))
+			errors.add(value.valueName + " is not a valid enum value for enum " + value.enumType);
 	}
 
 }

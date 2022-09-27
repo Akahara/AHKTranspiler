@@ -16,6 +16,7 @@ import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.SourceElement;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.prototypes.EnumPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.TypeAccess;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
@@ -51,6 +52,7 @@ public class Linker {
 	// set by #prelinkUnits
 	UnitPrototype[] prototypes;
 	Map<String, StructPrototype[]> declaredStructures;
+	Map<String, EnumPrototype[]> declaredEnums;
 	
 	public Linker(CompiledHandle handle) {
 		this.projectHandle = handle;
@@ -95,10 +97,12 @@ public class Linker {
 		
 		this.prototypes = ArrayOperator.map(units, UnitPrototype[]::new, u -> u.prototype);
 		this.declaredStructures = new HashMap<>();
+		this.declaredEnums = new HashMap<>();
 		
-		// collect global structures and blueprints
+		// collect global structures
 		for(UnitPrototype u : prototypes) {
 			declaredStructures.put(u.fullBase, u.structures);
+			declaredEnums.put(u.fullBase, u.enums);
 		}
 		
 		for(Unit unit : units) {
@@ -278,11 +282,11 @@ public class Linker {
 		boolean canBeUsed = true;
 		
 		for(VarStructType t : effectiveTypes) {
-			StructPrototype sproto = t.structure;
-			StructPrototype uproto = unit.prototype.getExternalStruct(t.name);
+			StructPrototype sproto = t.getBackingType();
+			StructPrototype uproto = unit.prototype.getExternalStruct(t.getName());
 			
 			if(uproto == null) {
-				uproto = searchStructSection(unit, t.name);
+				uproto = searchStructSection(unit, t.getName());
 				if(uproto != null && uproto.signature.declaringUnit.equals(unit.fullBase)) {
 					unit.prototype.externalAccesses.add(uproto);
 				}
@@ -329,6 +333,10 @@ public class Linker {
 	 */
 	StructPrototype searchStructSection(Unit unit, String name) {
 		return searchTypeAccess(unit, declaredStructures, name);
+	}
+
+	EnumPrototype searchEnumSection(Unit unit, String name) {
+		return searchTypeAccess(unit, declaredEnums, name);
 	}
 
 	private <T extends TypeAccess> T searchTypeAccess(Unit unit, Map<String, T[]> declaredAccesses, String name) {

@@ -149,7 +149,7 @@ public class MemoryManager {
 			
 		} else if(variable instanceof DirectAccessExp) {
 			DirectAccessExp exp = (DirectAccessExp) variable;
-			ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType().structure);
+			ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType().getBackingType());
 			writer.expWriter.writeExpression(exp.getStruct(), errors);
 			writer.instructions.push(Register.RAX);
 			addStackOffset(8);
@@ -243,7 +243,7 @@ public class MemoryManager {
 				
 			} else if(variable instanceof DirectAccessExp) {
 				DirectAccessExp exp = (DirectAccessExp) variable;
-				ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType().structure);
+				ConcreteType structType = writer.unitWriter.types.getConcreteType(exp.getStructType().getBackingType());
 				writeTo(varAdd, exp.getStruct(), errors);
 				variableAccesses[i] = new MemAddress(varAdd, structType.getOffset(exp.memberName));
 				

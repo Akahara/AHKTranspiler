@@ -207,6 +207,7 @@ public class AliasDeclarationParser extends AbstractParser {
 		VarType baseType;
 		Token firstToken = line[pointer.position];
 		
+		// TODO alias enums
 		if(Tokens.typesMap.containsKey(firstToken.base)) {
 			baseType = Tokens.typesMap.get(firstToken.base);
 			pointer.position++;
@@ -249,7 +250,7 @@ public class AliasDeclarationParser extends AbstractParser {
 				}
 			}
 		}
-		return alias.unit.unit.usedStructTypes.getType(token);
+		return alias.unit.unit.getAliasType(token);
 	}
 	
 	/** assumes that line[pointer] is a KW_FUNC */

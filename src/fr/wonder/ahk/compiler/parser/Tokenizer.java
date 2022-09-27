@@ -170,10 +170,12 @@ public class Tokenizer {
 		tokens.removeIf(t -> t.base == TokenBase.TK_SPACE || t.base == TokenBase.TK_NL);
 		
 		for(int i = 1; i < tokens.size(); i++) {
+			// TODO rework the tokens finalization
 			// previous, current and next tokens
 			Token ptk = tokens.get(i-1);
 			Token tk = tokens.get(i);
 			Token ntk = i+1 < tokens.size() ? tokens.get(i+1) : null;
+			Token nntk = i+2 < tokens.size() ? tokens.get(i+2) : null;
 			
 			if(tk.base == TK_DOT) {
 				// replace <(int) . int> and <int . (int)> by <float>
@@ -211,6 +213,20 @@ public class Tokenizer {
 					tokens.remove(i-1);
 					i--;
 				}
+			}
+			
+			// replace <@modifier :: variable> by <enum>
+			if( tk.base == TokenBase.TK_COLUMN && 
+				ntk.base == TokenBase.TK_COLUMN &&
+				ptk.base == TokenBase.VAR_MODIFIER &&
+				nntk.base == TokenBase.VAR_VARIABLE) {
+				
+				tokens.set(i, new Token(SourceReference.concat(ptk, tk, ntk, nntk), TokenBase.VAR_ENUM,
+						ptk.text + tk.text + ntk.text + nntk.text));
+				tokens.remove(i+2);
+				tokens.remove(i+1);
+				tokens.remove(i-1);
+				i--;
 			}
 		}
 	}

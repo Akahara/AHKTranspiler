@@ -39,14 +39,13 @@ class StructSectionParser extends AbstractParser {
 			Pointer p = new Pointer(1);
 
 			String structName = assertToken(declaration, p, TokenBase.VAR_STRUCT, "Expected structure name", errors).text;
-			
-			if(p.position != declaration.length - 1) {
-				errors.add("Unexpected tokens:" + SourceReference.fromLine(declaration, p.position, declaration.length-2).getErr());
-			}
+			assertToken(declaration, p, TokenBase.TK_BRACE_OPEN, "Expected '{'", errors);
+			assertNoRemainingTokens(declaration, p, errors);
+			SourceReference sourceRef = SourceReference.fromLine(declaration);
 			
 			structure = new StructSection(
+					sourceRef,
 					unit,
-					SourceReference.fromLine(declaration),
 					structName,
 					structModifiers);
 		} catch (ParsingException e) {

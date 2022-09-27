@@ -5,10 +5,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import fr.wonder.ahk.compiled.expressions.types.VarEnumType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
-import fr.wonder.ahk.compiled.units.ExternalTypeAccess;
+import fr.wonder.ahk.compiled.units.ExternalAccesses.ExternalTypeAccess;
 import fr.wonder.ahk.compiled.units.Unit;
+import fr.wonder.ahk.compiled.units.prototypes.EnumPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.FunctionPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.StructPrototype;
@@ -16,6 +18,7 @@ import fr.wonder.ahk.compiled.units.prototypes.TypeAccess;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VariablePrototype;
 import fr.wonder.ahk.compiled.units.sections.ConstructorDefaultValue;
+import fr.wonder.ahk.compiled.units.sections.EnumSection;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.OverloadedOperator;
@@ -46,6 +49,8 @@ class Prelinker {
 				con.setSignature(Signatures.of(con));
 			struct.setSignature(Signatures.of(struct));
 		}
+		for(EnumSection enumeration : unit.enums)
+			enumeration.setSignature(Signatures.of(enumeration));
 		
 		FunctionPrototype[] functions = ArrayOperator.map(
 				unit.functions,
@@ -59,33 +64,54 @@ class Prelinker {
 				unit.structures,
 				StructPrototype[]::new,
 				StructSection::getPrototype);
+		EnumPrototype[] enums = ArrayOperator.map(
+				unit.enums,
+				EnumPrototype[]::new,
+				EnumSection::getPrototype);
 		unit.prototype = new UnitPrototype(
 				unit.fullBase,
 				unit.importations,
 				functions,
 				variables,
-				structures);
+				structures,
+				enums);
 	}
 	
 	void prelinkTypes(Unit unit, ErrorWrapper errors) {
-		// link the structure types instances to their structure prototypes
+		// link the structure & enum types instances to their structure prototypes
 		linkStructTypes(unit, errors);
+		linkEnumTypes(unit, errors);
 	}
 
 	private void linkStructTypes(Unit unit, ErrorWrapper errors) {
-		
-		for(ExternalTypeAccess<VarStructType> structAccess : unit.usedStructTypes.getAccesses()) {
+		for(ExternalTypeAccess<VarStructType> structAccess : unit.externalStructureTypes.getAccesses()) {
 			VarStructType structType = structAccess.typeInstance;
-			StructPrototype structure = linker.searchStructSection(unit, structType.name);
+			StructPrototype structure = linker.searchStructSection(unit, structType.getName());
 			if(structure == null) {
-				errors.add("Unknown structure type used: " + structType.name + 
+				errors.add("Unknown structure type used: " + structType.getName() + 
 						" (" + structAccess.occurrenceCount + " references)" +
 						structAccess.firstOccurrence.getErr());
 				structure = Invalids.STRUCT_PROTOTYPE;
 			} else {
 				unit.prototype.externalAccesses.add(structure);
 			}
-			structType.structure = structure;
+			structType.setBackingType(structure);
+		}
+	}
+	
+	private void linkEnumTypes(Unit unit, ErrorWrapper errors) {
+		for(ExternalTypeAccess<VarEnumType> enumAccess : unit.externalEnumTypes.getAccesses()) {
+			VarEnumType enumType = enumAccess.typeInstance;
+			EnumPrototype enumeration = linker.searchEnumSection(unit, enumType.getName());
+			if(enumeration == null) {
+				errors.add("Unknown structure type used: " + enumType.getName() + 
+						" (" + enumAccess.occurrenceCount + " references)" +
+						enumAccess.firstOccurrence.getErr());
+				enumeration = Invalids.ENUM_PROTOTYPE;
+			} else {
+				unit.prototype.externalAccesses.add(enumeration);
+			}
+			enumType.setBackingType(enumeration);
 		}
 	}
 	
@@ -211,9 +237,9 @@ class Prelinker {
 			}
 			// check types
 			if(!(op1.loType instanceof VarStructType && ((VarStructType) op1.loType)
-					.structure.matchesPrototype(structure.getPrototype())) &&
+					.getBackingType().matchesPrototype(structure.getPrototype())) &&
 				!(op1.roType instanceof VarStructType && ((VarStructType) op1.roType)
-					.structure.matchesPrototype(structure.getPrototype()))) {
+					.getBackingType().matchesPrototype(structure.getPrototype()))) {
 				errors.add("Operator overloads must take at least one argument of"
 						+ " the struct type holding them:" + o1.getErr());
 			}

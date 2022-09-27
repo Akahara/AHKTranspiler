@@ -91,12 +91,12 @@ import fr.wonder.commons.utils.ArrayOperator;
  */
 public class NativeOperation extends Operation {
 	
-	protected NativeOperation(VarType l, VarType r, Operator o, VarType resultType) {
+	protected NativeOperation(VarNativeType l, VarNativeType r, Operator o, VarNativeType resultType) {
 		super(l, r, o, resultType);
 	}
 
 	/** Used to minimize the number */
-	private static final VarType[] nativeOrder = { BOOL, INT, FLOAT };
+	private static final VarNativeType[] nativeOrder = { BOOL, INT, FLOAT };
 	/** List of operators that can be used exclusively with booleans */
 	private static final Operator[] BOOLEAN_OPERATORS = { AND, OR };
 	
@@ -215,7 +215,7 @@ public class NativeOperation extends Operation {
 		int[] table = getOperatorTable(o);
 		int resultOrder = table[lorder+rorder*3];
 		
-		VarType result = resultOrder < 0 ? null : nativeOrder[resultOrder];
+		VarNativeType result = resultOrder < 0 ? null : nativeOrder[resultOrder];
 		NativeOperation strictOperation = result == null ? null : new NativeOperation(l, r, o, result);
 		NativeOperation castedOperation = strictOperation;
 		strictOperations.put(key, strictOperation);
@@ -227,7 +227,7 @@ public class NativeOperation extends Operation {
 			if(strictOperations.containsKey(castedKey)) {
 				castedOperation = strictOperations.get(castedKey);
 			} else {
-				VarType castedType = nativeOrder[castedOrder];
+				VarNativeType castedType = nativeOrder[castedOrder];
 				castedOperation = resultOrder < 0 ? null : new NativeOperation(
 						castedType, castedType, o, nativeOrder[resultOrder]);
 				strictOperations.put(castedKey, castedOperation);

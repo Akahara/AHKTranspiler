@@ -4,40 +4,23 @@ import ahk.Kernel;
 
 unit Main;
 
-alias FI = func int();
-alias FF = func float();
+enum @enum {
+	foo,
+	bar,
+}
 
-alias GI = func int(int);
-alias GF = func int(float);
-alias HF = func float(int);
+enum @enum2 {
+	foo,
+	baz
+}
 
 global func int main() {
-	GI gi = (int x):int => x+3;
-	GF gf = (float x):int => int:(x);
+	@enum a = @enum::foo;
+	@enum2 b = @enum2::foo;
 	
-	FI fi = ():int => 3;
-	FF ff = ():float => 4.6;
-	
-	Kernel.out << "Expected: 3.0\n";
-	FF fiAsff = fi;
-	float f = fiAsff();
-	Kernel.out << f << "\n";
-	
-	Kernel.out << "Expected: 7\n";
-	GF giAsgf = GF:(gi);
-	int i = giAsgf(4);
-	Kernel.out << i << "\n";
-	
-	Kernel.out << "Expected: 9.0\n";
-	HF ggg = (float x):int => int:(x+3.5);
-	float j = ggg(6);
-	Kernel.out << j << "\n";
-	
-	Kernel.out << "Expected ~7.6\n";
-	//FF fiPlusff = fi+ff;
-	FF fiPlusff = FF:(fi)+ff;
-	float g = fiPlusff();
-	Kernel.out << g << "\n";
+	Kernel.out << (a == @enum::bar) << Kernel.endl;
+	Kernel.out << (a == @enum::foo) << Kernel.endl;
+	Kernel.out << (b != @enum2::baz) << Kernel.endl;
 	
 	return 0;
 }

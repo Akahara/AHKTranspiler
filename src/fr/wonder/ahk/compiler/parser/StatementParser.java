@@ -76,13 +76,17 @@ public class StatementParser extends AbstractParser {
 		case TYPE_FLOAT:
 		case TYPE_INT:
 		case TYPE_STR:
-		case VAR_UNIT: // (Structure token)
 			// avoid 'int:(3.) >> Kernel.out' from being treated as an int declaration
 			if(line.length > 1 && line[1].base != TokenBase.TK_COMMA)
 				return parseVariableDeclaration(0, line.length, DeclarationModifiers.NONE, errors);
 		default:
 			break;
 		}
+		
+		// cannot be in the switch because VAR_STRUCT and VAR_ENUM_NAME are duplicates of VAR_UNIT and VAR_MODIFIER (same syntax)
+		if(firstToken == TokenBase.VAR_STRUCT || firstToken == TokenBase.VAR_ENUM_NAME)
+			return parseVariableDeclaration(0, line.length, DeclarationModifiers.NONE, errors);
+		
 		TokenBase lastToken = line[line.length-1].base;
 		int affectationTokenPos = getAffectationTokenPos(line, 0, line.length);
 		if(Tokens.isDirectAffectation(lastToken))

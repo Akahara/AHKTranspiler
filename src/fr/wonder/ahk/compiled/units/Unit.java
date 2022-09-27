@@ -4,17 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.wonder.ahk.UnitSource;
+import fr.wonder.ahk.compiled.expressions.types.VarEnumType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.sections.Alias;
+import fr.wonder.ahk.compiled.units.sections.EnumSection;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.SimpleLambda;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.linker.Prototypes;
 import fr.wonder.ahk.compiler.tokens.Token;
 import fr.wonder.ahk.compiler.tokens.TokenBase;
+import fr.wonder.ahk.compiler.tokens.Tokens;
+import fr.wonder.commons.utils.Assertions;
 
 public class Unit {
 	
@@ -28,19 +32,22 @@ public class Unit {
 	public VariableDeclaration[] variables;
 	public FunctionSection[] functions;
 	public StructSection[] structures;
+	public EnumSection[] enums;
+	
 	public List<SimpleLambda> lambdas = new ArrayList<>();
 	
 	public Alias[] accessibleAliases;
 	public final int declaredAliasCount;
 	
 	/**
-	 * List of structure types used through variable declarations,
-	 * when a declaration is read the structure type is not known
+	 * List of user defined types used through variable declarations,
+	 * when a declaration is read the concrete type is not known
 	 * (we only know its name) so a single instance is registered
-	 * and reused wherever the same struct name is used. This instance
-	 * will be linked to its struct declaration by the linker.
+	 * and reused wherever the same name is used. This instance
+	 * will be linked to its concrete declaration by the linker.
 	 */
-	public final ExternalAccesses<VarStructType> usedStructTypes = new ExternalAccesses<>(VarStructType::new);
+	public final ExternalAccesses<VarStructType> externalStructureTypes = new ExternalAccesses<>(VarStructType::new);
+	public final ExternalAccesses<VarEnumType> externalEnumTypes = new ExternalAccesses<>(VarEnumType::new, Tokens::extractEnumName);
 	
 	/** Set by {@link Prototypes#buildPrototype(Unit)} */
 	public UnitPrototype prototype;
@@ -64,16 +71,32 @@ public class Unit {
 		return other instanceof Unit && fullBase.equals(((Unit) other).fullBase);
 	}
 
-	public VarType getStructOrAliasType(Token token) {
-		if(token.base != TokenBase.VAR_STRUCT)
-			throw new IllegalArgumentException("Not a struct token");
+	public VarType getAliasOrStructType(Token token) {
+		if(!Tokens.isExternalDeclaration(token.base) && token.base != TokenBase.VAR_ALIAS) // technically VAR_ALIAS==VAR_STRUCT and VAR_STRUCT is an external declaration
+			throw new IllegalArgumentException("Not an external declaration token");
+		
+		if(token.base == TokenBase.VAR_ALIAS) {
+			VarType aliasedType = getAliasType(token);
+			if(aliasedType != null)
+				return aliasedType;
+		}
+		
+		return externalStructureTypes.getType(token);
+	}
+	
+	public VarEnumType getEnumType(Token token) {
+		Assertions.assertTrue(token.base == TokenBase.VAR_ENUM || token.base == TokenBase.VAR_ENUM_NAME);
+		return externalEnumTypes.getType(token);
+	}
+
+	public VarType getAliasType(Token token) {
+		Assertions.assertTrue(token.base == TokenBase.VAR_ALIAS, "Not an alias token");
 		
 		for(Alias alias : accessibleAliases) {
 			if(alias.text.equals(token.text))
 				return alias.resolvedType;
 		}
-		
-		return usedStructTypes.getType(token);
+		return null;
 	}
 
 }

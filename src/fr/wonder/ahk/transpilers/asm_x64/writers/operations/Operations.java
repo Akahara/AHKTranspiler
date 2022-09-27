@@ -15,6 +15,7 @@ import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.NumberLiteral;
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
+import fr.wonder.ahk.compiler.types.EnumOperation;
 import fr.wonder.ahk.compiler.types.NativeOperation;
 import fr.wonder.ahk.compiler.types.Operation;
 import fr.wonder.ahk.transpilers.common_x64.GlobalLabels;
@@ -46,6 +47,7 @@ class Operations {
 	private static final int F_POPAFTER = 1 << 2;
 	
 	static final Map<NativeOperation, OperationWriter> nativeOperations = new HashMap<>();
+	static final Map<Operator, OperationWriter> enumOperations = new HashMap<>();
 	static final Map<NativeOperation, NativeFunctionWriter> nativeFunctions = new HashMap<>();
 	
 	private static void putOperation(VarNativeType l, VarNativeType r, Operator o, OperationWriter opWriter, NativeFunctionWriter funcWriter) {
@@ -104,6 +106,9 @@ class Operations {
 		putOperation(BOOL, BOOL, BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
 		putOperation(INT,  INT,  BITWISE_OR,  Operations::op_intBITORint,  Operations::fc_intBITORint );
 		putOperation(INT,  INT,  BITWISE_AND, Operations::op_intBITANDint, Operations::fc_intBITANDint);
+
+		enumOperations.put(Operator.EQUALS, Operations::op_universalEquality);
+		enumOperations.put(Operator.NEQUALS, Operations::op_universalNEquality);
 	}
 	
 	static OperationWriter op_anySEQUALany = Operations::op_universalEquality;
@@ -118,6 +123,8 @@ class Operations {
 	public static OperationWriter getOperationWriter(Operation op) {
 		if(op.operator == Operator.STRICTEQUALS)
 			return op_anySEQUALany;
+		else if(op instanceof EnumOperation && op.loType.equals(op.roType))
+			return enumOperations.get(op.operator);
 		else
 			return nativeOperations.get(op);
 	}

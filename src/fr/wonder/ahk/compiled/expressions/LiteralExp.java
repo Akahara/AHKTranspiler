@@ -1,5 +1,7 @@
 package fr.wonder.ahk.compiled.expressions;
 
+import fr.wonder.ahk.compiled.expressions.types.EnumValue;
+import fr.wonder.ahk.compiled.expressions.types.VarEnumType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 
@@ -65,6 +67,14 @@ public abstract class LiteralExp<T> extends Expression {
 		public String toString() {
 			return '"'+value+'"';
 		}
+	}
+
+	public static class EnumLiteral extends LiteralExp<EnumValue> {
+
+		public EnumLiteral(SourceReference sourceRef, VarEnumType type, EnumValue value) {
+			super(sourceRef, type, value);
+		}
+		
 	}
 	
 }

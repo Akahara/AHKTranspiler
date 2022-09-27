@@ -1,6 +1,7 @@
 package fr.wonder.ahk.compiled.units.prototypes;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import fr.wonder.ahk.compiled.units.Signature;
@@ -10,10 +11,6 @@ import fr.wonder.commons.utils.ArrayOperator;
 
 public class UnitPrototype implements Prototype<UnitPrototype> {
 	
-	public static final UnitPrototype NULL_PROTOTYPE = 
-			new UnitPrototype("NULL", new String[0], new FunctionPrototype[0],
-					new VariablePrototype[0], new StructPrototype[0]);
-	
 	public final String base;
 	public final String fullBase;
 	public final String[] importations;
@@ -21,6 +18,7 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	public final FunctionPrototype[] functions;
 	public final VariablePrototype[] variables;
 	public final StructPrototype[] structures;
+	public final EnumPrototype[] enums;
 	
 	public final Signature signature;
 	
@@ -31,21 +29,20 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 	public Set<Prototype<?>> externalAccesses = new HashSet<>() {
 		private static final long serialVersionUID = 1L;
 		public boolean add(Prototype<?> e) {
-			if(e == null)
-				throw new NullPointerException("Null external access");
-			return super.add(e);
+			return super.add(Objects.requireNonNull(e));
 		};
 	};
 	
 	public UnitPrototype(String fullBase, String[] importations,
 			FunctionPrototype[] functions, VariablePrototype[] variables,
-			StructPrototype[] structures) {
+			StructPrototype[] structures, EnumPrototype[] enums) {
 		this.base = fullBase.substring(fullBase.lastIndexOf('.')+1);
 		this.fullBase = fullBase;
 		this.importations = importations;
 		this.functions = functions;
 		this.variables = variables;
 		this.structures = structures;
+		this.enums = enums;
 		this.signature = Signatures.of(this);
 	}
 	
@@ -88,6 +85,14 @@ public class UnitPrototype implements Prototype<UnitPrototype> {
 		for(FunctionPrototype func : functions) {
 			if(func.getName().equals(name))
 				return func;
+		}
+		return null;
+	}
+	
+	public EnumPrototype getEnum(String name) {
+		for(EnumPrototype enumeration : enums) {
+			if(enumeration.getName().equals(name))
+				return enumeration;
 		}
 		return null;
 	}

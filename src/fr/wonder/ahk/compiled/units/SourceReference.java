@@ -2,6 +2,8 @@ package fr.wonder.ahk.compiled.units;
 
 import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiler.tokens.Token;
+import fr.wonder.commons.utils.ArrayOperator;
+import fr.wonder.commons.utils.Assertions;
 
 public final class SourceReference {
 	
@@ -22,16 +24,17 @@ public final class SourceReference {
 		return source.getLine(this);
 	}
 
-	public static SourceReference concat(SourceReference ref1, SourceReference ref2) {
-		if(ref1.source != ref2.source)
-			throw new IllegalArgumentException("Cannot concat references of different sources");
-		if(ref1.stop > ref2.start)
-			throw new IllegalArgumentException("Invalid references to concat");
-		return new SourceReference(ref1.source, ref1.start, ref2.stop);
+	public static SourceReference concat(SourceReference... refs) {
+		Assertions.assertTrue(refs.length > 1, "Cannot concat less than 2 references");
+		for(int i = 1; i < refs.length; i++) {
+			Assertions.assertTrue(refs[0].source == refs[i].source, "Cannot concat references of different sources");
+			Assertions.assertTrue(refs[i].start >= refs[i-1].stop, "Ill-ordered references");
+		}
+		return new SourceReference(refs[0].source, refs[0].start, refs[refs.length-1].stop);
 	}
 	
-	public static SourceReference concat(SourceElement el1, SourceElement el2) {
-		return concat(el1.getSourceReference(), el2.getSourceReference());
+	public static SourceReference concat(SourceElement... elems) {
+		return concat(ArrayOperator.map(elems, SourceReference[]::new, SourceElement::getSourceReference));
 	}
 	
 	public SourceReference collapseToEnd() {

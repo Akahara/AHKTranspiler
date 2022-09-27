@@ -6,6 +6,7 @@ import fr.wonder.ahk.compiled.units.prototypes.AliasPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.OverloadedOperatorPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.UnitPrototype;
 import fr.wonder.ahk.compiled.units.prototypes.VarAccess;
+import fr.wonder.ahk.compiled.units.sections.EnumSection;
 import fr.wonder.ahk.compiled.units.sections.FunctionArgument;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructConstructor;
@@ -75,6 +76,13 @@ public class Signatures {
 				structSig(constructor.struct),
 				"constructor",
 				"constructor_" + constructor.getConstructorSignature());
+	}
+
+	public static Signature of(EnumSection enumeration) {
+		return new Signature(
+				enumeration.unit.fullBase,
+				enumeration.name,
+				enumeration.name);
 	}
 	
 	public static Signature of(OverloadedOperatorPrototype operator, StructSection structure) {

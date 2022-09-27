@@ -45,19 +45,19 @@ public class AHKTranspiler {
 		
 		transpiler = new AsmX64Transpiler(new AnsiLogger("x64", Logger.LEVEL_DEBUG));
 		
-		File dir = new File("exported/exported_x64");
-		dir.mkdirs();
-		FilesUtils.deleteContents(dir);
+		File outputDir = new File("exported/exported_x64");
+		outputDir.mkdirs();
 		try {
 			logger.warn("Exporting with " + transpiler.getName());
 			LinkedHandle handle = project
 				.compile(new ErrorWrapper("Unable to compile", true))
 				.link(new ErrorWrapper("Unable to link", true));
-			ExecutableHandle exec = transpiler.exportProject(handle, dir, new ErrorWrapper("Unable to export", true));
+			FilesUtils.deleteContents(outputDir);
+			ExecutableHandle exec = transpiler.exportProject(handle, outputDir, new ErrorWrapper("Unable to export", true));
 			if(exec == null)
 				return;
 			logger.warn("Running with " + transpiler.getName());
-			Process process = transpiler.runProject(exec, dir, new ErrorWrapper("Unable to run"));
+			Process process = transpiler.runProject(exec, outputDir, new ErrorWrapper("Unable to run"));
 			if(process != null)
 				ProcessUtils.redirectOutputToStd(process).start();
 		} catch (WrappedException e) {

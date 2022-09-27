@@ -16,7 +16,7 @@ The AHK language is heavily inspired by Java and C++, it is:
 - statically linked
 - garbage collected
 
-In AHK you write code in *Units*, units get tokenized and parsed individually but linked alltogether. A Unit can contain global variables, functions, structures, aliases and blueprints. Syntax is very similar to Java, here is a simple example program:
+In AHK you write code in *Units*, units get tokenized and parsed individually but linked alltogether. A Unit can contain global variables, functions, structures and aliases. Syntax is very similar to Java/c++, here is a simple example program:
 
 ```
 base fr.wonder.main;
@@ -41,7 +41,7 @@ func void fizzBuzz() {
 }
 ```
 
-> This page is cannot be a tutorial, if you want to try things using AHK search through the examples (the `code` folder).
+> This page isn't a tutorial, if you want to try things using AHK search through the examples (the `code` folder).
 
 ### Functions manipulations
 

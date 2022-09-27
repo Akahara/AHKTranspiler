@@ -12,6 +12,7 @@ import fr.wonder.ahk.compiled.expressions.FunctionCallExp;
 import fr.wonder.ahk.compiled.expressions.IndexingExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.BoolLiteral;
+import fr.wonder.ahk.compiled.expressions.LiteralExp.EnumLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.FloatLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.IntLiteral;
 import fr.wonder.ahk.compiled.expressions.LiteralExp.StrLiteral;
@@ -22,6 +23,8 @@ import fr.wonder.ahk.compiled.expressions.SimpleLambdaExp;
 import fr.wonder.ahk.compiled.expressions.SizeofExp;
 import fr.wonder.ahk.compiled.expressions.UninitializedArrayExp;
 import fr.wonder.ahk.compiled.expressions.VarExp;
+import fr.wonder.ahk.compiled.expressions.types.EnumValue;
+import fr.wonder.ahk.compiled.expressions.types.VarEnumType;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.SourceReference;
 import fr.wonder.ahk.compiled.units.Unit;
@@ -202,6 +205,8 @@ public class ExpressionParser extends AbstractParser {
 				return new VarExp(tk.sourceRef, line[section.start].text);
 			else if(Tokens.isLiteral(tk.base))
 				return parseLiteral(line[section.start], errors);
+			else if(tk.base == TokenBase.VAR_ENUM)
+				return parseEnumLiteral(line[section.start]);
 			return withError("Unknown expression type" + tk.getErr());
 		}
 		
@@ -280,6 +285,14 @@ public class ExpressionParser extends AbstractParser {
 			errors.add("Unable to parse literal: Token is not a literal value" + t.getErr());
 			return Invalids.LITERAL_EXPRESSION;
 		}
+	}
+	
+	/** Assumes that tokenBase == VAR_ENUM */
+	private Expression parseEnumLiteral(Token token) {
+		String enumValue = Tokens.extractEnumValue(token);
+		VarEnumType enumType = unit.getEnumType(token);
+		EnumValue value = new EnumValue(enumType, enumValue);
+		return new EnumLiteral(token.sourceRef, enumType, value);
 	}
 
 	/** Assumes that section.operators is not empty */
@@ -366,7 +379,7 @@ public class ExpressionParser extends AbstractParser {
 		Section argsSection = section.lastSubsection();
 		Expression[] arguments = parseArgumentList(argsSection);
 		Pointer p = new Pointer(section.start);
-		VarType structType = unit.getStructOrAliasType(line[p.position++]);
+		VarType structType = unit.getAliasOrStructType(line[p.position++]);
 		if(p.position != argsSection.start-1)
 			return withError("Unexpected tokens:" + unit.source.getErr(line, p.position, argsSection.start-1));
 		return new ConstructorExp(sourceRefOfSection(section), structType, arguments);

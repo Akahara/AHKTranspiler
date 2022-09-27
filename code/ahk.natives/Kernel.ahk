@@ -12,6 +12,7 @@ global struct KernelOut {
 }
 
 global KernelOut out;
+global str endl = "\n";
 
 @native("ahk_Kernel_argv");
 global str[] argv;

@@ -27,8 +27,7 @@ public class StructSection implements SourceElement {
 	
 	private StructPrototype prototype;
 	
-	public StructSection(Unit unit, SourceReference sourceRef, String structName, DeclarationModifiers modifiers) {
-		
+	public StructSection(SourceReference sourceRef, Unit unit, String structName, DeclarationModifiers modifiers) {
 		this.sourceRef = sourceRef;
 		this.unit = unit;
 		this.name = structName;

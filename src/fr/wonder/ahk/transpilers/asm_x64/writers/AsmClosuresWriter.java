@@ -135,7 +135,7 @@ public class AsmClosuresWriter {
 	public void writeConstantClosure(VarType returnType, int argsCount) {
 		String constantValue;
 		if(returnType instanceof VarStructType)
-			constantValue = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) returnType).structure);
+			constantValue = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) returnType).getBackingType());
 		else
 			constantValue = "0";
 		Address constantAddressInClosure = writeConstantClosure(argsCount);

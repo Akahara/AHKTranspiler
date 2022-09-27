@@ -5,12 +5,13 @@ import static fr.wonder.ahk.compiler.tokens.SectionToken.SEC_BRACKETS;
 import static fr.wonder.ahk.compiler.tokens.SectionToken.SEC_PARENTHESIS;
 import static fr.wonder.ahk.compiler.tokens.TokenBase.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
 import fr.wonder.ahk.compiled.expressions.types.VarType;
 import fr.wonder.ahk.compiled.units.sections.DeclarationVisibility;
+import fr.wonder.ahk.utils.NonNullableMap;
+import fr.wonder.commons.utils.Assertions;
 
 public class Tokens {
 	
@@ -31,7 +32,7 @@ public class Tokens {
 			KW_VAR, KW_IF, KW_ELSE, KW_FOR, KW_FOREACH,		// keywords
 			KW_WHILE, KW_FUNC, KW_STRUCT, KW_CONSTRUCTOR,
 			KW_RETURN, KW_SIZEOF, KW_ALIAS, KW_GLOBAL,
-			KW_LOCAL, KW_OPERATOR, KW_DOWHILE,
+			KW_LOCAL, KW_OPERATOR, KW_DOWHILE, KW_ENUM,
 			TYPE_VOID, TYPE_INT, TYPE_FLOAT, TYPE_STR,		// types
 			TYPE_BOOL,
 			VAR_UNIT, VAR_VARIABLE, VAR_MODIFIER,			// variable elements (MUST be read last by the tokenizer)
@@ -52,6 +53,11 @@ public class Tokens {
 			KW_WHILE,
 			KW_DOWHILE,
 	};
+	
+	public static boolean isExternalDeclaration(TokenBase base) {
+		return base == VAR_STRUCT ||
+				base == VAR_ENUM;
+	}
 
 	public static boolean isLiteral(TokenBase base) {
 		return base == LIT_BOOL_FALSE ||
@@ -64,10 +70,10 @@ public class Tokens {
 	/* ----------------------------- Type Tokens ---------------------------- */
 
 	public static boolean isVarType(TokenBase base) {
-		return base == VAR_STRUCT || typesMap.containsKey(base);
+		return base == VAR_STRUCT || base == VAR_ENUM_NAME || typesMap.containsKey(base);
 	}
 
-	public static final Map<TokenBase, VarType> typesMap = Map.of(
+	public static final Map<TokenBase, VarType> typesMap = NonNullableMap.of(
 			TYPE_INT,	VarType.INT,
 			TYPE_FLOAT,	VarType.FLOAT,
 			TYPE_STR,	VarType.STR,
@@ -84,7 +90,7 @@ public class Tokens {
 		return visibilitiesMap.get(base);
 	}
 	
-	private static final Map<TokenBase, DeclarationVisibility> visibilitiesMap = Map.of(
+	private static final Map<TokenBase, DeclarationVisibility> visibilitiesMap = NonNullableMap.of(
 			KW_LOCAL, DeclarationVisibility.LOCAL,
 			KW_GLOBAL, DeclarationVisibility.GLOBAL
 	);
@@ -103,7 +109,7 @@ public class Tokens {
 		return equalsOperatorMap.get(base);
 	}
 
-	private static final Map<TokenBase, Operator> equalsOperatorMap = Map.of(
+	private static final Map<TokenBase, Operator> equalsOperatorMap = NonNullableMap.of(
 			KW_EQUAL_PLUS, 	Operator.ADD,
 			KW_EQUAL_MINUS,	Operator.SUBSTRACT,
 			KW_EQUAL_MUL, 	Operator.MULTIPLY,
@@ -121,7 +127,7 @@ public class Tokens {
 		return directOperatorsMap.get(base);
 	}
 
-	private static final Map<TokenBase, Operator> directOperatorsMap = Map.of(
+	private static final Map<TokenBase, Operator> directOperatorsMap = NonNullableMap.of(
 			OP_DIRECT_PLUS,	Operator.ADD,
 			OP_DIRECT_MINUS,Operator.SUBSTRACT
 	);
@@ -139,27 +145,41 @@ public class Tokens {
 		return operatorsMap.get(base);
 	}
 
-	private static final Map<TokenBase, Operator> operatorsMap = new HashMap<>();
-	static {
-			operatorsMap.put(OP_PLUS,	Operator.ADD);
-			operatorsMap.put(OP_MINUS,	Operator.SUBSTRACT);
-			operatorsMap.put(OP_MUL,	Operator.MULTIPLY);
-			operatorsMap.put(OP_DIV,	Operator.DIVIDE);
-			operatorsMap.put(OP_EQUALS,	Operator.EQUALS);
-			operatorsMap.put(OP_SEQUALS,Operator.STRICTEQUALS);
-			operatorsMap.put(OP_LEQUALS,Operator.LEQUALS);
-			operatorsMap.put(OP_LOWER,	Operator.LOWER);
-			operatorsMap.put(OP_GREATER,Operator.GREATER);
-			operatorsMap.put(OP_GEQUALS,Operator.GEQUALS);
-			operatorsMap.put(OP_NEQUALS,Operator.NEQUALS);
-			operatorsMap.put(OP_MOD,	Operator.MOD);
-			operatorsMap.put(OP_NOT,	Operator.NOT);
-			operatorsMap.put(OP_SHR, 	Operator.SHR);
-			operatorsMap.put(OP_SHL, 	Operator.SHL);
-			operatorsMap.put(OP_POWER,	Operator.POWER);
-			operatorsMap.put(OP_AND,	Operator.AND);
-			operatorsMap.put(OP_OR,		Operator.OR);
-			operatorsMap.put(OP_BITWISE_AND, Operator.BITWISE_AND);
-			operatorsMap.put(OP_BITWISE_OR, Operator.BITWISE_OR);
+	private static final Map<TokenBase, Operator> operatorsMap = NonNullableMap.of(
+			OP_PLUS,        Operator.ADD,
+			OP_MINUS,       Operator.SUBSTRACT,
+			OP_MUL,         Operator.MULTIPLY,
+			OP_DIV,         Operator.DIVIDE,
+			OP_EQUALS,      Operator.EQUALS,
+			OP_SEQUALS,     Operator.STRICTEQUALS,
+			OP_LEQUALS,     Operator.LEQUALS,
+			OP_LOWER,       Operator.LOWER,
+			OP_GREATER,     Operator.GREATER,
+			OP_GEQUALS,     Operator.GEQUALS,
+			OP_NEQUALS,     Operator.NEQUALS,
+			OP_MOD,         Operator.MOD,
+			OP_NOT,         Operator.NOT,
+			OP_SHR,         Operator.SHR,
+			OP_SHL,         Operator.SHL,
+			OP_POWER,       Operator.POWER,
+			OP_AND,         Operator.AND,
+			OP_OR,          Operator.OR,
+			OP_BITWISE_AND, Operator.BITWISE_AND,
+			OP_BITWISE_OR,  Operator.BITWISE_OR
+	);
+
+	/* --------------------------- Utility Methods -------------------------- */
+	
+	public static final String extractEnumName(Token enumToken) {
+		if(enumToken.base == TokenBase.VAR_ENUM)
+			return enumToken.text.substring(0, enumToken.text.indexOf(':'));
+		else if(enumToken.base == TokenBase.VAR_ENUM_NAME)
+			return enumToken.text;
+		throw new IllegalArgumentException("Not an enum token " + enumToken);
+	}
+	
+	public static final String extractEnumValue(Token enumToken) {
+		Assertions.assertTrue(enumToken.base == TokenBase.VAR_ENUM);
+		return enumToken.text.substring(enumToken.text.lastIndexOf(':') + 1);
 	}
 }

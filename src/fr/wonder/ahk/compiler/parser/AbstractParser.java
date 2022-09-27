@@ -120,7 +120,9 @@ public class AbstractParser {
 		Token token = line[pointer.position];
 		VarType baseType;
 		if(token.base == TokenBase.VAR_STRUCT) {
-			baseType = unit.getStructOrAliasType(token);
+			baseType = unit.getAliasOrStructType(token);
+		} else if(token.base == TokenBase.VAR_ENUM_NAME) {
+			baseType = unit.getEnumType(token);
 		} else if(Tokens.isVarType(token.base)) {
 			baseType = Tokens.typesMap.get(token.base);
 		} else {

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import fr.wonder.ahk.compiled.expressions.Operator;
+import fr.wonder.ahk.compiled.expressions.types.VarEnumType;
 import fr.wonder.ahk.compiled.expressions.types.VarFunctionType;
 import fr.wonder.ahk.compiled.expressions.types.VarNativeType;
 import fr.wonder.ahk.compiled.expressions.types.VarStructType;
@@ -55,6 +56,14 @@ public class TypesTable {
 			Operation op = NativeOperation.getOperation((VarNativeType) query.lo, (VarNativeType) query.ro, query.operator, true);
 			if(op == null)
 				errors.add("Unimplemented native operation " + query.fullErr());
+			return op;
+		}
+		
+		// if both operands are enums, only search through enums operators
+		if(query.lo instanceof VarEnumType && query.ro instanceof VarEnumType) {
+			Operation op = EnumOperation.getOperation((VarEnumType) query.lo, (VarEnumType) query.ro, query.operator);
+			if(op == null)
+				errors.add("Unimplemented enum operation " + query.fullErr());
 			return op;
 		}
 		

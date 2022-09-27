@@ -7,6 +7,7 @@ import fr.wonder.ahk.UnitSource;
 import fr.wonder.ahk.compiled.statements.VariableDeclaration;
 import fr.wonder.ahk.compiled.units.Unit;
 import fr.wonder.ahk.compiled.units.sections.DeclarationModifiers;
+import fr.wonder.ahk.compiled.units.sections.EnumSection;
 import fr.wonder.ahk.compiled.units.sections.FunctionSection;
 import fr.wonder.ahk.compiled.units.sections.StructSection;
 import fr.wonder.ahk.compiler.tokens.Token;
@@ -113,6 +114,7 @@ public class UnitParser extends AbstractParser {
 		List<FunctionSection> functions = new ArrayList<>();
 		List<VariableDeclaration> variables = new ArrayList<>();
 		List<StructSection> structures = new ArrayList<>();
+		List<EnumSection> enums = new ArrayList<>();
 		
 		ModifiersHolder modifiers = new ModifiersHolder();
 		
@@ -159,6 +161,15 @@ public class UnitParser extends AbstractParser {
 				DeclarationModifiers mods = modifiers.getModifiers();
 				VariableDeclaration var = StatementParser.parseVariableDeclaration(unit, line, mods, errors);
 				variables.add(var);
+			
+			} else if(line[0].base == TokenBase.KW_ENUM) {
+				// parse enum
+				int enumEnd = getSectionEnd(lines, line[line.length-1].sectionPair, i);
+				DeclarationModifiers mods = modifiers.getModifiers();
+				ErrorWrapper subErrors = errors.subErrors("Cannot parse an enum section");
+				EnumSection enumeration = EnumSectionParser.parseEnum(unit, lines, i, enumEnd, mods, subErrors);
+				i = enumEnd;
+				enums.add(enumeration);
 				
 			} else {
 				errors.add("Unexpected line begin token:" + unit.source.getErr(line));
@@ -168,6 +179,7 @@ public class UnitParser extends AbstractParser {
 		unit.variables = variables.toArray(VariableDeclaration[]::new);
 		unit.functions = functions.toArray(FunctionSection[]::new);
 		unit.structures = structures.toArray(StructSection[]::new);
+		unit.enums = enums.toArray(EnumSection[]::new);
 	}
 	
 	private static int getSectionEnd(Token[][] lines, Token sectionStop, int start) {

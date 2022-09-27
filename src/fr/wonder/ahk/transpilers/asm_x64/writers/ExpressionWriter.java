@@ -163,7 +163,7 @@ public class ExpressionWriter {
 
 	private void writeDirectAccessExp(DirectAccessExp exp, ErrorWrapper errors) {
 		writeExpression(exp.getStruct(), errors);
-		ConcreteType structType = writer.unitWriter.types.getConcreteType(((VarStructType) exp.getStruct().getType()).structure);
+		ConcreteType structType = writer.unitWriter.types.getConcreteType(((VarStructType) exp.getStruct().getType()).getBackingType());
 		int offset = structType.getOffset(exp.memberName);
 		writer.instructions.mov(Register.RAX, new MemAddress(Register.RAX, offset));
 	}
@@ -261,7 +261,7 @@ public class ExpressionWriter {
 	}
 
 	private void writeConstructorExp(ConstructorExp exp, ErrorWrapper errors) {
-		StructPrototype structType = exp.getType().structure;
+		StructPrototype structType = exp.getType().getBackingType();
 		ConcreteType concreteType = writer.unitWriter.types.getConcreteType(structType);
 		ConstructorPrototype constructor = exp.constructor;
 		writer.unitWriter.callAlloc(concreteType.size);
@@ -296,7 +296,7 @@ public class ExpressionWriter {
 	
 	private void writeDefaultValue(VarType type, SourceElement sourceElement, ErrorWrapper errors) {
 		if(type instanceof VarStructType) {
-			String nullLabel = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) type).structure);
+			String nullLabel = writer.unitWriter.registries.getStructNullRegistry(((VarStructType) type).getBackingType());
 			writer.instructions.mov(Register.RAX, nullLabel);
 		} else if(type instanceof VarArrayType) {
 			writer.instructions.mov(Register.RAX, writer.unitWriter.requireExternLabel(GlobalLabels.GLOBAL_EMPTY_MEM_BLOCK));
